@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Name=TrueCrypt Mounter
+Comment=Mounts specified TrueCrypt volums
+Exec=tcmount
+Icon=truecrypt
+Terminal=false
+Type=Application
+Categories=Settings;Accessibility;
+Keywords=truecrypt;keyboard;accessibility;utility;settings;configuration;
