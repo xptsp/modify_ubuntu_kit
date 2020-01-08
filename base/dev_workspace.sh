@@ -18,11 +18,18 @@ _title "Adding script to creates development workspace after boot...."
 cat << EOF > /usr/local/finisher/tasks.d/13_workspace.sh
 #!/bin/bash
 # Create the directories we need:
-[[ ! -d /home/img/edit ]] && mkdir -p /home/img/{edit,extract,mnt}
-ln -sf /home/img /img
-# Mount the /img/edit (temp workspace) directory in RAM:
-echo "tmpfs  /img/edit  tmpfs  defaults  0  0" >> /etc/fstab
-# Mount the /tmp directory in RAM, too:
-echo "tmpfs  /tmp       tmpfs  defaults  0  0" >> /etc/fstab
+[[ ! -d /home/img/edit ]] && mkdir -p /home/img/{edit,original,mnt}
+[[ ! -e /img ]] && ln -sf /home/img /img
+[[ ! -e /img/extract ]] && ln -sf /img/extract /img/original
+
+# Add lines to "/etc/fstab":
+cat /etc/fstab | grep -v "tmpfs" > /tmp/fstab
+mv /tmp/fstab /etc/fstab
+cat << DONE >> /etc/fstab
+
+# Mount /tmp and /img/edit directory in RAM (tmpfs):
+tmpfs  /img/edit  tmpfs  defaults  0  0"
+tmpfs  /tmp       tmpfs  defaults  0  0
+DONE
 EOF
 chmod +x /usr/local/finisher/tasks.d/13_workspace.sh

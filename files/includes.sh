@@ -91,7 +91,7 @@ function ord() {
 
 # Function reporting whether we are in a chroot environment:
 function _chroot() {
-	[[ $(ischroot; echo $?) -ne 1 ]] && echo 1
+	[[ $(ischroot; echo $?) -ne 1 ]] && return 1
 }
 _chroot && CHROOT="Y" || CHROOT="N"
 

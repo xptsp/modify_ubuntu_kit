@@ -23,7 +23,7 @@ apt -y install openbox unzip hsetroot gifsicle httping expect
 git clone --depth=1 https://github.com/lufinkey/kodi-openbox /tmp/kodi-openbox
 pushd /tmp/kodi-openbox
 ./build.sh
-apt install -y /tmp/kodi-openbox.deb
+apt install -y /tmp/kodi-openbox/kodi-openbox.deb
 popd
 rm -rf /tmp/kodi-openbox
 

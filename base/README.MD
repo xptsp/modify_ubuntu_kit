@@ -13,6 +13,9 @@ The bottom panel contains the weather (again), the network tray icon, the power 
 
 **WALLPAPER SOURCE**: [1920x1080 wallpaper from WallpaperCave.com](https://wallpapercave.com/w/aAMbyIM), resized to 1280x720 by me because it didn't show up on the bootscreen without doing so....
 
+##alt_repos.sh##
+When I started on my Xubuntu HTPC build, I had a hard time updating using the default sources list.  So I changed the services that Xubuntu uses by default and haven't had a problem updating or installing packages on my system since.  So this script installs the new sources list on your OS....
+
 ##dev_workspace.sh##
 This script adds a finisher script that performs the following tasks:
 
@@ -64,9 +67,6 @@ This script also adds a finisher script that creates the **/etc/timeshift.json**
 
 ##truecrypt.sh##
 This script installs [TrueCrypt](https://launchpad.net/~stefansundin/+archive/ubuntu/truecrypt) onto your compuer.  It also modifies the autostart launcher to not start TrueCrypt when **xfce4-session** is not running, in order to keep it from popping up over Kodi when it is running.
-
-##xfce4_alt_repos.sh##
-When I started on my Xubuntu HTPC build, I had a hard time updating using the default sources list.  So I changed the services that Xubuntu uses by default and haven't had a problem updating or installing packages on my system since.  So this script installs the new sources list on your OS....
 
 ##xfce4_restricted_extras.sh##
 This script installs **ubuntu-restricted-extras**, which supports for MP3 and unencrypted DVD playback, Microsoft TrueType core fonts, the Flash plugin, and codecs for common audio and video files.

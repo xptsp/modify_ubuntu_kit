@@ -25,16 +25,13 @@ Description from website:
 ##extra_packages.sh##
 This script installs two packages: **libshairport2** (shared library to emulate an AirPort Express) and **librtmp1** (shared library - toolkit for RTMP streams) onto your machine.
 
-##kodi_all.sh##
+##kodi.sh##
 This script installs a few things onto your machine
 
 - Installs [Kodi](https://kodi.tv/) , the **kodi-pvr-hts** addon, visualizations and screensavers
 - Some default settings for Kodi and a few addons
 - Modifies the default skin to focus on TV when booting Kodi
 - Adds a finisher task to configure default web login details.
-
-##kodi_openbox.sh##
-This script installs [OpenBox](http://openbox.org/wiki/Main_Page), configuring a default background, as well as disabling the screen saver, screen blanking, and display power management signaling.  It also sets up automatic restart of Kodi when it crashes or quits.
 
 ##libcec.sh##
 This script installs [libcec](http://libcec.pulse-eight.com/) onto your machine.
@@ -56,6 +53,9 @@ Description from website:
 
 ##nuc_led.sh##
 This script installs [the NUC LED kernel module](https://github.com/xptsp/intel_nuc_led) onto your machine.
+
+##openbox.sh##
+This script installs [OpenBox](http://openbox.org/wiki/Main_Page), configuring a default background, as well as disabling the screen saver, screen blanking, and display power management signaling.  It also sets up automatic restart of Kodi when it crashes or quits.
 
 ##sickchill.sh##
 This script installs [SickChill](https://sickchill.github.io/) onto your machine.

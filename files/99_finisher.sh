@@ -15,8 +15,6 @@ cp -R ${MUK_DIR}/* /target/${MUK_DIR}/
 [[ -f /cdrom/casper/phrase.list ]] && cp --update /cdrom/casper/phrase.list /target/usr/local/finisher/phrase.list
 
 # Execute the finisher inside a chroot inside target install:
-if [[ -e /usr/lib/ubiquity/bin/muk_finisher.sh ]]; then
-	(chroot /target /usr/lib/ubiquity/bin/muk_finisher.sh) 1> /target/usr/local/finisher/finisher.log 2>&1
-fi
+(chroot /target ${MUK_DIR}/files/finisher.sh) 1> /target/usr/local/finisher/finisher.log 2>&1
 
 exit 0

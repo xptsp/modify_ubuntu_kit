@@ -255,7 +255,7 @@ elif [[ "$1" == "remove" ]]; then
 #==============================================================================
 # Did user request to unpack the ISO?
 #==============================================================================
-elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" ]]; then
+elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" ]]; then
 	if [[ $(ischroot; echo $?) -ne 1 ]]; then
 		_error "Cannot use ${BLUE}unpack${GREEN} inside chroot environment!"
 		exit 1
@@ -281,9 +281,9 @@ elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" ]]; then
 	fi
 	_title "Found ${BLUE}filesystem.squashfs${GREEN} in ${BLUE}${UNPACK_DIR}/${MNT}${GREEN}!!!"
 	if [[ "$MNT" == "mnt" ]] ; then
-		_title "Copying everything but ${BLUE}filesystem.squashfs${GREEN}..."
+		_title "Copying everything$([[ "$1" == "unpack-full" ]] || echo " but ${BLUE}filesystem.squashfs${GREEN}")..."
 		[ ! -d extract ] && mkdir extract
-		rsync --exclude=/casper/filesystem.squashfs -a mnt/ extract
+		rsync $([[ "$1" == "unpack-full" ]] || echo "--exclude=/casper/filesystem.squashfs") -a mnt/ extract
 	fi
 	if [[ -d edit ]]; then
 		_title "Removing folder ${BLUE}edit${GREEN} for clean extraction..."
@@ -409,6 +409,7 @@ else
 	echo "Available commands:"
 	echo -e "  ${GREEN}unpack${NC}      Unpacks the Ubuntu filesystem from DVD or extracted ISO on hard drive."
 	echo -e "  ${GREEN}unpack-iso${NC}  Unpacks the Ubuntu filesystem from ISO on hard drive."
+	echo -e "  ${GREEN}unpack-full${NC} Unpacks the Ubuntu filesystem from ISO on hard drive, including ${GREEN}filesystem.squashfs{$NC}!"
 	echo -e "  ${GREEN}pack${NC}        Packs the unpacked filesystem into ${BLUE}filesystem.squashfs${NC}."
 	echo -e "  ${GREEN}pack-xz${NC}     Packs the unpacked filesystem using XZ compression into ${BLUE}filesystem.squashfs${NC}."
 	echo -e "  ${GREEN}iso${NC}         Builds an ISO image in ${BLUE}${ISO_DIR}${NC} containing the packed filesystem."
