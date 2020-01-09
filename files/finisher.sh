@@ -3,7 +3,7 @@
 [[ -e /usr/local/finisher/settings.conf ]] && . /usr/local/finisher/settings.conf
 MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 [[ ! -e "${MUK_DIR}" ]] && exit 0
-. ${MUK_DIR}/.includes
+[[ -f ${MUK_DIR}/files/includes.sh ]] && . ${MUK_DIR}/files/includes.sh
 
 # Determine which user is user ID 1000:
 export USERNAME=$(id -un 1000)

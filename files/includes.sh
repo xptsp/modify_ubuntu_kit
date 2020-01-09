@@ -95,6 +95,15 @@ function _chroot() {
 }
 _chroot && CHROOT="Y" || CHROOT="N"
 
+# Defined directories:
+USB=${UNPACK_DIR}/usb
+MNT=${UNPACK_DIR}/mnt
+PTN2=${UNPACK_DIR}/extract-base
+PTN3=${UNPACK_DIR}/extract-desktop
+PTN4=${UNPACK_DIR}/extract-htpc
+EXT=${UNPACK_DIR}/extract
+ORG=${UNPACK_DIR}/original
+
 # Define stuff we need for this script:
 export DEBIAN_FRONTEND=noninteractive
 RED='\033[1;31m'

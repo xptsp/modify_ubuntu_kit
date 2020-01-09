@@ -86,6 +86,6 @@ apt update
 cat << EOF > /usr/local/finisher/tasks.d/10_sources.sh
 #!/bin/bash
 [[ ! -f /etc/apt/sources.list.orig ]] && cp /etc/apt/sources.list /etc/apt/sources.list.orig
-[[ ! -f /etc/apt/sources.list.new ]]  && cp /etc/apt/sources.list.new /etc/apt/sources.list
+[[ -f /etc/apt/sources.list.new ]]  && cp /etc/apt/sources.list.new /etc/apt/sources.list
 EOF
 chmod +x /usr/local/finisher/tasks.d/10_sources.sh

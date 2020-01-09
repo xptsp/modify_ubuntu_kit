@@ -103,7 +103,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		mount --bind /dev/ ${UNPACK_DIR}/edit/dev
 		### Third: Copy MUK into chroot environment:
 		rm -rf ${UNPACK_DIR}/edit${MUK_DIR}
-		cp -R ${MUK_DIR} ${UNPACK_DIR}/edit/opt/
+		cp -RL ${MUK_DIR} ${UNPACK_DIR}/edit/opt/
 		### Fourth: Enter the CHROOT environment:
 		_title "Entering CHROOT environment"
 		chroot ${UNPACK_DIR}/edit ${MUK_DIR}/edit_chroot.sh $@
@@ -143,7 +143,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 			echo "CHROOT" > /etc/debian_chroot
 			echo ". ${MUK_DIR}/files/includes.sh" >> /etc/skel/.bashrc
 			bash -s
-			cat /etc/skel/.bashrc | grep -v "${MUK_DIR}/.includes" > /tmp/.bashrc
+			cat /etc/skel/.bashrc | grep -v "${MUK_DIR}/files/includes.sh" > /tmp/.bashrc
 			mv /tmp/.bashrc /etc/skel/.bashrc
 			[ -f /etc/debian_chroot ] && rm /etc/debian_chroot
 			clear
@@ -255,7 +255,7 @@ elif [[ "$1" == "remove" ]]; then
 #==============================================================================
 # Did user request to unpack the ISO?
 #==============================================================================
-elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" ]]; then
+elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" || "$1" == "unpack-distro" ]]; then
 	if [[ $(ischroot; echo $?) -ne 1 ]]; then
 		_error "Cannot use ${BLUE}unpack${GREEN} inside chroot environment!"
 		exit 1
@@ -265,6 +265,12 @@ elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" ]]; t
 	if [[ "$1" == "unpack" ]]; then
 		MNT=$((mount /dev/cdrom ${UNPACK_DIR}/mnt >& /dev/null) && echo "mnt" || echo "extract")
 		[ "${MNT}" == "extract" ] && _error "No DVD in the drive!  Trying ${BLUE}extract${GREEN} folder..."
+	elif [[ "$1" == "unpack-distro" ]]; then
+		if [[ ! -f ${UNPACK_DIR}/$2/casper/filesystem.squashfs ]]; then
+			_error "Cannot find a ${BLUE}filesystem.squashfs${GREEN} to extract!!!"
+			exit 1
+		fi
+		MNT="$2"
 	elif [[ -z "$2" ]]; then
 		MNT=extract
 		_error "No ISO specified!  Trying ${BLUE}extract${GREEN} folder..."
@@ -280,7 +286,7 @@ elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" ]]; t
 		exit 1
 	fi
 	_title "Found ${BLUE}filesystem.squashfs${GREEN} in ${BLUE}${UNPACK_DIR}/${MNT}${GREEN}!!!"
-	if [[ "$MNT" == "mnt" ]] ; then
+	if [[ ! "$1" == "unpack-distro" && "$MNT" == "mnt" ]] ; then
 		_title "Copying everything$([[ "$1" == "unpack-full" ]] || echo " but ${BLUE}filesystem.squashfs${GREEN}")..."
 		[ ! -d extract ] && mkdir extract
 		rsync $([[ "$1" == "unpack-full" ]] || echo "--exclude=/casper/filesystem.squashfs") -a mnt/ extract
@@ -292,7 +298,7 @@ elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" ]]; t
 	fi
 	_title "Unpacking ${BLUE}filesystem.squashfs${GREEN} to ${BLUE}edit${GREEN}..."
 	unsquashfs -f -d edit ${MNT}/casper/filesystem.squashfs
-	if [[ "${MNT}" == "mnt" || "$1" != "unpack" ]]; then
+	if [[ "${MNT}" == "mnt" || ("$1" != "unpack" && ! "$1" == "unpack-distro") ]]; then
 		_title "Unmounting DVD/ISO from mount point...."
 		umount mnt
 	fi
@@ -400,6 +406,112 @@ elif [[ "$1" == "rebuild-xz" ]]; then
 	exit 0
 
 #==============================================================================
+# Did user ask to rebuild part of or all of RedDragon distros?
+#==============================================================================
+elif [[ "$1" == "rdbuild" ]]; then
+	# Unpack the factory XUbuntu 18.04.3 ISO so we can play with it:
+	if [[ ! -d ${ORG} ]]; then
+		# Abort if the RedDragon USB stick isn't found:
+		DEV=$(blkid | grep "RedDragon USB" | cut -d":" -f 1)
+		if [[ -z "${DEV}" ]]; then
+			_error "USB stick with ${BLUE}RedDragon USB${GREEN} label was not detected!  Aborting!"
+			exit 1
+		fi
+
+		# Mount the RedDragon USB stick:
+		while [[ ! -z "$(mount | grep "${DEV}")" ]]; do umount ${DEV}; sleep 1; done
+		[[ ! -d ${USB} ]] && mkdir -p ${USB}
+		mount ${DEV} ${USB}
+
+		# Unpack the factory Xubuntu 18.04 ISO image:
+		[[ ! -d ${MNT} ]] && mkdir -p ${MNT}
+		$0 unpack-full ${USB}/_ISO/MAINMENU/1*.iso
+		mv ${EXT} ${ORG}
+		ln -sf ${ORG} ${EXT}
+
+		# Unmount the factory Xubuntu 18.04 ISO:
+		umount ${USB}
+	else
+		[[ -d ${EXT} ]] && rm -rf ${EXT} || rm ${EXT}
+		UPK=${ORG}
+		[[ "$2" == "desktop" ]] && UPK=${PTN2}
+		[[ "$2" == "htpc" ]] && UPK=${PTN3}
+		ln -sf ${UPK} ${EXT}
+		$0 unpack
+	fi
+
+	# Create our "base" install:
+	if [[ -z "$2" || "$2" == "base" ]]; then
+		[[ -f ${PTN2} ]] && rm -rf ${PTN2}
+		cp -R ${ORG} ${PTN2}
+		rm ${EXT}
+		ln -sf ${PTN2} ${EXT}
+		$0 build base
+		$0 rebuild
+	fi
+
+	# Create our "desktop" install:
+	if [[ -z "$2" || "$2" == "desktop" ]]; then
+		[[ -f ${PTN3} ]] && rm -rf ${PTN3}
+		cp -R ${ORG} ${PTN3}
+		rm ${EXT}
+		ln -sf ${PTN3} ${EXT}
+		$0 build desktop
+		$0 rebuild
+	fi
+
+	# Create our "htpc" install:
+	if [[ -z "$2" || "$2" == "htpc" ]]; then
+		[[ -f ${PTN4} ]] && rm -rf ${PTN4}
+		cp -R ${ORG} ${PTN4}
+		rm ${EXT}
+		ln -sf ${PTN4} ${EXT}
+		$0 build htpc
+		$0 rebuild
+	fi
+
+#==============================================================================
+# Did user request to copy RedDragon distros to USB stick?
+#==============================================================================
+elif [[ "$1" == "rdcopy" ]]; then
+	# Abort if the RedDragon USB stick isn't found:
+	DEV=$(blkid | grep "RedDragon USB" | cut -d":" -f 1)
+	if [[ -z "${DEV}" ]]; then
+		_error "USB stick with ${BLUE}RedDragon USB${GREEN} label was not detected!  Aborting!"
+		exit 1
+	fi
+
+	# Mount the RedDragon USB stick:
+	_title "Mounting the RedDragon USB Stick...."
+	while [[ ! -z "$(mount | grep "${DEV}")" ]]; do umount ${DEV}; sleep 1; done
+	[[ ! -d ${USB} ]] && mkdir -p ${USB}
+	mount ${DEV} ${USB}
+
+	_title "Copying the Base edition to the USB stick..."
+	mount ${USB}/_ISO/MAINMENU/2* ${MNT}
+	cp ${PTN2}/casper/* ${MNT}/casper/
+	_title "Unmounting Base edition image partition..."
+	umount ${MNT}
+
+	_title "Copying the Desktop edition to the USB stick..."
+	mount ${USB}/_ISO/MAINMENU/3* ${MNT}
+	cp ${PTN3}/casper/* ${MNT}/casper/
+	_title "Unmounting Desktop edition image partition..."
+	umount ${MNT}
+
+	_title "Copying the HTPC edition to the USB stick..."
+	mount ${USB}/_ISO/MAINMENU/4* ${MNT}
+	cp ${PTN4}/casper/* ${MNT}/casper/
+	_title "Unmounting HTPC  edition image partition..."
+	umount ${MNT}
+
+	_title "Unmounting RedDragon USB stick..."
+	umount ${USB}
+	_title "Ejecting RedDragon USB stick..."
+	eject ${DEV}
+	_title "Done!"
+
+#==============================================================================
 # Invalid parameter specified.  List available parameters:
 #==============================================================================
 else
@@ -421,6 +533,8 @@ else
 	echo -e "  ${GREEN}unmount${NC}     Safely unmounts all unpacked filesystem mount points."
 	echo -e "  ${GREEN}remove${NC}      Safely removes the unpacked filesystem from the hard drive."
 	echo -e "  ${GREEN}update${NC}      Updates this script with the latest version."
+	echo -e "  ${GREEN}rdbuild${NC}     Builds one or all Red Dragon distro builds."
+	echo -e "  ${GREEN}rdcopy${NC}      Copies Red Dragon distros to the Red Dragon USB stick."
 	echo -e "  ${GREEN}--help${NC}      This message"
 	echo -e ""
 	echo -e "Note that this command ${RED}REQUIRES${NC} root access in order to function it's job!"
