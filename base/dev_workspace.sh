@@ -28,7 +28,7 @@ mv /tmp/fstab /etc/fstab
 cat << DONE >> /etc/fstab
 
 # Mount /tmp and /img/edit directory in RAM (tmpfs):
-tmpfs  /img/edit  tmpfs  defaults  0  0"
+tmpfs  /img/edit  tmpfs  defaults  0  0
 tmpfs  /tmp       tmpfs  defaults  0  0
 DONE
 EOF

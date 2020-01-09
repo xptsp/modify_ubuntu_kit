@@ -24,17 +24,14 @@ apt install -y timeshift
 [[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
 cat << EOF > /usr/local/finisher/tasks.d/14_timeshift.sh
 #!/bin/bash
-# Determine characteristics of root partition:
-ROOT_MNT=\$(mount | grep " / ")
+# Determine characteristics of target root partition:
+ROOT_MNT=\$(mount | grep " /target ")
 ROOT_TYPE=\$([[ "\$(echo \$ROOT_MNT | cut -d" " -f 5)" == "btrfs" ]] && echo "true" || echo "false")
 ROOT_DEV=\$(echo \$ROOT_MNT | cut -d" " -f 1)
 ROOT_UUID=\$(blkid \$ROOT_DEV -o export | grep "UUID=" | head -1 | cut -d"=" -f 2)
 
-# If we are not dealing with root partition with a BTRFS format, abort this script:
-[[ "\$ROOT_TYPE" == "false" ]] && exit 0
-
 # Create the timeshift.json file dynamically:
-cat << DONE > /etc/timeshift.json
+if [[ "\$ROOT_TYPE" == "true" ]] && cat << DONE > /etc/timeshift.json
 {
   "backup_device_uuid" : "\${ROOT_UUID}",
   "parent_device_uuid" : "",

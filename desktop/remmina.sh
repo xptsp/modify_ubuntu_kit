@@ -6,21 +6,15 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs ethernet suspend/hibernate fix on your computer."
+	echo -e "${RED}Purpose:${NC} Installs Remmina on your computer."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Adding script to deal with no ethernet connection after suspend/hibernate..."
+_title "Installing Remmina...."
 #==============================================================================
-cat << EOF > /etc/pm/sleep.d/99-network.sh
-#!/bin/sh
-case "\${1}" in
-    resume|thaw)
-        service network-manager restart
-		;;
-esac
-EOF
-chmod +x /etc/pm/sleep.d/99-network.sh
-
+### First: Install Remmina:
+apt-add-repository -y --no-update ppa:remmina-ppa-team/remmina-next
+apt update
+apt install -y remmina remmina-plugin-rdp remmina-plugin-secret remmina-plugin-spice

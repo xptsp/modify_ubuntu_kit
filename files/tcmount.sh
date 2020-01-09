@@ -39,7 +39,7 @@ do
 			[[ ${val} == HOME_DIR/* ]] && val=${val/HOME_DIR/${HOME}}
 			[[ ! -z "${options[debug]}" ]] && echo "${key}=${val}"
 			# Add the key/value set to the array:
-			declare -A "$section[${key//-/}]=${val}"
+			declare -A "$section[${key}]=${val}"
 		fi
 	fi
 done < ${CONFIG_FILE}

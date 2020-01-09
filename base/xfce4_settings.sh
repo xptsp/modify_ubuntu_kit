@@ -27,7 +27,12 @@ _title "Keep the annoying ${BLUE}\"System Program Problem Detected\"${BLUE} dial
 sed -i "s|enabled=1|enabled=0|g" /etc/default/apport
 
 #==============================================================================
-_title "Change default timeout in GRUB to 1 second..."
+_title "Adding finisher task to change default timeout in GRUB to 1 second..."
 #==============================================================================
-sed -i "s|GRUB_TIMEOUT=10|GRUB_TIMEOUT=1|g" /etc/default/grub
+[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+cat << EOF > /usr/local/finisher/tasks.d/15_grub_timeout.sh
+#!/bin/bash
+sed -i "s|GRUB_TIMEOUT=.*|GRUB_TIMEOUT=1|g" /etc/default/grub
 update-grub
+EOF
+chmod +x /usr/local/finisher/tasks.d/15_grub_timeout.sh

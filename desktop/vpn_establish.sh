@@ -32,7 +32,7 @@ systemctl disable freevpn
 # Second: Link the scripts necessary in order to set up the service:
 #==============================================================================
 mkdir /etc/openvpn/freevpn
-for file in /opt/modify_ubuntu_kit/programs/files/freevpn_*.sh; do 
+for file in /opt/modify_ubuntu_kit/files/freevpn_*.sh; do 
 	ln -sf ${file} /etc/openvpn/freevpn/$(basename ${file})
 done
 ln -sf /opt/modify_ubuntu_kit/files/30_freevpn.sh /usr/local/finisher/tasks.d/30_freevpn.sh

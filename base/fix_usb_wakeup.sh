@@ -37,7 +37,7 @@ chmod +x /etc/rc.local
 [[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/{tasks,post}.d
 cat << EOF > /usr/local/finisher/tasks.d/10_rc.local.sh
 #!/bin/bash
-/usr/bin/lspci | grep USB | cut -d " " -f 1 > /tmp/t7s1 && \
+(/usr/bin/lspci | grep USB; /usr/bin/lspci | grep Ethernet) | cut -d " " -f 1 > /tmp/t7s1 && \
 cat /proc/acpi/wakeup > /tmp/t7s2 && \
 grep -f /tmp/t7s1 /tmp/t7s2 > /tmp/t7s3 && \
 cat /tmp/t7s3 | cut -c 1-4 > /tmp/t7s4 && \
