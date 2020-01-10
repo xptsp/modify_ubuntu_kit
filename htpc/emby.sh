@@ -22,7 +22,7 @@ ln -sf ${MUK_DIR}/files/emby_upgrade.sh /usr/local/bin/emby_upgrade
 # Second: Install the software (duh :p)
 #==============================================================================
 /usr/local/bin/emby_upgrade
-systemctl disable emby-server
+[[ ! -z "${CHROOT}" ]] && systemctl disable emby-server
 relocate_dir /var/lib/emby
 
 # Third: Pull the default settings for Emby:

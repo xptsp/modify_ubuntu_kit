@@ -49,9 +49,9 @@ systemctl enable pulseaudio
 
 # Fifth: Add finisher task:
 #==============================================================================
-[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-cat << EOF > /usr/local/finisher/tasks.d/60_pulseaudio.sh
-#!/bin/bash
-usermod -aG pulse,pulse-access \${USERNAME}
-EOF
-chmod +x /usr/local/finisher/tasks.d/60_pulseaudio.sh
+if [[ ! -z "${CHROOT}" ]]; then
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+	ln -sf ${MUK_DIR}/files/tasks.d/60_pulseaudio.sh /usr/local/finisher/tasks.d/60_pulseaudio.sh
+else
+	${MUK_DIR}/files/tasks.d/60_pulseaudio.sh
+fi

@@ -20,27 +20,26 @@ add-apt-repository -y ppa:mamarley/tvheadend-git-stable
 echo "tvheadend tvheadend/admin_username string kodi" | debconf-set-selections
 echo "tvheadend tvheadend/admin_password password xubuntu" | debconf-set-selections
 apt install -y tvheadend
-system_disable tvheadend
 relocate_dir /home/hts
 
 # Second: Create default login settings tasks:
 #==============================================================================
 [[ ! -d /usr/local/finisher/post.d ]] && mkdir -p /usr/local/finisher/post.d
-cat << EOF > /usr/local/finisher/post.d/50_tvh.sh
-#!/bin/bash
-# Reconfigure tvheadend to default username/password:
-echo "tvheadend tvheadend/admin_username string kodi" | debconf-set-selections
-echo "tvheadend tvheadend/admin_password password xubuntu" | debconf-set-selections
-dpkg-reconfigure -u tvheadend
-EOF
-chmod +x /usr/local/finisher/post.d/50_tvh.sh
+ln -sf ${MUK_DIR}/files/tasks.d/50_tvh.sh /usr/local/finisher/post.d/50_tvh.sh
 change_username /usr/local/finisher/post.d/50_tvh.sh
 change_password /usr/local/finisher/post.d/50_tvh.sh
 
 # Third: Create the power management script needed:
 #==============================================================================
-[ ! -d /etc/pm/sleep.d ] && mkdir -p /etc/pm/sleep.d
-ln -sf ${MUK_DIR}/files/tvh_check-recordings.sh /etc/pm/sleep.d/70_check-recordings
+if [[ ! -z "${CHROOT}" ]]; then
+	system disable tvheadend
+	[ ! -d /etc/pm/sleep.d ] && mkdir -p /etc/pm/sleep.d
+	ln -sf ${MUK_DIR}/files/tvh_check-recordings.sh /etc/pm/sleep.d/70_check-recordings
+else
+	system enable tvheadend
+	system start tvheadend
+	${MUK_DIR}/files/tvh_check-recordings.sh
+fi
 
 # Fourth: Install a mobile UI for TVHeadEnd:
 #==============================================================================

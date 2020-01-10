@@ -21,12 +21,9 @@ apt install -y libcec
 
 # Second: Add finisher task:
 #==============================================================================
-[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-cat << EOF > /usr/local/finisher/tasks.d/60_libcec.sh
-#!/bin/bash
-usermod -aG dialout \${USERNAME}
-usermod -aG dialout htpc
-EOF
-chmod +x /usr/local/finisher/tasks.d/60_libcec.sh
-
-
+if [[ ! -z "${CHROOT}" ]]; then
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+	ln -sf ${MUK_DIR}/files/tasks.d/60_libcec.sh /usr/local/finisher/tasks.d/60_libcec.sh
+else
+	${MUK_DIR}/files/tasks.d/60_libcec.sh
+fi

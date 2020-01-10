@@ -93,7 +93,12 @@ function ord() {
 function _chroot() {
 	[[ $(ischroot; echo $?) -ne 1 ]] && return 1
 }
-_chroot && CHROOT="Y" || CHROOT="N"
+
+# If we are not running as root, then run this script as root:
+if [[ "$UID" -ne 0 ]]; then
+	sudo $0 $@
+	exit $?
+fi
 
 # Defined directories:
 USB=${UNPACK_DIR}/usb
@@ -124,8 +129,5 @@ for opt in "$@"; do
 	declare -A "options[${key//-/}]=${var}"
 done
 
-# If we are not running as root, then run this script as root:
-if [[ "$UID" -ne 0 ]]; then
-	sudo $0 $@
-	exit $?
-fi
+_chroot && CHROOT="Y" || unset CHROOT
+

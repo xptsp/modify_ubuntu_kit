@@ -15,16 +15,4 @@ fi
 _title "Setup the computer to always start Kodi on next login..."
 #==============================================================================
 [[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-cat << EOF > /usr/local/finisher/tasks.d/50_lightdm.sh
-#!/bin/bash
-# Setup auto login in LightDM.  Effective next reboot....
-cat << DONE > /etc/lightdm/lightdm.conf
-[SeatDefaults]
-autologin-user=htpc
-autologin-user-timeout=0
-autologin-session=kodi-openbox
-greeter-session=lightdm-gtk-greeter
-allow-guest=false
-DONE
-EOF
-chmod +x /usr/local/finisher/tasks.d/50_lightdm.sh
+ln -sf ${MUK_DIR}/files/tasks.d/50_lightdm.sh /usr/local/finisher/tasks.d/50_lightdm.sh

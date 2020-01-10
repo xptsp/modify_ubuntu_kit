@@ -29,14 +29,9 @@ fi
 
 # Second: Add finisher task to configure "LIRC":
 #==============================================================================
-[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-cat << EOF > /usr/local/finisher/tasks.d/50_lirc.sh
-#!/bin/bash
-export DEBIAN_FRONTEND=noninteractive
-echo "lirc lirc/dev_input_device select /dev/lirc0" | debconf-set-selections
-echo "lirc lirc/transmitter select None" | debconf-set-selections
-echo "lirc lirc/serialport select /dev/ttyS0" | debconf-set-selections
-echo "lirc lirc/remote select Windows Media Center Transceivers/Remotes (all)" | debconf-set-selections
-dpkg-reconfigure -u lirc
-EOF
-chmod +x /usr/local/finisher/tasks.d/50_lirc.sh
+if [[ ! -z "${CHROOT}" ]]; then
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+	ln -sf ${MUK_DIR}/files/tasks.d/50_lirc.sh /usr/local/finisher/tasks.d/50_lirc.sh
+else
+	${MUK_DIR}/files/tasks.d/50_lirc.sh
+fi

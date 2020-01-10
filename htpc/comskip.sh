@@ -33,16 +33,16 @@ make
 make install
 popd
 rm -rf /tmp/comskipper
-systemctl disable hts-skipper
 
 #==============================================================================
 # Creating Comskip finisher task:
 #==============================================================================
-[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-cat << EOF > /usr/local/finisher/tasks.d/50_hts_skipper.sh
-#!/bin/bash
-USERNAME=\$(id -un 1000 2> /dev/null)
-mkdir -p /home/\${USERNAME}/Recorded TV
-sed -i "s|/mnt/somedisk/Recorded TV|/home/\${USERNAME}/Recorded TV|g" /etc/comskip/hts_skipper.xml
-EOF
-chmod +x /usr/local/finisher/tasks.d/50_hts_skipper.sh
+if [[ ! -z "${CHROOT}" ]]; then
+	systemctl disable hts-skipper
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+	ln -sf ${MUK_DIR}/files/tasks.d/50_hts_skipper.sh /usr/local/finisher/tasks.d/50_hts_skipper.sh
+else
+	systemctl enable hts-skipper
+	systemctl start hts-skipper
+	${MUK_DIR}/files/tasks.d/50_hts_skipper.sh
+fi

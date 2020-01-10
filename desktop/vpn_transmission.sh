@@ -24,17 +24,15 @@ add-apt-repository -y ppa:transmissionbt/ppa
 apt remove -y transmission*
 apt install -y transmission-daemon transmission-cli transgui
 
-# Second: Stop the daemon so we can configure it:
+# Second: Configure the daemon:
 #==============================================================================
-systemctl disable transmission-daemon
-
-# Third: Alter the service file to met our needs:
-#==============================================================================
+[[ ! -z "${CHROOT}" ]] && systemctl disable transmission-daemon
+[[ -z "${CHROOT}" ]] && systemctl stop transmission-daemon
 sed -i "s|User=.*|User=htpc|g" /lib/systemd/system/transmission-daemon.service
 sed -i "s|Group=.*|Group=htpc|g" /lib/systemd/system/transmission-daemon.service
 sed -i "s|ExecStart|Restart=on-failure\nRestartSec=10\nExecStart|g" /lib/systemd/system/transmission-daemon.service
 
-# Fourth: Configure the settings for Transmission and TransGUI:
+# Third: Configure the settings for Transmission and TransGUI:
 #==============================================================================
 # Transmission settings:
 [[ ! -d ~/.config/transmission-daemon ]] && mkdir -p ~/.config/transmission-daemon
@@ -43,6 +41,10 @@ change_username /etc/skel/.config/transmission-daemon/settings.json
 change_password /etc/skel/.config/transmission-daemon/settings.json
 # TransGUI settings:
 unzip -o ${MUK_DIR}/files/transgui.zip -d ~/.config/
+
+# Fourth: Reenable the service if NOT running in CHROOT environment:
+#==============================================================================
+[[ -z "${CHROOT}" ]] && systemctl start transmission-daemon
 
 # Fifth: Create the autoremove.sh script:
 #==============================================================================

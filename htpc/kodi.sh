@@ -37,11 +37,9 @@ sed -i "s|XBMC.ShutDown()||g" ${HOME}/.kodi/userdata/keymaps/harmony_remote.xml
 
 ### Fifth: Create a post-install task to configure Kodi:
 #==============================================================================
-[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-cat << EOF > /usr/local/finisher/tasks.d/50_kodi.sh
-#!/bin/bash
-USERNAME=\$(id -un 1000 2> /dev/null)
-sed -i "s|\"network.httpproxypassword\">.*<|\"network.httpproxypassword\">\${PASSWORD:-"xubuntu"}<|g" /home/\${USERNAME}/.kodi/userdata/guisettings.xml
-sed -i "s|\"network.httpproxyusername\">.*<|\"network.httpproxyusername\">\${USERNAME}<|g" /home/\${USERNAME}/.kodi/userdata/guisettings.xml
-EOF
-chmod +x /usr/local/finisher/tasks.d/50_kodi.sh
+if [[ ! -z "${CHROOT}" ]]; then
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+	ln -sf ${MUK_DIR}/files/tasks.d/50_kodi.sh /usr/local/finisher/tasks.d/50_kodi.sh
+else
+	${MUK_DIR}/files/tasks.d/50_kodi.sh
+fi

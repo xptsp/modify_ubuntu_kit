@@ -1,0 +1,11 @@
+#!/bin/bash
+if pgrep xfce4-session > /dev/null; then
+    PROCESS=$(ps aux | grep "truecrypt" | grep -v "grep")
+    if [[ -z "${PROCESS}" ]]; then
+        /usr/bin/truecrypt $@
+    else
+        echo "NOTE: Truecrypt already started!"
+    fi
+else
+    echo "NOTE: Not launching TrueCrypt because xfce4-session not started!"
+fi

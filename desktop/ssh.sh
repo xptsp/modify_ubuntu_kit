@@ -18,17 +18,14 @@ _title "Installing and configuring SSH..."
 #==============================================================================
 apt install -y ssh
 
-# Second: Disable SSH and remove the generated SSH keys for security reasons...
+# Third: Configure as appropriate:
 #==============================================================================
-systemctl disable ssh
-rm -v /etc/ssh/ssh_host_*
+if [[ ! -z "${CHROOT}" ]]; then
+	# Disable SSH and remove the generated SSH keys for security reasons...
+	systemctl disable ssh
+	rm -v /etc/ssh/ssh_host_*
 
-# Third: Add finisher task to regenerate the SSH keys...
-#==============================================================================
-[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-cat << EOF > /usr/local/finisher/tasks.d/12_ssh.sh
-#!/bin/bash
-# Generate new SSH keys for this install:
-dpkg-reconfigure openssh-server
-EOF
-chmod +x /usr/local/finisher/tasks.d/12_ssh.sh
+	# Add finisher task to regenerate the SSH keys...
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+	ln -sf ${MUK_DIR}/files/tasks.d/12_ssh.sh /usr/local/finisher/tasks.d/12_ssh.sh
+fi

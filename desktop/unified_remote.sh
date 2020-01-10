@@ -48,3 +48,4 @@ WantedBy=default.target
 EOF
 chown root:root /etc/systemd/system/urserver.service
 systemctl enable urserver
+[[ -z "${CHROOT}" ]] && systemctl start urserver

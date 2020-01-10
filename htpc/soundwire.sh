@@ -37,7 +37,7 @@ chmod +x /opt/SoundWireServer/start-soundwire
 cat << EOF > /usr/share/applications/soundwire.desktop
 [Desktop Entry]
 Name=SoundWire Server
-Comment=Server program for SoundWire Android app
+Comment=SoundWire Android server
 Exec=/opt/SoundWireServer/start-soundwire
 Icon=/opt/SoundWireServer/sw-icon.xpm
 Terminal=false
@@ -63,6 +63,11 @@ RestartSec=3
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl disable soundwire
+if [[ ! -z "${CHROOT}" ]]; then
+	systemctl disable soundwire
+else
+	systemctl enable soundwire
+	systemctl start soundwire
+fi
 chown root:root /etc/systemd/system/soundwire.service
 change_username /etc/systemd/system/soundwire.service

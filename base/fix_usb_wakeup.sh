@@ -34,17 +34,9 @@ chmod +x /etc/rc.local
 
 # Create finisher task to keep USB devices from waking up computer
 #==============================================================================
-[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/{tasks,post}.d
-cat << EOF > /usr/local/finisher/tasks.d/10_rc.local.sh
-#!/bin/bash
-(/usr/bin/lspci | grep USB; /usr/bin/lspci | grep Ethernet) | cut -d " " -f 1 > /tmp/t7s1 && \
-cat /proc/acpi/wakeup > /tmp/t7s2 && \
-grep -f /tmp/t7s1 /tmp/t7s2 > /tmp/t7s3 && \
-cat /tmp/t7s3 | cut -c 1-4 > /tmp/t7s4 && \
-sed -i -e 's/^/echo "/' /tmp/t7s4 && \
-sed -i 's/$/" > \/proc\/acpi\/wakeup/' /tmp/t7s4 && \
-(head -n -1 /etc/rc.local; cat /tmp/t7s4; tail -1 /etc/rc.local) > /tmp/rc.local && \
-mv /tmp/rc.local /etc/rc.local && \
-chmod +x /etc/rc.local
-EOF
-chmod +x /usr/local/finisher/tasks.d/10_rc.local.sh
+if [[ ! -z "${CHROOT}" ]]; then
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/{tasks,post}.d
+	ln -sf ${MUK_DIR}/files/tasks.d/10_rc.local.sh /usr/local/finisher/tasks.d/10_rc.local.sh
+else
+	${MUK_DIR}/files/tasks.d/10_rc.local.sh
+fi

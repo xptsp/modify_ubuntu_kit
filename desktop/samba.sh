@@ -44,15 +44,15 @@ create mask=0777
 directory mask=0777
 public=no
 EOF
-systemctl disable smbd
-systemctl disable nmbd
 change_username /etc/samba/smb.conf
 
 # Fourth: Add Samba finisher task:
 #==============================================================================
-[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-cat << EOF > /usr/local/finisher/tasks.d/50_samba.sh
-#!/bin/bash
-(echo \${PASSWORD:-"xubuntu"}; echo \${PASSWORD:-"xubuntu"}) | smbpasswd -a \${USERNAME}
-EOF
-chmod +x /usr/local/finisher/tasks.d/50_samba.sh
+if [[ ! -z "${CHROOT}" ]]; then
+	systemctl disable smbd
+	systemctl disable nmbd
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+	ln -sf ${MUK_DIR}/files/tasks.d/50_samba.sh /usr/local/finisher/tasks.d/50_samba.sh
+else
+	${MUK_DIR}/files/tasks.d/50_samba.sh
+fi

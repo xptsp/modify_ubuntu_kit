@@ -14,16 +14,33 @@ fi
 #==============================================================================
 _title "Setup & configure the DDClient daemon..."
 #==============================================================================
+# First: Install the original packages and mark them as on hold:
+#==============================================================================
 apt install -y ddclient curl libjson-any-perl libio-socket-ssl-perl sasl2-bin
 apt-mark hold ddclient
+
+systemctl stop ddclient
+if [[ ! -z "${CHROOT}" ]]; then
+	systemctl disable ddclient
+	sed -i '/ddclient/d' /usr/local/finisher/disabled.lsit
+fi
+
+# Second: Download the new code and replace the binary:
+#==============================================================================
 wget http://downloads.sourceforge.net/project/ddclient/ddclient/ddclient-3.8.3.tar.bz2 -O /tmp/ddclient-3.8.3.tar.bz2
 pushd /tmp
 tar -jxvf ddclient-3.8.3.tar.bz2
 cp -f ddclient-3.8.3/ddclient /usr/sbin/ddclient
 rm -rf ddclient*
+popd
+
+# Third: Move the configuration files to match new locations:
+#==============================================================================
 mkdir /etc/ddclient
 mv /etc/ddclient.conf /etc/ddclient/
 ln -sf /etc/ddclient/ddclient.conf /etc/ddclient.conf
-popd
 chmod 600 /etc/ddclient/ddclient.conf
-systemctl disable ddclient --dry-run
+
+# Fourth: Restart ddclient if not in CHROOT environment:
+#==============================================================================
+[[ -z "${CHROOT}" ]] && systemctl start ddclient

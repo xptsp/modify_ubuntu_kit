@@ -22,12 +22,11 @@ apt install -y openvpn openvpn-systemd-resolved iptables-persistent p7zip-full c
 #==============================================================================
 _title "Setting up VPN service and scripts..."
 #==============================================================================
-# First: Create our VPN service and disable for Live CD:
+# First: Create our VPN service...
 #==============================================================================
 sed "s|%i|freevpn|g" /lib/systemd/system/openvpn@.service > /etc/systemd/system/freevpn.service
 sed -i "s|/etc/openvpn/freevpn|/etc/openvpn/freevpn/freevpn|g" /etc/systemd/system/freevpn.service
 sed -i "s|ExecStart=|ExecStartPre=/etc/openvpn/freevpn/freevpn_login.sh\nExecStart=|g" /etc/systemd/system/freevpn.service
-systemctl disable freevpn
 
 # Second: Link the scripts necessary in order to set up the service:
 #==============================================================================
@@ -35,7 +34,6 @@ mkdir /etc/openvpn/freevpn
 for file in /opt/modify_ubuntu_kit/files/freevpn_*.sh; do 
 	ln -sf ${file} /etc/openvpn/freevpn/$(basename ${file})
 done
-ln -sf /opt/modify_ubuntu_kit/files/30_freevpn.sh /usr/local/finisher/tasks.d/30_freevpn.sh
 touch /etc/openvpn/freevpn/freevpn_creds
 chmod 400 /etc/openvpn/freevpn/freevpn_creds
 touch /etc/openvpn/freevpn/freevpn_last_update
@@ -64,3 +62,14 @@ EOF
 iptables -F
 iptables -A OUTPUT ! -o lo -m owner --uid-owner 9999 -j DROP
 iptables-save > /etc/iptables/rules.v4
+
+# Seventh: Call/Setup finisher task...
+#==============================================================================
+if [[ ! -z "${CHROOT}" ]]; then
+	systemctl disable freevpn
+	[[ -e /usr/local/finisher/tasks.d/30_freevpn.sh ]] && rm /usr/local/finisher/tasks.d/30_freevpn.sh
+	ln -sf /opt/modify_ubuntu_kit/files/30_freevpn.sh /usr/local/finisher/tasks.d/30_freevpn.sh
+else
+	systemctl enable freevpn
+	systemctl start freevpn
+fi

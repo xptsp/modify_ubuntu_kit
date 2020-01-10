@@ -15,4 +15,4 @@ fi
 _title "Installing PCSX2..."
 #==============================================================================
 add-apt-repository -y ppa:gregory-hainaut/pcsx2.official.ppa
-sudo apt-get install -y pcsx2
+apt-get install -y pcsx2

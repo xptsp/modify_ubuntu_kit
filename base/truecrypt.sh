@@ -20,20 +20,7 @@ apt install -y truecrypt
 
 # Second: Stop TrueCrypt from automatically starting without "xfce4-session" running:
 #==============================================================================
-cat << EOF > /usr/local/bin/start-truecrypt
-#!/bin/bash
-if pgrep xfce4-session > /dev/null; then
-    PROCESS=\$(ps aux | grep "truecrypt" | grep -v "grep")
-    if [[ -z "\${PROCESS}" ]]; then
-        /usr/bin/truecrypt \$@
-    else
-        echo "NOTE: Truecrypt already started!"
-    fi
-else
-    echo "NOTE: Not launching TrueCrypt because xfce4-session not started!"
-fi
-EOF
-chmod +x /usr/local/bin/start-truecrypt
+ln -sf ${MUK_DIR}/files/start-truecrypt /usr/local/bin/start-truecrypt
 sed -i "s|Exec=/usr/bin/truecrypt|Exec=/usr/local/bin/start-truecrypt|g" /etc/xdg/autostart/truecrypt.desktop
 
 # Third: Adding TrueCrypt mounter to OS:

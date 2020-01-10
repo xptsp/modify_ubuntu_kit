@@ -14,22 +14,9 @@ fi
 #==============================================================================
 _title "Adding script to creates development workspace after boot...."
 #==============================================================================
-[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-cat << EOF > /usr/local/finisher/tasks.d/13_workspace.sh
-#!/bin/bash
-# Create the directories we need:
-[[ ! -d /home/img/edit ]] && mkdir -p /home/img/{edit,original,mnt}
-[[ ! -e /img ]] && ln -sf /home/img /img
-[[ ! -e /img/extract ]] && ln -sf /img/extract /img/original
-
-# Add lines to "/etc/fstab":
-cat /etc/fstab | grep -v "tmpfs" > /tmp/fstab
-mv /tmp/fstab /etc/fstab
-cat << DONE >> /etc/fstab
-
-# Mount /tmp and /img/edit directory in RAM (tmpfs):
-tmpfs  /img/edit  tmpfs  defaults  0  0
-tmpfs  /tmp       tmpfs  defaults  0  0
-DONE
-EOF
-chmod +x /usr/local/finisher/tasks.d/13_workspace.sh
+if [[ ! -z "${CHROOT}" ]]; then
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+	ln -sf ${MUK_DIR}/files/tasks.d/13_workspace.sh /usr/local/finisher/tasks.d/13_workspace.sh
+else
+	${MUK_DIR}/files/tasks.d/13_workspace.sh
+fi

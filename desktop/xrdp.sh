@@ -36,7 +36,7 @@ EOF
 #==============================================================================
 ### Fourth: :
 [ ! -f /usr/bin/light-locker.orig ] && mv /usr/bin/light-locker /usr/bin/light-locker.orig
-cat <<EOF | tee /usr/bin/light-locker
+cat << EOF > /usr/bin/light-locker
 #!/bin/sh
 
 # The light-locker uses XDG_SESSION_PATH provided by lightdm.

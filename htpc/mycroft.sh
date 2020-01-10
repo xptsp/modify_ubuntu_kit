@@ -47,6 +47,11 @@ RestartSec=3
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl disable mycroft
+if [[ ! -z "${CHROOT}" ]]; then
+	systemctl disable mycroft
+else
+	systemctl enable mycroft
+	systemctl start mycroft
+fi
 chown root:root /etc/systemd/system/mycroft.service
 change_username /etc/systemd/system/mycroft.service

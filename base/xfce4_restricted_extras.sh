@@ -23,4 +23,4 @@ _title "Installing and Building the DVD decoder..."
 apt-get install -y libdvd-pkg
 dpkg-reconfigure -f noninteractive libdvd-pkg
 apt-mark hold libdvd-pkg libdvdcss2
-apt install -f
+cp -r /usr/lib/python3/dist-packages/CommandNotFound /usr/lib/

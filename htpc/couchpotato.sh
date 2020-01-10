@@ -29,13 +29,15 @@ change_ownership /opt/couchpotato
 cp /opt/couchpotato/init/couchpotato.service /etc/systemd/system/couchpotato.service
 sed -i "s|/var/lib/CouchPotatoServer|/opt/couchpotato|g" /etc/systemd/system/couchpotato.service
 sed -i "s|=couchpotato|=htpc|g" /etc/systemd/system/couchpotato.service
-systemctl disable couchpotato
 
 # Fourth: Create finisher task
 #==============================================================================
-[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-cat << EOF > /usr/local/finisher/tasks.d/40_couchpotato.sh
-#!/bin/bash
-chown htpc:htpc -R /opt/couchpotato
-EOF
-chmod +x /usr/local/finisher/tasks.d/40_couchpotato.sh
+if [[ -z "${CHROOT}" ]]; then
+	systemctl disable couchpotato
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+	ln -sf ${MUK_DIR}/files/tasks.d/40_couchpotato.sh /usr/local/finisher/tasks.d/40_couchpotato.sh
+else
+	systemctl enable couchpotato
+	systemctl start couchpotato
+	${MUK_DIR}/files/tasks.d/40_couchpotato.sh
+fi

@@ -14,12 +14,14 @@ fi
 #==============================================================================
 _title "Adding finisher task to add these to the generated hosts file..."
 #==============================================================================
+# First: Install p7zip-full package if not already installed:
 FILE=$(whereis 7z | cut -d" " -f 2)
 [[ -z "${FILE}" ]] && apt install -y p7zip-full
-[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-cat << EOF > /usr/local/finisher/tasks.d/11_hosts.sh
-#!/bin/bash
-echo "" >> /etc/hosts
-7z x -so ${MUK_DIR}/files/spybot_hosts.7z >> /etc/hosts
-EOF
-chmod +x /usr/local/finisher/tasks.d/11_hosts.sh
+
+# Second: Add/execute finisher task:
+if [[ ! -z "${CHROOT}" ]]; then
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+	ln -sf ${MUK_DIR}/files/tasks.d/11_hosts.sh /usr/local/finisher/tasks.d/11_hosts.sh
+else
+	${MUK_DIR}/files/tasks.d/11_hosts.sh
+fi
