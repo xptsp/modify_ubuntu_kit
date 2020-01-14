@@ -12,7 +12,7 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
-_title "Install Jekyll..."
+_title "Installing Jekyll dependencies..."
 #==============================================================================
 # First: Install dependencies:
 apt -y install make build-essential ruby ruby-dev
@@ -20,13 +20,23 @@ apt -y install make build-essential ruby ruby-dev
 echo "export GEM_HOME=\$HOME/gems" >> ~/.bashrc
 echo "export PATH=\$HOME/gems/bin:\$PATH" >> ~/.bashrc
 source ~/.bashrc
-# Third: Fetch the bundler:
+
+#==============================================================================
+_title "Installing Ruby bundler..."
+#==============================================================================
 gem install bundler
-# Fourth: Fetch Jekyll:
+
+#==============================================================================
+_title "Installing Jekyll..."
+#==============================================================================
 gem install jekyll
+
 # Fifth: Change ownership if not in a CHROOT:
 [[ -z "${CHROOT}" ]] && chown $USER:$USER -R ~/.bundle
 
+#==============================================================================
+_title "Installing Jekyll systemd service..."
+#==============================================================================
 # Sixth: Create Jekyll systemd service file:
 cat << EOF > /etc/systemd/system/jekyll.service
 [Unit]
@@ -51,8 +61,8 @@ fi
 # Seventh: Create "run-jekyll" command:
 cat << EOF > /usr/local/bin/run-jekyll
 #!/bin/bash
-export GEM_HOME=/home/kodi/gems
-export PATH=/home/kodi/gems/bin:\$PATH
+export GEM_HOME=\$HOME/gems
+export PATH=\$HOME/gems/bin:\$PATH
 cd /home/kodi/GitHub/xptsp.github.io
 jekyll serve
 EOF

@@ -487,23 +487,29 @@ elif [[ "$1" == "rdcopy" ]]; then
 	[[ ! -d ${USB} ]] && mkdir -p ${USB}
 	mount ${DEV} ${USB}
 
-	_title "Copying the Base edition to the USB stick..."
-	mount ${USB}/_ISO/MAINMENU/2* ${MNT}
-	cp ${PTN2}/casper/* ${MNT}/casper/
-	_title "Unmounting Base edition image partition..."
-	umount ${MNT}
+	if [[ -z "$2" || "$2" == "base" ]]; then
+		_title "Copying the Base edition to the USB stick..."
+		mount ${USB}/_ISO/MAINMENU/2* ${MNT}
+		cp ${PTN2}/casper/* ${MNT}/casper/
+		_title "Unmounting Base edition image partition..."
+		umount ${MNT}
+	fi
 
-	_title "Copying the Desktop edition to the USB stick..."
-	mount ${USB}/_ISO/MAINMENU/3* ${MNT}
-	cp ${PTN3}/casper/* ${MNT}/casper/
-	_title "Unmounting Desktop edition image partition..."
-	umount ${MNT}
+	if [[ -z "$2" || "$2" == "desktop" ]]; then
+		_title "Copying the Desktop edition to the USB stick..."
+		mount ${USB}/_ISO/MAINMENU/3* ${MNT}
+		cp ${PTN3}/casper/* ${MNT}/casper/
+		_title "Unmounting Desktop edition image partition..."
+		umount ${MNT}
+	fi
 
-	_title "Copying the HTPC edition to the USB stick..."
-	mount ${USB}/_ISO/MAINMENU/4* ${MNT}
-	cp ${PTN4}/casper/* ${MNT}/casper/
-	_title "Unmounting HTPC  edition image partition..."
-	umount ${MNT}
+	if [[ -z "$2" || "$2" == "htpc" ]]; then
+		_title "Copying the HTPC edition to the USB stick..."
+		mount ${USB}/_ISO/MAINMENU/4* ${MNT}
+		cp ${PTN4}/casper/* ${MNT}/casper/
+		_title "Unmounting HTPC  edition image partition..."
+		umount ${MNT}
+	fi
 
 	_title "Unmounting RedDragon USB stick..."
 	umount ${USB}

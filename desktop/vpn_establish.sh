@@ -68,7 +68,7 @@ iptables-save > /etc/iptables/rules.v4
 if [[ ! -z "${CHROOT}" ]]; then
 	systemctl disable freevpn
 	[[ -e /usr/local/finisher/tasks.d/30_freevpn.sh ]] && rm /usr/local/finisher/tasks.d/30_freevpn.sh
-	ln -sf /opt/modify_ubuntu_kit/files/30_freevpn.sh /usr/local/finisher/tasks.d/30_freevpn.sh
+	ln -sf ${MUK_DIR}/files/tasks.d/30_freevpn.sh /usr/local/finisher/tasks.d/30_freevpn.sh
 else
 	systemctl enable freevpn
 	systemctl start freevpn

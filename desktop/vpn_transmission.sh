@@ -55,19 +55,7 @@ change_password /etc/transmission-daemon/autoremove.sh
 # Sixth: Create the finisher task to create the user "htpc": 
 #==============================================================================
 [[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-cat << EOF > /usr/local/finisher/tasks.d/40_transmission.sh
-#!/bin/bash
-# Change ownership and permissions:
-chown -R htpc:htpc /etc/transmission-daemon/
-chown -R htpc:htpc /var/lib/transmission-daemon/
-chmod -R 775 /etc/transmission-daemon/
-chmod -R 775 /var/lib/transmission-daemon/
-
-# Create necessary folders:
-mkdir -p ~htpc/{Downloads,Incomplete}
-chown htpc:htpc -R ~htpc/{Downloads,Incomplete}
-EOF
-chmod +x /usr/local/finisher/tasks.d/40_transmission.sh
+ln -sf ${MUK_DIR}/files/tasks.d/40_transmission.sh /usr/local/finisher/tasks.d/40_transmission.sh
 
 # Seventh: Creating our Transmission site reverse proxy:
 #==============================================================================

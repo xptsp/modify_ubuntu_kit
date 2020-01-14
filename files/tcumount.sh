@@ -52,7 +52,7 @@ fi
 # Notify user if we need to rebind directories:
 if [[ ! -z "${rebind[@]}" || ! -z "${bind[@]}" ]]; then
 	MSG="Binding directories together...  Please wait!"
-	[[ -z "${DISPLAY}" ]] && "${MSG}" || notify-send --icon=info "${TITLE}" "${MSG}"
+	[[ -z "${DISPLAY}" ]] && _title "${MSG}" || notify-send --icon=info "${TITLE}" "${MSG}"
 
 	# Unmount the specified folders before binding others together:
 	for dir in "${rebind[@]}"; do [[ -d ${dir} ]] && umount ${dir} >& /dev/null; done
