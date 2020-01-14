@@ -14,4 +14,4 @@ fi
 #==============================================================================
 _title "Installing some extra packages on your machine..."
 #==============================================================================
-apt install -y dh-modaliases build-essential linux-headers-generic dkms dpkg-dev debhelper checkinstall ttf-ubuntu-font-family net-tools rename
+apt install -y dh-modaliases build-essential linux-headers-generic dkms dpkg-dev debhelper checkinstall ttf-ubuntu-font-family net-tools rename tree
