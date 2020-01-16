@@ -23,10 +23,10 @@ ETHERNET=$(lshw -c network -disable usb -short | grep -i "ethernet")
 IFS=" " read -ra ETH_ARR <<< $ETHERNET
 unset IFS
 export ETH_NAME=${ETH_ARR[1]}
-echo -e "[INFO] Using ethernet adapter name: ${ETH_NAME}"
+_title "Using ethernet adapter name: ${ETH_NAME}"
 MAC_ADDR=$(ip address show $ETH_NAME | grep "ether" | cut -d" " -f 6)
 OUT_FILE=${ETH_NAME}_${MAC_ADDR//:}
-echo -e "[INFO] Using ethernet MAC address:  ${MAC_ADDR}"
+_title "Using ethernet MAC address:  ${MAC_ADDR}"
 MAC_ADDR=$(echo $MAC_ADDR | md5sum)
 
 ### Second: Attempt to get machine-specific task from DropBox:
@@ -53,13 +53,13 @@ if [[ ! -z "$MAC_ADDR" && -f /usr/local/finisher/phrase.list ]]; then
 		### Attempt to get the file specified from Dropbox:
 		if [[ "${VALID}" == "Y" ]]; then
 			URL=https://www.dropbox.com/s/${URL}/${OUT_FILE}.sh?dl=0
-			echo "[INFO] Trying Dropbox URL: ${URL}..."
+			_title "Trying Dropbox URL: ${URL}..."
 			if [[ "$(wget -q -O /tmp/${OUT_FILE} ${URL} && echo "Y")" == "Y" ]]; then
-				echo "[INFO] Executing \"${OUT_FILE}\"..."
+				_title "Executing \"${OUT_FILE}\"..."
 				chmod +x /tmp/${OUT_FILE}
 				. /tmp/${OUT_FILE}
 			else
-				echo "[FAIL] Failed to pull file from DropBox!"
+				_error "Failed to pull file from DropBox!"
 			fi
 		fi
 	done) < /usr/local/finisher/phrase.list
@@ -71,7 +71,7 @@ fi
 if [[ -d /usr/local/finisher/tasks.d ]]; then
 	for file in /usr/local/finisher/tasks.d/*; do
 		if [[ -f "${file}" && -x "${file}" ]]; then
-			echo "[INFO] Executing task in \"${file}\"..."
+			_title "Executing task in \"${file}\"..."
 			. ${file}
 		fi
 	done
@@ -84,7 +84,7 @@ if [ -f /usr/local/finisher/username.list ]; then
 	echo ""
 	while read p r; do
 		if [[ -f $p ]]; then
-			echo -e "[INFO] Changing username in file \"${p}\"..."
+			_title "Changing username in file \"${p}\"..."
 			sed -i "s|${r:-kodi}|${USERNAME}|g" $p
 		fi
 	done < /usr/local/finisher/username.list
@@ -97,7 +97,7 @@ if [ -f /usr/local/finisher/password.list ]; then
 	echo ""
 	while read p r; do
 		if [[ -f $p ]]; then
-			echo -e "[INFO] Changing password in file \"${p}\"..."
+			_title "Changing password in file \"${p}\"..."
 			sed -i "s|${r:-xubuntu}|${PASSWORD}|g" $p
 		fi
 	done < /usr/local/finisher/password.list
@@ -127,7 +127,7 @@ if [[ ! "${PROOT}" == "${PHOME}" && -f /usr/local/finisher/relocate.list ]]; the
 	[ ! -d /home/.relocate ] && mkdir -p /home/.relocate
 	while read p; do
 		BASE=$(basename $p)
-		echo -e "[INFO] Redirecting \"${p}\" to \"/home/.relocate/${BASE}\"...."
+		_title "Redirecting \"${p}\" to \"/home/.relocate/${BASE}\"...."
 		[[ ! -d /home/.relocate/${BASE} ]] && cp -aR $p /home/.relocate/
 		echo "$p  /home/.relocate/${BASE}  none  defaults,bind  0  0" >> /etc/fstab
 	done < /usr/local/finisher/relocate.list
@@ -138,10 +138,10 @@ fi
 ################################################################################
 if [ -f /usr/local/finisher/disabled.list ]; then
 	while read p; do
-		echo "[INFO] Enabling service \"${p}\"..."
+		_title "Enabling service \"${p}\"..."
 		systemctl enable $p
-		if [[ "$1" == "--start" ]]; then
-			echo "[INFO] Starting service \"${p}\"..."
+		if [[ -z "${CHROOT}" || "$1" == "--start" ]]; then
+			_title "Starting service \"${p}\"..."
 			systemctl start $p
 		fi
 	done < /usr/local/finisher/disabled.list
@@ -153,7 +153,7 @@ fi
 if [[ -d /usr/local/finisher/post.d ]]; then
 	for file in /usr/local/finisher/post.d/*; do
 		if [[ -f "${file}" && -x "${file}" ]]; then
-			echo "[INFO] Executing task in \"${file}\"..."
+			_title "Executing task in \"${file}\"..."
 			. ${file}
 		fi
 	done

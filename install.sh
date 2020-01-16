@@ -26,4 +26,4 @@ ln -sf ${MUK}/edit_chroot.sh /usr/local/bin/edit_chroot
 
 # Create target-config task in order to run "finisher.sh" ONLY if ubiquity is installed:
 [[ -e /usr/lib/ubiquity/target-config/99_finisher ]] && rm /usr/lib/ubiquity/target-config/99_finisher
-[[ -d /usr/lib/ubiquity/target-config ]] && ln -sf ${MUK}/files/tasks.d99_finisher.sh /usr/lib/ubiquity/target-config/99_finisher
+[[ -d /usr/lib/ubiquity/target-config ]] && ln -sf ${MUK}/files/tasks.d/99_finisher.sh /usr/lib/ubiquity/target-config/99_finisher

@@ -48,7 +48,7 @@ unzip -o ${MUK_DIR}/files/transgui.zip -d ~/.config/
 
 # Fifth: Create the autoremove.sh script:
 #==============================================================================
-ln -sf ${MUK_DIR}/files/transmission-autoremove.sh /etc/transmission-daemon/autoremove.sh
+ln -sf ${MUK_DIR}/files/transmission_autoremove.sh /etc/transmission-daemon/autoremove.sh
 change_username /etc/transmission-daemon/autoremove.sh
 change_password /etc/transmission-daemon/autoremove.sh
 
