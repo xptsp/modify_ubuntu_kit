@@ -31,7 +31,7 @@ iptables -t mangle -A OUTPUT -j CONNMARK --save-mark
 iptables -A INPUT -i $INTERFACE -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 
 # allow incoming mapped port from AirVPN
-for $PORT in $PORTS; do
+for PORT in $PORTS; do
 	iptables -A INPUT -i $INTERFACE -p tcp --dport $PORT -j ACCEPT
 	iptables -A INPUT -i $INTERFACE -p udp --dport $PORT -j ACCEPT
 done
