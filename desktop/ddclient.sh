@@ -20,7 +20,7 @@ apt install -y ddclient curl libjson-any-perl libio-socket-ssl-perl sasl2-bin
 apt-mark hold ddclient
 
 systemctl stop ddclient
-if [[ ! -z "${CHROOT}" ]]; then
+if ischroot; then
 	systemctl disable ddclient
 	sed -i '/ddclient/d' /usr/local/finisher/disabled.lsit
 fi
@@ -43,4 +43,4 @@ chmod 600 /etc/ddclient/ddclient.conf
 
 # Fourth: Restart ddclient if not in CHROOT environment:
 #==============================================================================
-[[ -z "${CHROOT}" ]] && systemctl start ddclient
+ischroot || systemctl start ddclient

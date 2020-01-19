@@ -30,9 +30,6 @@ ln -sf ${MUK_DIR}/files/tcmount.sh /usr/local/bin/tcmount
 ln -sf ${MUK_DIR}/files/tcumount.sh /usr/local/bin/tcumount
 # Application:
 ln -sf ${MUK_DIR}/files/tcmount.desktop /usr/share/applications/
-# Autolauncher:
-ln -sf ${MUK_DIR}/files/tcmount.desktop /etc/xdg/autostart/
-sed -i "s|Exec=tcmount|Exec=tcmount -no-xfce -q|g" /etc/xdg/autostart/tcmount.desktop
 # Icon:
 ln -sf ${MUK_DIR}/files/truecrypt.xpm /usr/share/icons/
 # Configuration File:

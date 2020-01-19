@@ -65,7 +65,7 @@ iptables-save > /etc/iptables/rules.v4
 
 # Seventh: Call/Setup finisher task...
 #==============================================================================
-if [[ ! -z "${CHROOT}" ]]; then
+if ischroot; then
 	systemctl disable freevpn
 	[[ -e /usr/local/finisher/tasks.d/30_freevpn.sh ]] && rm /usr/local/finisher/tasks.d/30_freevpn.sh
 	ln -sf ${MUK_DIR}/files/tasks.d/30_freevpn.sh /usr/local/finisher/tasks.d/30_freevpn.sh

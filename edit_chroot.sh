@@ -249,7 +249,13 @@ elif [[ "$1" == "remove" ]]; then
 	fi
 	$0 unmount
 	_title "Removing folder ${BLUE}${UNPACK_DIR}/edit${GREEN} safely..."
-	rm -rf ${UNPACK_DIR}/edit
+	EDIT_FS=$(cat /etc/fstab | grep -e "tmpfs.*/img/edit ")
+	if [[ ! -z "${EDIT_FS}" ]]; then
+		umount ${UNPACK_DIR}/edit
+		mount ${UNPACK_DIR}/edit
+	else
+		rm -rf ${UNPACK_DIR}/edit
+	fi
 	_title "All filesystem mount points should be unmounted now."
 
 #==============================================================================
@@ -293,8 +299,7 @@ elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" || "$
 	fi
 	if [[ -d edit ]]; then
 		_title "Removing folder ${BLUE}edit${GREEN} for clean extraction..."
-		$0 unmount
-		rm -R edit
+		$0 remove
 	fi
 	_title "Unpacking ${BLUE}filesystem.squashfs${GREEN} to ${BLUE}edit${GREEN}..."
 	unsquashfs -f -d edit ${MNT}/casper/filesystem.squashfs
@@ -539,9 +544,11 @@ else
 	echo -e "  ${GREEN}unmount${NC}     Safely unmounts all unpacked filesystem mount points."
 	echo -e "  ${GREEN}remove${NC}      Safely removes the unpacked filesystem from the hard drive."
 	echo -e "  ${GREEN}update${NC}      Updates this script with the latest version."
+	echo -e "  ${GREEN}--help${NC}      This message"
+	echo -e ""
+	echo "Red Dragon Distro-related commands:"
 	echo -e "  ${GREEN}rdbuild${NC}     Builds one or all Red Dragon distro builds."
 	echo -e "  ${GREEN}rdcopy${NC}      Copies Red Dragon distros to the Red Dragon USB stick."
-	echo -e "  ${GREEN}--help${NC}      This message"
 	echo -e ""
 	echo -e "Note that this command ${RED}REQUIRES${NC} root access in order to function it's job!"
 fi

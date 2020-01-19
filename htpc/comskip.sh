@@ -37,7 +37,7 @@ rm -rf /tmp/comskipper
 #==============================================================================
 # Creating Comskip finisher task:
 #==============================================================================
-if [[ ! -z "${CHROOT}" ]]; then
+if ischroot; then
 	systemctl disable hts-skipper
 	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
 	ln -sf ${MUK_DIR}/files/tasks.d/50_hts_skipper.sh /usr/local/finisher/tasks.d/50_hts_skipper.sh

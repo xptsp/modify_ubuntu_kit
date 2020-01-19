@@ -10,14 +10,6 @@ if [[ "$EUID" -ne 0 ]]; then
     exit $?
 fi
 
-# If "--no-xfce" is passed to script, then don't start this if xfce4-session isn't running:
-if [[ ! -z "${options[no-xfce]}" ]]; then
-	if ! pgrep xfce4-session > /dev/null; then
-		_error "Refusing to run script because ${BLUE}xfce4-session${GREEN} not started!"
-		exit 1
-	fi
-fi
-
 # Define the keyiables we need for this script:
 export CONFIG_FILE=/usr/local/finisher/tcmount.ini
 export TITLE="TrueCrypt Mounter"

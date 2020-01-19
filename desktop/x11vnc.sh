@@ -38,7 +38,7 @@ chown root:root /etc/systemd/system/x11vnc.service
 
 # Third: Adding X11VNC finisher task:
 #==============================================================================
-if [[ ! -z "${CHROOT}" ]]; then
+if ischroot; then
 	systemctl disable x11vnc
 	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
 	ln -sf ${MUK_DIR}/files/tasks.d/20_x11vnc.sh /usr/local/finisher/tasks.d/20_x11vnc.sh

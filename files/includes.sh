@@ -34,13 +34,13 @@ function systemctl() {
 	command systemctl $@
 	ACTION=$1
 	shift
-	[[ ! -z "$CHROOT" && "${ACTION}" == "enable"  ]] && __remove_from disabled $@
-	[[ ! -z "$CHROOT" && "${ACTION}" == "disable" ]] && __insert_into disabled $@
+	[[ "${ACTION}" == "enable"  ]] && __remove_from disabled $@
+	[[ "${ACTION}" == "disable" ]] && __insert_into disabled $@
 }
 function service() {
 	command service $@
-	[[ ! -z "$CHROOT" && "$2" == "enable"  ]] && __remove_from disabled $1
-	[[ ! -z "$CHROOT" && "$2" == "disable" ]] && __insert_into disabled $1
+	[[ "$2" == "enable"  ]] && __remove_from disabled $1
+	[[ "$2" == "disable" ]] && __insert_into disabled $1
 }
 
 # Functions performing file alternations:
@@ -130,4 +130,3 @@ for opt in "$@"; do
 done
 
 _chroot && CHROOT="Y" || unset CHROOT
-

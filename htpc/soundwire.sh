@@ -63,7 +63,7 @@ RestartSec=3
 [Install]
 WantedBy=multi-user.target
 EOF
-if [[ ! -z "${CHROOT}" ]]; then
+if ischroot; then
 	systemctl disable soundwire
 else
 	systemctl enable soundwire

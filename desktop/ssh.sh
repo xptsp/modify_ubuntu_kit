@@ -20,7 +20,7 @@ apt install -y ssh
 
 # Third: Configure as appropriate:
 #==============================================================================
-if [[ ! -z "${CHROOT}" ]]; then
+if ischroot; then
 	# Disable SSH and remove the generated SSH keys for security reasons...
 	systemctl disable ssh
 	rm -v /etc/ssh/ssh_host_*

@@ -31,7 +31,7 @@ change_password /usr/local/finisher/post.d/50_tvh.sh
 
 # Third: Create the power management script needed:
 #==============================================================================
-if [[ ! -z "${CHROOT}" ]]; then
+if ischroot; then
 	system disable tvheadend
 	[ ! -d /etc/pm/sleep.d ] && mkdir -p /etc/pm/sleep.d
 	ln -sf ${MUK_DIR}/files/tvh_check-recordings.sh /etc/pm/sleep.d/70_check-recordings

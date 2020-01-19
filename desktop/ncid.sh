@@ -33,7 +33,7 @@ apt remove --purge -y mailutils-common postfix
 # Fourth: Reconfigure server so that it doesn't require a modem:
 #==============================================================================
 sed -i "s|# set cidinput = 3|set cidinput = 3|g" /etc/ncid/ncidd.conf
-[[ ! -z "${CHROOT}" ]] && systemctl disable ncidd
+ischroot || systemctl disable ncidd
 
 # Fidth: Fix a few improperly marked executable service files:
 #==============================================================================
@@ -45,4 +45,4 @@ ln -sf ${MUK_DIR}/files/kodi_ncid.sh /usr/share/ncid/modules/ncid_kodi
 cp /usr/lib/systemd/system/ncid-page.service /usr/lib/systemd/system/kodi_ncid.service
 sed -i "s|ncid-page|kodi_ncid|g" /usr/lib/systemd/system/kodi_ncid.service
 sed -i "s|Page Module|Kodi Module|g" /usr/lib/systemd/system/kodi_ncid.service
-[[ ! -z "${CHROOT}" ]] && systemctl disable kodi_ncid
+ischroot || systemctl disable kodi_ncid

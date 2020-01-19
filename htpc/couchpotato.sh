@@ -32,7 +32,7 @@ sed -i "s|=couchpotato|=htpc|g" /etc/systemd/system/couchpotato.service
 
 # Fourth: Create finisher task
 #==============================================================================
-if [[ -z "${CHROOT}" ]]; then
+if ischroot; then
 	systemctl disable couchpotato
 	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
 	ln -sf ${MUK_DIR}/files/tasks.d/40_couchpotato.sh /usr/local/finisher/tasks.d/40_couchpotato.sh

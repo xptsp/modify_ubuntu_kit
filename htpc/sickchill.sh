@@ -38,7 +38,7 @@ change_username /opt/sickchill/config.ini
 
 # Fifth: Create finisher task
 #==============================================================================
-if [[ ! -z "${CHROOT}" ]]; then
+if ischroot; then
 	systemctl disable sickchill
 	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
 	ln -sf ${MUK_DIR}/files/tasks.d/40_sickchill.sh /usr/local/finisher/tasks.d/40_sickchill.sh

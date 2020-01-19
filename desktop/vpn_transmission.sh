@@ -26,8 +26,8 @@ apt install -y transmission-daemon transmission-cli transgui
 
 # Second: Configure the daemon:
 #==============================================================================
-[[ ! -z "${CHROOT}" ]] && systemctl disable transmission-daemon
-[[ -z "${CHROOT}" ]] && systemctl stop transmission-daemon
+ischroot && systemctl disable transmission-daemon
+ischroot || systemctl stop transmission-daemon
 sed -i "s|User=.*|User=htpc|g" /lib/systemd/system/transmission-daemon.service
 sed -i "s|Group=.*|Group=htpc|g" /lib/systemd/system/transmission-daemon.service
 sed -i "s|ExecStart|Restart=on-failure\nRestartSec=10\nExecStart|g" /lib/systemd/system/transmission-daemon.service
@@ -44,7 +44,7 @@ unzip -o ${MUK_DIR}/files/transgui.zip -d ~/.config/
 
 # Fourth: Reenable the service if NOT running in CHROOT environment:
 #==============================================================================
-[[ -z "${CHROOT}" ]] && systemctl start transmission-daemon
+ischroot && systemctl start transmission-daemon
 
 # Fifth: Create the autoremove.sh script:
 #==============================================================================

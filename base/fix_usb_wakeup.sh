@@ -34,9 +34,9 @@ chmod +x /etc/rc.local
 
 # Create finisher task to keep USB devices from waking up computer
 #==============================================================================
-if [[ ! -z "${CHROOT}" ]]; then
+if ischroot; then
 	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/{tasks,post}.d
-	ln -sf ${MUK_DIR}/files/tasks.d/10_rc.local.sh /usr/local/finisher/tasks.d/10_rc.local.sh
+	ln -sf ${MUK_DIR}/files/tasks.d/14_usb_wakeup.sh /usr/local/finisher/tasks.d/14_usb_wakeup.sh
 else
-	${MUK_DIR}/files/tasks.d/10_rc.local.sh
+	${MUK_DIR}/files/tasks.d/14_usb_wakeup.sh
 fi

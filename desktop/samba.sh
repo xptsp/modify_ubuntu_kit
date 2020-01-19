@@ -48,7 +48,7 @@ change_username /etc/samba/smb.conf
 
 # Fourth: Add Samba finisher task:
 #==============================================================================
-if [[ ! -z "${CHROOT}" ]]; then
+if ischroot; then
 	systemctl disable smbd
 	systemctl disable nmbd
 	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d

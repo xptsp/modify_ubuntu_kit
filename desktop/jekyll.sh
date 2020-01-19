@@ -52,12 +52,12 @@ ExecStop=/usr/bin/pkill -f jekyll
 [Install]
 WantedBy=multi-user.target network-online.target
 EOF
-if [[ -z "${CHROOT}" ]]; then
-	systemctl enable jekyll
-else
+if ischroot; then
 	systemctl disable jekyll
+	change_username /etc/systemd/system/jekyll.service
+else
+	systemctl enable jekyll
 fi
-[[ ! -z "${CHROOT}" ]] && change_username /etc/systemd/system/jekyll.service
 # Seventh: Create "run-jekyll" command:
 cat << EOF > /usr/local/bin/run-jekyll
 #!/bin/bash
@@ -67,4 +67,4 @@ cd /home/kodi/GitHub/xptsp.github.io
 jekyll serve
 EOF
 chmod +x /usr/local/bin/run-jekyll
-[[ ! -z "${CHROOT}" ]] && change_username /usr/local/bin/run-jekyll
+ischroot || change_username /usr/local/bin/run-jekyll

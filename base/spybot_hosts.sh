@@ -19,7 +19,7 @@ FILE=$(whereis 7z | cut -d" " -f 2)
 [[ -z "${FILE}" ]] && apt install -y p7zip-full
 
 # Second: Add/execute finisher task:
-if [[ ! -z "${CHROOT}" ]]; then
+if ischroot; then
 	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
 	ln -sf ${MUK_DIR}/files/tasks.d/11_hosts.sh /usr/local/finisher/tasks.d/11_hosts.sh
 else
