@@ -44,9 +44,10 @@ if ! [[ -z "$1" || "$1" == "--help" ]]; then
 	# Make sure we got everything we need to create a customized Ubuntu disc:
 	MKSQUASH=$(whereis mksquashfs | cut -d ":" -f 2 | cut -d " " -f 2)
 	GENISO=$(whereis genisoimage | cut -d ":" -f 2 | cut -d " " -f 2)
-	if [[ -z $MKSQUASH || -z $GENISO ]]; then
+	GIT=$(whereis git | cut -d ":" -f 2 | cut -d " " -f 2)
+	if [[ -z $MKSQUASH || -z $GENISO || -z $GIT]]; then
 		_title "Installing necessary packages"
-		apt-get install -y $([[ -z $MKSQUASH ]] && echo "squashfs-tools") $([[ -z $GENISO ]] && echo "genisoimage")
+		apt-get install -y $([[ -z $MKSQUASH ]] && echo "squashfs-tools") $([[ -z $GENISO ]] && echo "genisoimage") $([[ -z $GIT ]] && echo "git")
 	fi
 fi
 
