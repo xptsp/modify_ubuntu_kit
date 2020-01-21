@@ -6,7 +6,7 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs VirtualBox 5.2 and extension pack on your computer."
+	echo -e "${RED}Purpose:${NC} Installs VirtualBox 6.1 and extension pack on your computer."
 	echo ""
 	exit 0
 fi
@@ -14,7 +14,8 @@ fi
 #==============================================================================
 _title "Install VirtualBox and VirtualBox Extension Pack..."
 #==============================================================================
-echo "virtualbox-ext-pack virtualbox-ext-pack/license boolean true" | debconf-set-selections
-apt install -y virtualbox virtualbox-ext-pack
-mv /root/VirtualBox ~/VirtualBox
-
+# First: Install the software :p
+#==============================================================================
+wget https://download.virtualbox.org/virtualbox/6.1.2/virtualbox-6.1_6.1.2-135662~Ubuntu~bionic_amd64.deb -O /tmp/virtualbox-6.1_6.1.2-135662~Ubuntu~bionic_amd64.deb
+apt install -y /tmp/virtualbox-6.1_6.1.2-135662~Ubuntu~bionic_amd64.deb
+rm /tmp/virtualbox-6.1_6.1.2-135662~Ubuntu~bionic_amd64.deb
