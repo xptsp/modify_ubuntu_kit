@@ -25,8 +25,8 @@ fi
 
 # Second: Change the TRIM task to run daily:
 #==============================================================================
-mkdir /etc/systemd/system/fstrim.timer.d
-cat << EOF > mkdir -v /etc/systemd/system/fstrim.timer.d/override.conf
+[[ ! -d /etc/systemd/system/fstrim.timer.d ]] && mkdir /etc/systemd/system/fstrim.timer.d
+cat << EOF > /etc/systemd/system/fstrim.timer.d/override.conf
 [Timer]
 OnCalendar=
 OnCalendar=daily
