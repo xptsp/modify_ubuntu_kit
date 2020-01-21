@@ -101,13 +101,17 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		cp /etc/hosts ${UNPACK_DIR}/edit/etc/
 		mount --bind /run/ ${UNPACK_DIR}/edit/run
 		mount --bind /dev/ ${UNPACK_DIR}/edit/dev
-		### Third: Copy MUK into chroot environment:
+		### Third: Update the toolkit from GitHub:
+		pushd ${MUK_DIR}
+		git pull
+		popd		
+		### Fourth: Copy MUK into chroot environment:
 		rm -rf ${UNPACK_DIR}/edit${MUK_DIR}
 		cp -RL ${MUK_DIR} ${UNPACK_DIR}/edit/opt/
-		### Fourth: Enter the CHROOT environment:
+		### Fifth: Enter the CHROOT environment:
 		_title "Entering CHROOT environment"
 		chroot ${UNPACK_DIR}/edit ${MUK_DIR}/edit_chroot.sh $@
-		### Fifth: Remove mounts for CHROOT environment:
+		### Sixth: Remove mounts for CHROOT environment:
 		$0 unmount
 		_title "Exited CHROOT environment"
 	else
@@ -256,7 +260,7 @@ elif [[ "$1" == "remove" ]]; then
 	else
 		rm -rf ${UNPACK_DIR}/edit
 	fi
-	_title "The unpacked filesystem has been removed from the hard drive."
+	_title "All filesystem mount points should be unmounted now."
 
 #==============================================================================
 # Did user request to unpack the ISO?
