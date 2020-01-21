@@ -18,3 +18,7 @@ _title "Installing TimeShift..."
 #==============================================================================
 apt-add-repository -y ppa:teejee2008/ppa
 apt install -y timeshift
+
+# Second: Add the finisher script:
+#==============================================================================
+ln -sf ${MUK_DIR}/files/tasks.d/70_timeshift.sh /usr/local/finisher/tasks.d/70_timeshift.sh
