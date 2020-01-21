@@ -4,7 +4,7 @@ ROOT_SYS=$(mount | grep " / ")
 ROOT_UUID=$(blkid $(echo $ROOT_SYS | cut -d" " -f 1) | cut -d'"' -f 2)
 
 # If root filesystem is a btrfs, then set up automatic backups:
-if [[ "$(echo $ROOT_SYS | cut -d" " -f 6)" != "btrfs" ]]; then
+if [[ "$(echo $ROOT_SYS | cut -d" " -f 5)" == "btrfs" ]]; then
 	cat < EOF > /etc/cron.d/timeshift-hourly
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
