@@ -6,17 +6,18 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Creates development workspace after boot."
+	echo -e "${RED}Purpose:${NC} Installs Stubby on your machine."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Adding script to creates development workspace after boot...."
+_title "Installing Stubby on your machine..."
 #==============================================================================
-if ischroot; then
-	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-	ln -sf ${MUK_DIR}/files/tasks.d/13_workspace.sh /usr/local/finisher/tasks.d/13_workspace.sh
-else
-	${MUK_DIR}/files/tasks.d/13_workspace.sh
-fi
+# First: Install the software:
+#==============================================================================
+apt install -y stubby
+
+# Second: Configure the resolver:
+#==============================================================================
+sed -i "s|nameserver .*|nameserver 127.0.0.1|g" /etc/resolv.conf

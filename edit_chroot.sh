@@ -256,7 +256,7 @@ elif [[ "$1" == "remove" ]]; then
 	else
 		rm -rf ${UNPACK_DIR}/edit
 	fi
-	_title "All filesystem mount points should be unmounted now."
+	_title "The unpacked filesystem has been removed from the hard drive."
 
 #==============================================================================
 # Did user request to unpack the ISO?
