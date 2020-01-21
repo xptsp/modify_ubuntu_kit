@@ -102,17 +102,13 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		cp /etc/hosts ${UNPACK_DIR}/edit/etc/
 		mount --bind /run/ ${UNPACK_DIR}/edit/run
 		mount --bind /dev/ ${UNPACK_DIR}/edit/dev
-		### Third: Update the toolkit from GitHub:
-		pushd ${MUK_DIR}
-		git pull
-		popd		
-		### Fourth: Copy MUK into chroot environment:
+		### Third: Copy MUK into chroot environment:
 		rm -rf ${UNPACK_DIR}/edit${MUK_DIR}
 		cp -RL ${MUK_DIR} ${UNPACK_DIR}/edit/opt/
-		### Fifth: Enter the CHROOT environment:
+		### Fourth: Enter the CHROOT environment:
 		_title "Entering CHROOT environment"
 		chroot ${UNPACK_DIR}/edit ${MUK_DIR}/edit_chroot.sh $@
-		### Sixth: Remove mounts for CHROOT environment:
+		### Fifth: Remove mounts for CHROOT environment:
 		$0 unmount
 		_title "Exited CHROOT environment"
 	else
@@ -254,14 +250,14 @@ elif [[ "$1" == "remove" ]]; then
 	fi
 	$0 unmount
 	_title "Removing folder ${BLUE}${UNPACK_DIR}/edit${GREEN} safely..."
-	EDIT_FS=$(cat /etc/fstab | grep -e "tmpfs.*/img/edit ")
+	EDIT_FS=$(cat /etc/fstab | grep -e "^tmpfs" | grep " /img/edit ")
 	if [[ ! -z "${EDIT_FS}" ]]; then
 		umount ${UNPACK_DIR}/edit
 		mount ${UNPACK_DIR}/edit
 	else
 		rm -rf ${UNPACK_DIR}/edit
 	fi
-	_title "All filesystem mount points should be unmounted now."
+	_title "Unpacked filesystem has been removed."
 
 #==============================================================================
 # Did user request to unpack the ISO?
