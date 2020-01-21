@@ -30,7 +30,10 @@ change_username /etc/default/dropbox
 
 # Third: Get the dropbox binary:
 #==============================================================================
-apt install -y python
 wget https://www.dropbox.com/download?dl=packages/dropbox.py -O /usr/local/bin/dropbox
 chmod 555 /usr/local/bin/dropbox
 ln -sf /opt/dropbox ~/.dropbox-dist
+
+# Fourth: Get Dropbox integration with Thunar:
+#==============================================================================
+apt install -y python thunar-dropbox-plugin
