@@ -7,6 +7,7 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 	echo -e "${RED}Purpose:${NC} Installs VPN browser launchers on your computer."
+	echo -e "${RED}Dependency:${NC} VPN browser launchers requires FreeVPN to be established, plus Firefox and Google Chrome to be installed."
 	echo ""
 	exit 0
 fi
@@ -16,7 +17,7 @@ fi
 PROG=$(whereis firefox | cut -d" " -f 2)
 [[ -z "${PROG}" ]] && apt install -y firefox
 PROG=$(whereis google-chrome | cut -d" " -f 2)
-[[ -z "${PROG}" ]] && ${MUK_DIR}/programs/google-chrome.sh
+[[ -z "${PROG}" ]] && ${MUK_DIR}/desktop/chrome.sh
 
 #==============================================================================
 _title "Create VPN Browser launchers..."

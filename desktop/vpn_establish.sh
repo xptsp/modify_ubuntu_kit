@@ -70,6 +70,7 @@ if ischroot; then
 	[[ -e /usr/local/finisher/tasks.d/30_freevpn.sh ]] && rm /usr/local/finisher/tasks.d/30_freevpn.sh
 	ln -sf ${MUK_DIR}/files/tasks.d/30_freevpn.sh /usr/local/finisher/tasks.d/30_freevpn.sh
 else
+	/usr/local/finisher/tasks.d/30_freevpn.sh
 	systemctl enable freevpn
 	systemctl start freevpn
 fi

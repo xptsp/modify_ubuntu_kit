@@ -46,7 +46,8 @@ EOF
 
 # Fourth: Configuring XRDP properly:
 #==============================================================================
-sed -i -e 's/^new_cursors=true/new_cursors=false/g' /etc/xrdp/xrdp.ini
+sed -i -e 's/^new_cursors=.*/new_cursors=false/g' /etc/xrdp/xrdp.ini
+sed -i -e 's/^allow_channels=.*/allow_channels==false/g' /etc/xrdp/xrdp.ini
 
 # Fifth: Create ~/.xsession and ~/.xsessionrc:
 #==============================================================================

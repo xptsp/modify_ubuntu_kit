@@ -6,7 +6,8 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs Google Chrome and WhatsApp on your computer."
+	echo -e "${RED}Purpose:${NC} Installs WhatsApp on your computer."
+	echo -e "${RED}Dependency:${NC} WhatsApp requires that Google Chrome is installed."
 	echo ""
 	exit 0
 fi

@@ -2,15 +2,23 @@
 # Niftiest Software  www.niftiestsoftware.com
 # Modified version by HTPC Guides  www.htpcguides.com
 
+# Determine what the interface name is:
 export INTERFACE=$(cat /etc/openvpn/freevpn/freevpn.conf | grep "dev " | cut -d" " -f 2)
+
+# The user that the VPN is restricted to:
 export VPNUSER=htpc
+
+# Get local ethernet name and IP address:
 ETHERNET=$(lshw -c network -disable usb -short | grep -i "ethernet")
 IFS=" " read -ra ETH_NAME <<< $ETHERNET
 export NETIF=${ETH_NAME[1]}
-export LOCALIP=$(ip address show $NETIF | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}' | egrep -v '255|(127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})' | tail -n1)/16
+export LOCALIP=$(ip address show $NETIF | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}' | egrep -v '255|(127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})' | tail -n1)
+export LOCALIP=$(echo $LOCALIP | cut -d"." -f1-3).0/24
 
+# Get a list of ports to port forward on:
 export PORTS=($([[ -f /etc/openvpn/freevpn/port_forward.list ]] && cat /etc/openvpn/freevpn/port_forward.list))
 
+# Enable IP forwarding:
 echo 1 > /proc/sys/net/ipv4/ip_forward
 sysctl -w net.ipv4.ip_forward=1
 

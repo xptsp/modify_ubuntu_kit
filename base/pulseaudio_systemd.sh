@@ -16,7 +16,7 @@ _title "Install ZeroConf, Avahi, and PulseAudio preference software"
 #==============================================================================
 # First: Install the software:
 #==============================================================================
-apt install -y pulseaudio-module-zeroconf avahi-daemon paprefs
+apt install -y pulseaudio-module-zeroconf pulseaudio-module-bluetooth avahi-daemon paprefs
 
 # Second: Configure some settings:
 #==============================================================================

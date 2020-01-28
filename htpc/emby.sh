@@ -27,5 +27,37 @@ relocate_dir /var/lib/emby
 
 # Third: Pull the default settings for Emby:
 #==============================================================================
+ischroot || systemctl stop emby-server
 7z x ${MUK_DIR}/files/emby_settings.7z -aoa -o/var/lib/emby/
-chown emby:emby -R /var/lib/emby/*
+chown emby:emby -R /var/lib/emby
+ischroot || systemctl start emby-server
+
+#==============================================================================
+_title "Installing Emby for Kodi addons..."
+#==============================================================================
+### First: Set "KODI_ADD" variable if not set:
+KODI_ADD=${KODI_ADD:-"/etc/skel/.kodi/addons"}
+### Second: Get "Emby-Kodi" repository:
+wget http://kodi.emby.media/repository.emby.kodi-1.0.6.zip -O /tmp/repository.emby.kodi-1.0.6.zip
+7z x /tmp/repository.emby.kodi-1.0.6.zip -aoa -o${KODI_ADD}/
+rm /tmp/repository.emby.kodi-1.0.6.zip
+### Third: Get the "plugin.video.emby.movies" addon:
+wget https://embydata.com/downloads/addons/xbmb3c/multi-repo/krypton/plugin.video.emby.movies/plugin.video.emby.movies-0.14.zip -O /tmp/plugin.video.emby.movies-0.14.zip
+7z x /tmp/plugin.video.emby.movies-0.14.zip -aoa -o${KODI_ADD}/
+rm /tmp/plugin.video.emby.movies-0.14.zip
+### Fourth: Get the "plugin.video.emby.musicvideos" addon:
+wget https://embydata.com/downloads/addons/xbmb3c/multi-repo/krypton/plugin.video.emby.musicvideos/plugin.video.emby.musicvideos-0.14.zip -O /tmp/plugin.video.emby.musicvideos-0.14.zip
+7z x /tmp/plugin.video.emby.musicvideos-0.14.zip -aoa -o${KODI_ADD}/
+rm /tmp/plugin.video.emby.musicvideos-0.14.zip
+### Fifth: Get the "plugin.video.empty.tvshows" addon:
+wget https://embydata.com/downloads/addons/xbmb3c/multi-repo/krypton/plugin.video.emby.tvshows/plugin.video.emby.tvshows-0.14.zip -O /tmp/plugin.video.emby.tvshows-0.14.zip
+7z x /tmp/plugin.video.emby.tvshows-0.14.zip -aoa -o${KODI_ADD}/
+rm /tmp/plugin.video.emby.tvshows-0.14.zip
+### Sixth: Get the "plugin.video.emby" addon:
+wget https://embydata.com/downloads/addons/xbmb3c/multi-repo/krypton/plugin.video.emby/plugin.video.emby-4.1.10.zip -O /tmp/plugin.video.emby-4.1.10.zip
+7z x /tmp/plugin.video.emby-4.1.10.zip -aoa -o${KODI_ADD}/
+rm /tmp/plugin.video.emby-4.1.10.zip
+### Seventh: Get the "service.upnext" addon:
+wget https://embydata.com/downloads/addons/xbmb3c/multi-repo/krypton/service.upnext/service.upnext-1.0.3.zip -O /tmp/service.upnext-1.0.3.zip
+7z x /tmp/service.upnext-1.0.3.zip -aoa -o${KODI_ADD}/
+rm /tmp/service.upnext-1.0.3.zip

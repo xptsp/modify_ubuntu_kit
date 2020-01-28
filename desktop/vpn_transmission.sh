@@ -7,6 +7,7 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 	echo -e "${RED}Purpose:${NC} Installs Transmission and TransGUI on your computer."
+	echo -e "${RED}Dependency:${NC} VPN browser launchers requires FreeVPN to be established and Nginx to be installed."
 	echo ""
 	exit 0
 fi

@@ -60,7 +60,7 @@ if [[ ! -z "${rebind[@]}" || ! -z "${bind[@]}" ]]; then
 	# Bind the specified folders together:
 	for src in "${!bind[@]}"; do
 		dst=${bind[${src}]}
-		[[ -d ${dst} &&  -d ${src} ]] && umount --bind ${src}
+		[[ -d ${dst} &&  -d ${src} ]] && umount ${src}
 	done
 
 	# Remount the specified folders umounted earlier:

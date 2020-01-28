@@ -39,7 +39,6 @@ else
 		echo "${GREEN}NOTICE${NC}: Upgrading Emby Server to version ${VER}....!"
 	fi
     wget ${URL} -O /tmp/${FILE}
-    apt install -y /tmp/${FILE}
-    rm /tmp/${FILE}
-    echo ${VER} > /var/lib/emby/installed.version
+    apt install -y /tmp/${FILE} && echo ${VER} > /var/lib/emby/installed.version
+    rm /tmp/${FILE}    
 fi

@@ -6,30 +6,33 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs Remmina on your computer."
+	echo -e "${RED}Purpose:${NC} Installs Mozilla Firefox on your computer."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Installing Remmina...."
+_title "Installing Mozilla Firefox..."
 #==============================================================================
-# First: Install Remmina:
+# First: Install the software:
 #==============================================================================
-apt-add-repository -y --no-update ppa:remmina-ppa-team/remmina-next
-apt update
-apt install -y remmina remmina-plugin-rdp remmina-plugin-secret remmina-plugin-spice
+apt install -y firefox
 
-# Second: Pull the "script.kodi.launches.emulationstation" addon:
+# Second: Install the Kodi addon:
 #==============================================================================
 KODI_OPT=${KODI_OPT:-"/opt/kodi"}
 KODI_ADD=${KODI_ADD:-"/etc/skel/.kodi/addons"}
 ### First: Get the repo:
 [[ ! -d ${KODI_OPT} ]] && mkdir -p ${KODI_OPT}
-git clone --depth=1 https://github.com/xptsp/script.kodi.launches.remmina ${KODI_OPT}/script.kodi.launches.remmina
+git clone --depth=1 https://github.com/xptsp/script.kodi.launches.firefox ${KODI_OPT}/script.kodi.launches.firefox
 ### Second: Link the repo:
 [[ ! -d ${KODI_ADD} ]] && mkdir -p ${KODI_ADD}
-ln -sf ${KODI_OPT}/script.kodi.launches.remmina ${KODI_ADD}/script.kodi.launches.remmina
+ln -sf ${KODI_OPT}/script.kodi.launches.firefox ${KODI_ADD}/script.kodi.launches.firefox
 ### Third: Create default addon data:
 KODI_DATA=$(dirname ${KODI_ADD})
-7z x ${MUK_DIR}/files/kodi_userdata.7z addon_data/script.kodi.launches.remmina -O${KODI_DATA}/
+7z x ${MUK_DIR}/files/kodi_userdata.7z addon_data/script.kodi.launches.firefox -O${KODI_DATA}/
+
+# Third: Copy launcher to the desktop:
+#==============================================================================
+[[ ! -d ~/Desktop ]] && mkdir -p ~/Desktop
+cp /usr/share/applications/firefox.desktop ~/Desktop/

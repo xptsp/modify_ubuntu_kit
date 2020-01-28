@@ -12,10 +12,15 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
-_title "Installing the RetroPie software"
+_title "Installing the RetroPie software..."
+#==============================================================================
+### First: Install the software:
 #==============================================================================
 apt install -y git dialog unzip xmlstarlet
 git clone --depth=1 https://github.com/RetroPie/RetroPie-Setup.git /opt/RetroPie-Setup
+
+### Second: Move stuff around so that the folders are created for each user:
+#==============================================================================
 cd /opt/RetroPie-Setup && __nodialog=1 ./retropie_packages.sh setup basic_install && cd /
 mv /root/RetroPie ~/
 mv /root/.atari800.cfg ~/
@@ -24,3 +29,16 @@ mv /root/.config/retroarch ~/.config/
 change_ownership /opt/RetroPie-Setup
 change_ownership /opt/retropie
 
+### Third: Pull the "script.kodi.launches.emulationstation" addon:
+#==============================================================================
+KODI_OPT=${KODI_OPT:-"/opt/kodi"}
+KODI_ADD=${KODI_ADD:-"/etc/skel/.kodi/addons"}
+### First: Get the repo:
+[[ ! -d ${KODI_OPT} ]] && mkdir -p ${KODI_OPT}
+git clone --depth=1 https://github.com/BrosMakingSoftware/Kodi-Launches-EmulationStation-Addon ${KODI_OPT}/Kodi-Launches-EmulationStation-Addon
+### Second: Link the repo:
+[[ ! -d ${KODI_ADD} ]] && mkdir -p ${KODI_ADD}
+ln -sf ${KODI_OPT}/Kodi-Launches-EmulationStation-Addon/script.kodi.launches.emulationstation ${KODI_ADD}/script.kodi.launches.emulationstation
+### Third: Create default addon data:
+KODI_DATA=$(dirname ${KODI_ADD})
+7z x ${MUK_DIR}/files/kodi_userdata.7z addon_data/script.kodi.launches.emulationstation -O${KODI_DATA}/

@@ -36,5 +36,5 @@ for (( i=0; i<${#DID}; i++ )); do
         PHRASE+=($j)
 done
 _title "Adding Generated Phrase: ${PHRASE[@]}"
-sed -i "/$(echo ${PHRASE[@]})/d" /usr/local/finisher/phrase.list
+[[ -f /usr/local/finisher/phrase.list ]] && sed -i "/$(echo ${PHRASE[@]})/d" /usr/local/finisher/phrase.list
 echo ${PHRASE[@]} >> /usr/local/finisher/phrase.list

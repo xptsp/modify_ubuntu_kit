@@ -2,6 +2,8 @@
 # Get details about root filesystem:
 ROOT_SYS=$(mount | grep " / ")
 ROOT_UUID=$(blkid $(echo $ROOT_SYS | cut -d" " -f 1) | cut -d'"' -f 2)
+[[ -z "${USERNAME}" ]] && USERNAME=$(id -un 1000)
+[[ -z "${PASSWORD}" ]] && PASSWORD=xubuntu
 
 # If root filesystem is a btrfs, then set up automatic backups:
 if [[ "$(echo $ROOT_SYS | cut -d" " -f 5)" == "btrfs" ]]; then
@@ -37,7 +39,7 @@ EOF
   "date_format" : "%Y-%m-%d %H:%M:%S",
   "exclude" : [
     "/home/htpc/**",
-    "/home/kodi/**"
+    "/home/${USERNAME}/**"
   ],
   "exclude-apps" : [
   ]

@@ -14,7 +14,22 @@ fi
 #==============================================================================
 _title "Installing Steam..."
 #==============================================================================
+### First: Install the software (duh :p)
+#==============================================================================
 dpkg --add-architecture i386
 apt update
 apt install -y steam
 
+### Second: Pull the "script.kodi.launches.emulationstation" addon:
+#==============================================================================
+KODI_OPT=${KODI_OPT:-"/opt/kodi"}
+KODI_ADD=${KODI_ADD:-"/etc/skel/.kodi/addons"}
+### First: Get the repo:
+[[ ! -d ${KODI_OPT} ]] && mkdir -p ${KODI_OPT}
+git clone --depth=1 https://github.com/BrosMakingSoftware/Kodi-Launches-Steam-Addon ${KODI_OPT}/Kodi-Launches-Steam-Addon
+### Second: Link the repo:
+[[ ! -d ${KODI_ADD} ]] && mkdir -p ${KODI_ADD}
+ln -sf ${KODI_OPT}/Kodi-Launches-Steam-Addon/script.kodi.launches.steam ${KODI_ADD}/script.kodi.launches.steam
+### Third: Create default addon data:
+KODI_DATA=$(dirname ${KODI_ADD})
+7z x ${MUK_DIR}/files/kodi_userdata.7z addon_data/script.kodi.launches.steam -O${KODI_DATA}/

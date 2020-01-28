@@ -16,7 +16,7 @@ _title "Replacing wallpaper and plymouth background..."
 #==============================================================================
 DIR=/usr/share/plymouth/themes/xubuntu-logo/
 [[ ! -f ${DIR}/wallpaper.png.original ]] && mv ${DIR}/wallpaper.png ${DIR}/wallpaper.png.original
-ln -sf /opt/modify_ubuntu_kit/files/red_dragon.png ${DIR}/wallpaper.png
+cp /opt/modify_ubuntu_kit/files/red_dragon.png ${DIR}/wallpaper.png
 update-initramfs -u
 
 #==============================================================================

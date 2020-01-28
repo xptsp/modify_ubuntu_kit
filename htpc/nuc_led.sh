@@ -35,3 +35,17 @@ chown root:root /etc/modules-load.d/nuc_led.conf
 echo "options nuc_led nuc_led_perms=0664 nuc_led_gid=100 nuc_led_uid=1000" > /etc/modprobe.d/nuc_led.conf
 chown root:root /etc/modprobe.d/nuc_led.conf
 
+# Fourth: Pull the "script.kodi.launches.emulationstation" addon:
+#==============================================================================
+KODI_OPT=${KODI_OPT:-"/opt/kodi"}
+KODI_ADD=${KODI_ADD:-"/etc/skel/.kodi/addons"}
+KODI_NAME="service.recording-led-for-nuc"
+### First: Get the repo:
+[[ ! -d ${KODI_OPT} ]] && mkdir -p ${KODI_OPT}
+git clone --depth=1 https://github.com/xptsp/${KODI_NAME} ${KODI_OPT}/${KODI_NAME}
+### Second: Link the repo:
+[[ ! -d ${KODI_ADD} ]] && mkdir -p ${KODI_ADD}
+ln -sf ${KODI_OPT}/${KODI_NAME} ${KODI_ADD}/${KODI_NAME}
+### Third: Create default addon data:
+KODI_DATA=$(dirname ${KODI_ADD})
+7z x ${MUK_DIR}/files/kodi_userdata.7z addon_data/service.recording-led -O${KODI_DATA}/

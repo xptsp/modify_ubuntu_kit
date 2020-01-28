@@ -1,4 +1,8 @@
 #!/bin/bash
+[[ -z "${USERNAME}" ]] && USERNAME=$(id -un 1000)
+[[ -z "${PASSWORD}" ]] && PASSWORD=xubuntu
+
+# Create the "htpc" user:
 adduser --disabled-password htpc < /dev/null
 passwd -d htpc
 usermod -aG htpc ${USERNAME}
@@ -30,3 +34,11 @@ DONE
 
 # Create Samba password for user "htpc"
 (echo ${PASSWORD:-"xubuntu"}; echo ${PASSWORD:-"xubuntu"}) | smbpasswd -a htpc
+
+# Create default setting for session to use:
+cat << EOF > ~htpc/.dmrc
+[[Desktop]
+Session=kodi-openbox
+EOF
+chown htpc:htpc ~htpc/.dmrc
+chattr +i ~htpc/.dmrc
