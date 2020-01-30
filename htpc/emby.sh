@@ -61,3 +61,12 @@ rm /tmp/plugin.video.emby-4.1.10.zip
 wget https://embydata.com/downloads/addons/xbmb3c/multi-repo/krypton/service.upnext/service.upnext-1.0.3.zip -O /tmp/service.upnext-1.0.3.zip
 7z x /tmp/service.upnext-1.0.3.zip -aoa -o${KODI_ADD}/
 rm /tmp/service.upnext-1.0.3.zip
+
+### Eighth: Enable all these addons:
+[[ ! -f /etc/skel/.kodi/userdata/Database/Addons27.db ]] && ${MUK_DIR}/base/kodi_addon_db.sh
+sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="repository.emby.kodi";'
+sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="plugin.video.emby.movies";'
+sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="plugin.video.emby.musicvideos";'
+sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="plugin.video.emby.tvshows";'
+sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="plugin.video.emby";'
+sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="service.upnext";'

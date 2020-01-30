@@ -26,18 +26,15 @@ _title "Unpacking the new default user UI settings..."
 unzip -o /opt/modify_ubuntu_kit/files/red_dragon.zip -d /etc/skel/.config/
 
 # Second: Create link to new plymouth background:
-pushd /usr/share/xfce4/backdrops
-[[ -e red-dragon.png ]] && rm red-dragon.png
-ln -sf ${DIR}/wallpaper.png red-dragon.png
-[[ -e xubuntu-wallpaper.png ]] && rm red-dragon.png
-ln -sf red-dragon.png xubuntu-wallpaper.png
-popd
+DIR=/usr/share/xfce4/backdrops
+ln -sf ${MUK_DIR}/files/red-dragon.png ${DIR}/red-dragon.png
+ln -sf ${DIR}/red-dragon.png ${DIR}/xubuntu-wallpaper.png
 
 # Third: Configuring the LightDM greeter:
 #==============================================================================
 cat << EOF > /etc/lightdm/lightdm-gtk-greeter.conf
 [greeter]
-background = /usr/share/xfce4/backdrops/xubuntu-wallpaper.png
+background = ${DIR}/xubuntu-wallpaper.png
 theme-name = Adwaita
 icon-theme-name = Adwaita
 font-name = Noto Sans 12

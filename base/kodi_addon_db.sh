@@ -14,5 +14,6 @@ fi
 #==============================================================================
 _title "Prepping the install for additional Kodi addons..."
 #==============================================================================
-[[ ! -d /usr/share/kodi/userdata/addon_data ]] && mkdir -p /usr/share/kodi/userdata/addon_data
-7z x ${MUK_DIR}/files/kodi_addon_db.7z -O/usr/share/kodi/userdata/addon_data
+apt install sqlite3 -y 
+[[ ! -d /etc/skel/.kodi/userdata/Database ]] && mkdir -p /etc/skel/.kodi/userdata/Database
+7z x ${MUK_DIR}/files/kodi_addon_db.7z -O/etc/skel/.kodi/userdata/Database

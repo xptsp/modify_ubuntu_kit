@@ -30,6 +30,6 @@ git clone --depth=1 https://github.com/BrosMakingSoftware/Kodi-Launches-Steam-Ad
 ### Second: Link the repo:
 [[ ! -d ${KODI_ADD} ]] && mkdir -p ${KODI_ADD}
 ln -sf ${KODI_OPT}/Kodi-Launches-Steam-Addon/script.kodi.launches.steam ${KODI_ADD}/script.kodi.launches.steam
-### Third: Create default addon data:
-KODI_DATA=$(dirname ${KODI_ADD})
-7z x ${MUK_DIR}/files/kodi_userdata.7z addon_data/script.kodi.launches.steam -O${KODI_DATA}/
+### Third: Enable addon by default:
+[[ ! -f /etc/skel/.kodi/userdata/Database/Addons27.db ]] && ${MUK_DIR}/base/kodi_addon_db.sh
+sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="script.kodi.launches.steam";'

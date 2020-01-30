@@ -49,3 +49,6 @@ ln -sf ${KODI_OPT}/${KODI_NAME} ${KODI_ADD}/${KODI_NAME}
 ### Third: Create default addon data:
 KODI_DATA=$(dirname ${KODI_ADD})
 7z x ${MUK_DIR}/files/kodi_userdata.7z addon_data/service.recording-led -O${KODI_DATA}/
+### Fourth: Enable all these addons:
+[[ ! -f /etc/skel/.kodi/userdata/Database/Addons27.db ]] && ${MUK_DIR}/base/kodi_addon_db.sh
+sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="service.recording-led";'
