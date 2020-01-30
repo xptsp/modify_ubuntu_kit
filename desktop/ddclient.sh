@@ -22,7 +22,7 @@ apt-mark hold ddclient
 systemctl stop ddclient
 if ischroot; then
 	systemctl disable ddclient
-	sed -i '/ddclient/d' /usr/local/finisher/disabled.lsit
+	sed -i '/ddclient/d' /usr/local/finisher/disabled.list
 fi
 
 # Second: Download the new code and replace the binary:

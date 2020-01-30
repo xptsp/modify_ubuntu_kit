@@ -21,6 +21,7 @@ add-apt-repository -y ppa:martinx/xrdp-hwe-18.04
 apt install -y xrdp
 adduser xrdp ssl-cert
 systemctl disable xrdp
+sed -i '/xrdp/d' /usr/local/finisher/disabled.list
 
 # Second: Fix the "second session" issue with 18.04.x:
 # Src: https://catch22cats.blogspot.com/2018/05/xrdp-blank-screen-with-ubuntu-1804.html
