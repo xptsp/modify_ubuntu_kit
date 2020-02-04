@@ -36,7 +36,9 @@ ischroot || systemctl start emby-server
 _title "Installing Emby for Kodi addons..."
 #==============================================================================
 ### First: Set "KODI_ADD" variable if not set:
-KODI_ADD=${KODI_ADD:-"/etc/skel/.kodi/addons"}
+KODI_OPT=${KODI_OPT:-"/opt/kodi"}
+KODI_ADD=/usr/share/kodi/addons
+
 ### Second: Get "Emby-Kodi" repository:
 wget http://kodi.emby.media/repository.emby.kodi-1.0.6.zip -O /tmp/repository.emby.kodi-1.0.6.zip
 7z x /tmp/repository.emby.kodi-1.0.6.zip -aoa -o${KODI_ADD}/
@@ -63,10 +65,9 @@ wget https://embydata.com/downloads/addons/xbmb3c/multi-repo/krypton/service.upn
 rm /tmp/service.upnext-1.0.3.zip
 
 ### Eighth: Enable all these addons:
-[[ ! -f /etc/skel/.kodi/userdata/Database/Addons27.db ]] && ${MUK_DIR}/base/kodi_addon_db.sh
-sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="repository.emby.kodi";'
-sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="plugin.video.emby.movies";'
-sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="plugin.video.emby.musicvideos";'
-sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="plugin.video.emby.tvshows";'
-sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="plugin.video.emby";'
-sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="service.upnext";'
+kodi_enable repository.emby.kodi
+kodi_enable plugin.video.emby.movies
+kodi_enable plugin.video.emby.musicvideos
+kodi_enable plugin.video.emby.tvshows
+kodi_enable plugin.video.emby
+kodi_enable service.upnext

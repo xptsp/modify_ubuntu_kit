@@ -77,3 +77,26 @@ server {
 }
 EOF
 ln -sf /etc/nginx/sites-available/transmission /etc/nginx/sites-enabled/transmission
+
+#==============================================================================
+_title "Install Transmission addon for Kodi..."
+#==============================================================================
+### First: Get the "script.module.beautifulsoup" addon:
+#==============================================================================
+kodi_repo ${KODI_BASE}/script.module.beautifulsoup ${KODI_ADD}/
+kodi_enable script.module.beautifulsoup
+
+### Second: Pull the "script.module.simplejson" addon:
+#==============================================================================
+kodi_repo ${KODI_BASE}/script.module.simplejson ${KODI_ADD}/
+kodi_enable script.module.simplejson
+
+### Third: Pull the "script.module.six" addon:
+#==============================================================================
+kodi_repo ${KODI_BASE}/script.module.six ${KODI_ADD}/
+kodi_enable script.module.six
+
+### Fourth: Pull the "script.transmission" addon:
+#==============================================================================
+kodi_repo ${KODI_BASE}/script.transmission ${KODI_ADD}/
+kodi_enable script.transmission

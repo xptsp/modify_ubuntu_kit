@@ -21,7 +21,7 @@ git clone --depth=1 https://github.com/RetroPie/RetroPie-Setup.git /opt/RetroPie
 
 ### Second: Move stuff around so that the folders are created for each user:
 #==============================================================================
-cd /opt/RetroPie-Setup && __nodialog=1 ./retropie_packages.sh setup basic_install && cd /
+#cd /opt/RetroPie-Setup && __nodialog=1 ./retropie_packages.sh setup basic_install && cd /
 mv /root/RetroPie ~/
 mv /root/.atari800.cfg ~/
 mv /root/.emulationstation ~/
@@ -32,7 +32,8 @@ change_ownership /opt/retropie
 ### Third: Pull the "script.kodi.launches.emulationstation" addon:
 #==============================================================================
 KODI_OPT=${KODI_OPT:-"/opt/kodi"}
-KODI_ADD=${KODI_ADD:-"/etc/skel/.kodi/addons"}
+KODI_ADD=/usr/share/kodi/addons
+
 ### First: Get the repo:
 [[ ! -d ${KODI_OPT} ]] && mkdir -p ${KODI_OPT}
 git clone --depth=1 https://github.com/BrosMakingSoftware/Kodi-Launches-EmulationStation-Addon ${KODI_OPT}/Kodi-Launches-EmulationStation-Addon
@@ -40,5 +41,4 @@ git clone --depth=1 https://github.com/BrosMakingSoftware/Kodi-Launches-Emulatio
 [[ ! -d ${KODI_ADD} ]] && mkdir -p ${KODI_ADD}
 ln -sf ${KODI_OPT}/Kodi-Launches-EmulationStation-Addon/script.kodi.launches.emulationstation ${KODI_ADD}/script.kodi.launches.emulationstation
 ### Third: Enable addon by default:
-[[ ! -f /etc/skel/.kodi/userdata/Database/Addons27.db ]] && ${MUK_DIR}/base/kodi_addon_db.sh
-sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="script.kodi.launches.emulationstation";'
+kodi_enable script.kodi.launches.emulationstation

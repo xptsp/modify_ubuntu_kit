@@ -47,3 +47,47 @@ else
 	systemctl start sickchill
 	${MUK_DIR}/files/tasks.d/40_sickchill.sh
 fi	
+
+#==============================================================================
+_title "Installing SickChill addon for Kodi..."
+#==============================================================================
+KODI_OPT=${KODI_OPT:-"/opt/kodi"}
+KODI_ADD=/usr/share/kodi/addons
+
+### First: We need the repository:
+#==============================================================================
+wget https://github.com/Hiltronix/repo/raw/master/repository.Hiltronix.zip -O /tmp/repository.Hiltronix.zip
+7z x /tmp/repository.Hiltronix.zip -aoa -o${KODI_ADD}/
+rm /tmp/repository.Hiltronix.zip
+kodi_enable repository.Hiltronix
+
+### Second: We need the addon:
+#==============================================================================
+git clone --depth=1 https://github.com/Hiltronix/plugin.video.sickrage ${KODI_OPT}/plugin.video.sickrage
+ln -sf ${KODI_OPT}/plugin.video.sickrage ${KODI_ADD}/plugin.video.sickrage
+kodi_enable plugin.video.sickrage
+
+### Third: Pull the "script.module.certifi" addon:
+#==============================================================================
+kodi_repo ${KODI_BASE}/script.module.certifi ${KODI_ADD}/
+kodi_enable script.module.certifi
+
+### Fourth: Pull the "script.module.chardet" addon:
+#==============================================================================
+kodi_repo ${KODI_BASE}/script.module.chardet ${KODI_ADD}/
+kodi_enable script.module.chardet
+
+### Fifth: Pull the "script.module.idna" addon:
+#==============================================================================
+kodi_repo ${KODI_BASE}/script.module.idna ${KODI_ADD}/
+kodi_enable script.module.idna
+
+### Sixth: Pull the "script.module.requests" addon:
+#==============================================================================
+kodi_repo ${KODI_BASE}/script.module.requests ${KODI_ADD}/
+kodi_enable script.module.requests
+
+### Seventh: Pull the "script.module.urllib3" addon:
+#==============================================================================
+kodi_repo ${KODI_BASE}/script.module.urllib3 ${KODI_ADD}/
+kodi_enable script.module.urllib3

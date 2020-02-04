@@ -41,3 +41,19 @@ else
 	systemctl start couchpotato
 	${MUK_DIR}/files/tasks.d/40_couchpotato.sh
 fi
+
+#==============================================================================
+_title "Installing CouchPotato addons for Kodi..."
+#==============================================================================
+KODI_OPT=${KODI_OPT:-"/opt/kodi"}
+KODI_ADD=/usr/share/kodi/addons
+
+### First: Install the couchpotato manager addon:
+#==============================================================================
+kodi_repo plugin.video.couchpotato_manager
+kodi_enable plugin.video.couchpotato_manager
+
+### Second: Install the dependency:
+#==============================================================================
+kodi_repo script.module.xbmcswift2
+kodi_enable script.module.xbmcswift2

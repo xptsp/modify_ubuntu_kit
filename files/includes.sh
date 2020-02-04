@@ -94,6 +94,15 @@ function _chroot() {
 	[[ $(ischroot; echo $?) -ne 1 ]] && return 1
 }
 
+# Function that enables specified Kodi addons:
+function kodi_enable() {
+	[[ ! -f /etc/skel/.kodi/userdata/Database/Addons27.db ]] && ${MUK_DIR}/base/kodi_addon_db.sh
+	sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="$1";'
+}
+function kodi_repo() {
+	${MUK_DIR}/kodi_repo.sh $@
+}
+
 # If we are not running as root, then run this script as root:
 if [[ "$UID" -ne 0 ]]; then
 	sudo $0 $@

@@ -15,7 +15,7 @@ fi
 # Make sure Firefox is installed:
 #==============================================================================
 PROG=$(whereis firefox | cut -d" " -f 2)
-[[ -z "${PROG}" ]] && apt install -y firefox
+[[ -z "${PROG}" ]] && ${MUK_DIR}/desktop/firefox.sh
 PROG=$(whereis google-chrome | cut -d" " -f 2)
 [[ -z "${PROG}" ]] && ${MUK_DIR}/desktop/chrome.sh
 
