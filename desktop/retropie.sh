@@ -21,7 +21,7 @@ git clone --depth=1 https://github.com/RetroPie/RetroPie-Setup.git /opt/RetroPie
 
 ### Second: Move stuff around so that the folders are created for each user:
 #==============================================================================
-#cd /opt/RetroPie-Setup && __nodialog=1 ./retropie_packages.sh setup basic_install && cd /
+cd /opt/RetroPie-Setup && __nodialog=1 ./retropie_packages.sh setup basic_install && cd /
 mv /root/RetroPie ~/
 mv /root/.atari800.cfg ~/
 mv /root/.emulationstation ~/
