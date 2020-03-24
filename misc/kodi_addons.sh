@@ -16,6 +16,7 @@ _title "Installing a few Kodi addons and activating them..."
 #==============================================================================
 KODI_ADD=/usr/share/kodi/addons
 KODI_OPT=/opt/kodi
+KODI_BASE=https://mirrors.kodi.tv/addons/leia/
 
 ### First: Install URLresolver from tvaddonsco:
 #==============================================================================
@@ -108,7 +109,7 @@ rm /tmp/repository.primaeval-0.0.2.zip
 
 ### Eighteenth: Pull the "plugin.video.iptvsimple.addons"
 #==============================================================================
-wget https://github.com/primaeval/repository.primaeval/blob/master/krypton/plugin.video.iptvsimple.addons/plugin.video.iptvsimple.addons-0.0.7.zip -O /tmp/plugin.video.iptvsimple.addons-0.0.7.zip
+wget https://github.com/primaeval/repository.primaeval/raw/master/krypton/plugin.video.iptvsimple.addons/plugin.video.iptvsimple.addons-0.0.7.zip -O /tmp/plugin.video.iptvsimple.addons-0.0.7.zip
 unzip -o /tmp/plugin.video.iptvsimple.addons-0.0.7.zip -d ${KODI_ADD}/
 rm /tmp/plugin.video.iptvsimple.addons-0.0.7.zip
 

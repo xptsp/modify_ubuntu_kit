@@ -32,7 +32,7 @@ EXT=$([[ "$URL" = *.* ]] && echo ".${URL##*.}" || echo '')
 if [[ "$EXT" != "zip" ]]; then
 	# Pull the directory listing from the base URL and return error if invalid:
 	wget --quiet ${URL}/ -O /tmp/output.txt
-	FILE=$(cat /tmp/output.txt | grep "${FILE}" | sed -n 's/.*href="\([^"]*\).*/\1/p')
+	FILE=$(cat /tmp/output.txt | grep "${FILE}" | sed -n 's/.*href="\([^"]*\).*/\1/p' | sort | tail -1)
 	rm /tmp/output.txt
 	if [ -z "${FILE}" ]; then
 		echo -e "${RED}ERROR:${NC} Invalid addon specified!"
