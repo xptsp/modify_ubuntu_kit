@@ -5,7 +5,7 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 . ${MUK_DIR}/files/includes.sh
 
 URL=$1
-FILE=$(basename ${URL})
+[[ ! -z "$1" ]] && FILE=$(basename ${URL})
 DEST=$2
 
 # No parameter specified?  Or maybe help requested?
@@ -53,4 +53,4 @@ fi
 
 # Pull the addon and extract it to the destination specified:
 wget ${URL} -O /tmp/${FILE} && unzip -o /tmp/${FILE} -d ${DEST}/
-[ -f /tmp/${FILE} ] && rm /tmp/${FILE}
+[[ -f /tmp/${FILE} ]] && rm /tmp/${FILE}
