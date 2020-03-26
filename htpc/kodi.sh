@@ -48,7 +48,7 @@ fi
 #==============================================================================
 _title "Installing a few Kodi addons and activating them..."
 #==============================================================================
-KODI_ADD=/usr/share/kodi/addons
+KODI_ADD=/usr/skel/.kodi/addons
 KODI_OPT=/opt/kodi
 KODI_BASE=https://mirrors.kodi.tv/addons/leia/
 
@@ -133,19 +133,7 @@ git clone --depth=1 https://github.com/ossman/service.system.update ${KODI_OPT}/
 ln -sf ${KODI_OPT}/service.system.update ${KODI_ADD}/service.system.update
 kodi_enable service.system.update
 
-### Seventeenth: Pull the "repository.primaeval" addon:
-#==============================================================================
-wget https://github.com/primaeval/repository.primaeval/raw/master/zips/repository.primaeval/repository.primaeval-0.0.2.zip -O /tmp/repository.primaeval-0.0.2.zip
-unzip -o /tmp/repository.primaeval-0.0.2.zip -d ${KODI_ADD}/
-rm /tmp/repository.primaeval-0.0.2.zip
-
-### Eighteenth: Pull the "plugin.video.iptvsimple.addons"
-#==============================================================================
-wget https://github.com/primaeval/repository.primaeval/raw/master/krypton/plugin.video.iptvsimple.addons/plugin.video.iptvsimple.addons-0.0.7.zip -O /tmp/plugin.video.iptvsimple.addons-0.0.7.zip
-unzip -o /tmp/plugin.video.iptvsimple.addons-0.0.7.zip -d ${KODI_ADD}/
-rm /tmp/plugin.video.iptvsimple.addons-0.0.7.zip
-
-### Ninteenth: Pull the "script.module.xbmcswift2" addon:
+### Seventeenth: Pull the "script.module.xbmcswift2" addon:
 #==============================================================================
 kodi_repo ${KODI_BASE}/script.module.xbmcswift2 ${KODI_ADD}/
 kodi_enable script.module.xbmcswift2

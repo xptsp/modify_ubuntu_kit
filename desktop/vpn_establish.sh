@@ -24,20 +24,20 @@ _title "Setting up VPN service and scripts..."
 #==============================================================================
 # First: Create our VPN service...
 #==============================================================================
-sed "s|%i|freevpn|g" /lib/systemd/system/openvpn@.service > /etc/systemd/system/freevpn.service
-sed -i "s|/etc/openvpn/freevpn|/etc/openvpn/freevpn/freevpn|g" /etc/systemd/system/freevpn.service
-sed -i "s|ExecStart=|ExecStartPre=/etc/openvpn/freevpn/freevpn_login.sh\nExecStart=|g" /etc/systemd/system/freevpn.service
+sed "s|%i|vpn|g" /lib/systemd/system/openvpn@.service > /etc/systemd/system/vpn.service
+sed -i "s|/etc/openvpn/vpn|/etc/openvpn/vpn/vpn|g" /etc/systemd/system/vpn.service
+sed -i "s|ExecStart=|ExecStartPre=/etc/openvpn/vpn/vpn_login.sh\nExecStart=|g" /etc/systemd/system/vpn.service
 
 # Second: Link the scripts necessary in order to set up the service:
 #==============================================================================
-mkdir /etc/openvpn/freevpn
-for file in /opt/modify_ubuntu_kit/files/freevpn_*.sh; do 
-	ln -sf ${file} /etc/openvpn/freevpn/$(basename ${file})
+mkdir /etc/openvpn/vpn
+for file in /opt/modify_ubuntu_kit/files/vpn_*.sh; do 
+	ln -sf ${file} /etc/openvpn/vpn/$(basename ${file})
 done
-touch /etc/openvpn/freevpn/freevpn_creds
-chmod 400 /etc/openvpn/freevpn/freevpn_creds
-touch /etc/openvpn/freevpn/freevpn_last_update
-chmod 400 /etc/openvpn/freevpn/freevpn_last_update
+touch /etc/openvpn/vpn/vpn_creds
+chmod 400 /etc/openvpn/vpn/vpn_creds
+touch /etc/openvpn/vpn/vpn_last_update
+chmod 400 /etc/openvpn/vpn/vpn_last_update
 
 # Third: Configure to prevent DNS leaks:
 #==============================================================================
@@ -66,11 +66,11 @@ iptables-save > /etc/iptables/rules.v4
 # Seventh: Call/Setup finisher task...
 #==============================================================================
 if ischroot; then
-	systemctl disable freevpn
-	[[ -e /usr/local/finisher/tasks.d/30_freevpn.sh ]] && rm /usr/local/finisher/tasks.d/30_freevpn.sh
-	ln -sf ${MUK_DIR}/files/tasks.d/30_freevpn.sh /usr/local/finisher/tasks.d/30_freevpn.sh
+	systemctl disable vpn
+	[[ -e /usr/local/finisher/tasks.d/30_vpn.sh ]] && rm /usr/local/finisher/tasks.d/30_vpn.sh
+	ln -sf ${MUK_DIR}/files/tasks.d/30_vpn.sh /usr/local/finisher/tasks.d/30_vpn.sh
 else
-	/usr/local/finisher/tasks.d/30_freevpn.sh
-	systemctl enable freevpn
-	systemctl start freevpn
+	/usr/local/finisher/tasks.d/30_vpn.sh
+	systemctl enable vpn
+	systemctl start vpn
 fi

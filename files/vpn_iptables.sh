@@ -2,9 +2,6 @@
 # Niftiest Software  www.niftiestsoftware.com
 # Modified version by HTPC Guides  www.htpcguides.com
 
-# Determine what the interface name is:
-export INTERFACE=$(cat /etc/openvpn/freevpn/freevpn.conf | grep "dev " | cut -d" " -f 2)
-
 # The user that the VPN is restricted to:
 export VPNUSER=htpc
 
@@ -12,8 +9,16 @@ export VPNUSER=htpc
 ETHERNET=$(lshw -c network -disable usb -short | grep -i "ethernet")
 IFS=" " read -ra ETH_NAME <<< $ETHERNET
 export NETIF=${ETH_NAME[1]}
+#echo "Ethernet Interface = $NETIF"
 export LOCALIP=$(ip address show $NETIF | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}' | egrep -v '255|(127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})' | tail -n1)
 export LOCALIP=$(echo $LOCALIP | cut -d"." -f1-3).0/24
+#echo "Ethernet Local IP Address = $LOCALIP"
+
+# Determine what the interface name is and IP address:
+export INTERFACE=$(cat /etc/openvpn/freevpn/freevpn.conf | grep "dev " | cut -d" " -f 2)
+#echo "VPN Interface = $INTERFACE"
+export GATEWAYIP=$(ip address show $NETIF | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}' | egrep -v '255|(127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})' | tail -n1)
+#echo "VPN Gateway IP = $GATEWAYIP"; exit
 
 # Get a list of ports to port forward on:
 export PORTS=($([[ -f /etc/openvpn/freevpn/port_forward.list ]] && cat /etc/openvpn/freevpn/port_forward.list))
@@ -39,10 +44,12 @@ iptables -t mangle -A OUTPUT -j CONNMARK --save-mark
 iptables -A INPUT -i $INTERFACE -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
 
 # allow incoming mapped port from AirVPN
-for PORT in "${PORTS[@]}"; do
-	iptables -A INPUT -i $INTERFACE -p tcp --dport $PORT -j ACCEPT
-	iptables -A INPUT -i $INTERFACE -p udp --dport $PORT -j ACCEPT
-done
+if [[ ! -z "$PORTS" ]]; then
+        for PORT in "${PORTS[@]}"; do
+                iptables -A INPUT -i $INTERFACE -p tcp --dport $PORT -j ACCEPT
+                iptables -A INPUT -i $INTERFACE -p udp --dport $PORT -j ACCEPT
+        done
+fi
 
 # block everything incoming on $INTERFACE to prevent accidental exposing of ports
 iptables -A INPUT -i $INTERFACE -j REJECT
@@ -55,22 +62,32 @@ iptables -A OUTPUT -o $INTERFACE -m owner --uid-owner $VPNUSER -j ACCEPT
 iptables -t nat -A POSTROUTING -o $INTERFACE -j MASQUERADE
 
 # setup each port in the "port_forward.list":
-for PORT in "${PORTS[@]}"; do
-	# forward mapped ports
-	iptables -t nat -A PREROUTING -p tcp -i $INTERFACE --dport $PORT -j DNAT --to $LOCALIP
-	iptables -t nat -A PREROUTING -p udp -i $INTERFACE --dport $PORT -j DNAT --to $LOCALIP
-	iptables -A FORWARD -p tcp -i $INTERFACE -o $NETIF -d $LOCALIP --dport $PORT -j ACCEPT
-	iptables -A FORWARD -p udp -i $INTERFACE -o $NETIF -d $LOCALIP --dport $PORT -j ACCEPT
+if [[ ! -z "$PORTS" ]]; then
+        for PORT in "${PORTS[@]}"; do
+                # forward mapped ports
+                iptables -t nat -A PREROUTING -p tcp -i $INTERFACE --dport $PORT -j DNAT --to $LOCALIP
+                iptables -t nat -A PREROUTING -p udp -i $INTERFACE --dport $PORT -j DNAT --to $LOCALIP
+                iptables -A FORWARD -p tcp -i $INTERFACE -o $NETIF -d $LOCALIP --dport $PORT -j ACCEPT
+                iptables -A FORWARD -p udp -i $INTERFACE -o $NETIF -d $LOCALIP --dport $PORT -j ACCEPT
 
-	# allow output (to masqueraded address) from mapped port from port
-	iptables -A OUTPUT -o $NETIF -p tcp --sport $PORT -j ACCEPT
-	iptables -A OUTPUT -o $NETIF -p udp --sport $PORT -j ACCEPT
-done
+                # allow output (to masqueraded address) from mapped port from port
+                iptables -A OUTPUT -o $NETIF -p tcp --sport $PORT -j ACCEPT
+                iptables -A OUTPUT -o $NETIF -p udp --sport $PORT -j ACCEPT
+        done
+fi
 
 # reject connections from predator IP going over $NETIF
 iptables -A OUTPUT ! --src $LOCALIP -o $NETIF -j REJECT
 
-# Start routing script
-/etc/openvpn/freevpn/freevpn_routing.sh
+# finish the routing:
+if [[ $(ip rule list | grep -c 0x1) == 0 ]]; then
+    ip rule add from all fwmark 0x1 lookup $VPNUSER
+fi
+ip route replace default via $GATEWAYIP table $VPNUSER
+ip route append default via 127.0.0.1 dev lo table $VPNUSER
+ip route flush cache
+
+# run update-systemd-resolved script to set VPN DNS
+/etc/openvpn/update-systemd-resolved
 
 exit 0
