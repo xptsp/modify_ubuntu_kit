@@ -14,6 +14,13 @@ fi
 #==============================================================================
 _title "Install required software for Split Tunnel VPN..."
 #==============================================================================
+wget https://swupdate.openvpn.net/repos/repo-public.gpg -O - | sudo apt-key add -
+echo "deb http://build.openvpn.net/debian/openvpn/stable bionic main" | sudo tee -a /etc/apt/sources.list.d/openvpn.list
+apt update
+
+#==============================================================================
+_title "Install required software for Split Tunnel VPN..."
+#==============================================================================
 apt install -y debconf-utils
 echo "iptables-persistent iptables-persistent/autosave_v4 boolean false" | debconf-set-selections
 echo "iptables-persistent iptables-persistent/autosave_v6 boolean false" | debconf-set-selections
@@ -26,14 +33,11 @@ _title "Setting up VPN service and scripts..."
 #==============================================================================
 sed "s|%i|vpn|g" /lib/systemd/system/openvpn@.service > /etc/systemd/system/vpn.service
 sed -i "s|/etc/openvpn/vpn|/etc/openvpn/vpn/vpn|g" /etc/systemd/system/vpn.service
-sed -i "s|ExecStart=|ExecStartPre=/etc/openvpn/vpn/vpn_login.sh\nExecStart=|g" /etc/systemd/system/vpn.service
+sed -i "s|ExecStart=|ExecStartPre=${MUK_DIR}/vpn_login.sh\nExecStart=|g" /etc/systemd/system/vpn.service
 
 # Second: Link the scripts necessary in order to set up the service:
 #==============================================================================
 mkdir /etc/openvpn/vpn
-for file in /opt/modify_ubuntu_kit/files/vpn_*.sh; do 
-	ln -sf ${file} /etc/openvpn/vpn/$(basename ${file})
-done
 touch /etc/openvpn/vpn/vpn_creds
 chmod 400 /etc/openvpn/vpn/vpn_creds
 touch /etc/openvpn/vpn/vpn_last_update
