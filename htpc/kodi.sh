@@ -49,7 +49,9 @@ fi
 _title "Installing a few Kodi addons and activating them..."
 #==============================================================================
 KODI_ADD=/usr/skel/.kodi/addons
+[[ ! -d "${KODI_ADD}" ]] && mkdir -p ${KODI_ADD}
 KODI_OPT=/opt/kodi
+[[ ! -d "${KODI_OPT}" ]] && mkdir -p ${KODI_OPT}
 KODI_BASE=https://mirrors.kodi.tv/addons/leia/
 
 ### First: Pull the "script.module.beautifulsoup4" addon:
@@ -127,13 +129,7 @@ kodi_enable service.subtitles.subscene
 kodi_repo ${KODI_BASE}/context.copytostorage ${KODI_ADD}/
 kodi_enable context.copytostorage
 
-### Sixteenth: Pull the "service.system.update" addon:
-#==============================================================================
-git clone --depth=1 https://github.com/ossman/service.system.update ${KODI_OPT}/service.system.update
-ln -sf ${KODI_OPT}/service.system.update ${KODI_ADD}/service.system.update
-kodi_enable service.system.update
-
-### Seventeenth: Pull the "script.module.xbmcswift2" addon:
+### Sixteenth: Pull the "script.module.xbmcswift2" addon:
 #==============================================================================
 kodi_repo ${KODI_BASE}/script.module.xbmcswift2 ${KODI_ADD}/
 kodi_enable script.module.xbmcswift2
