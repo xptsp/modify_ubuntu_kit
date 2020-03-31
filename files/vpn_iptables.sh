@@ -9,11 +9,16 @@ export VPNUSER=htpc
 ETHERNET=$(lshw -c network -disable usb -short | grep -i "ethernet")
 IFS=" " read -ra ETH_NAME <<< $ETHERNET
 export NETIF=${ETH_NAME[1]}
+[[ "$1" == "-v" ]] && echo "Ethernet Interface = $NETIF"
 export LOCALIP=$(ip address show $NETIF | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}' | egrep -v '255|(127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})' | tail -n1)
+[[ "$1" == "-v" ]] && echo "Ethernet IP Address = $LOCALIP"
 
 # Determine what the interface name is and IP address:
-export INTERFACE=$(cat /etc/openvpn/freevpn/freevpn.conf | grep "dev " | cut -d" " -f 2)
-export GATEWAYIP=$(ip address show $NETIF | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}' | egrep -v '255|(127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})' | tail -n1)
+[[ -f /etc/openvpn/vpn/vpn.conf ]] && export INTERFACE=$(cat /etc/openvpn/vpn/vpn.conf | grep "dev " | cut -d" " -f 2)
+[[ -z "$INTERFACE" ]] && export INTERFACE=$(cat /etc/openvpn/freevpn/freevpn.conf | grep "dev " | cut -d" " -f 2)
+[[ "$1" == "-v" ]] && echo "VPN Interface = $INTERFACE"
+export GATEWAYIP=$(ip address show $INTERFACE | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}' | egrep -v '255|(127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})' | tail -n1)
+[[ "$1" == "-v" ]] && echo "VPN IP Address = $GATEWAYIP"
 
 # flushes all the iptables rules, if you have other rules to use then add them into the script
 iptables -F -t nat

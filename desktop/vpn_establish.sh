@@ -45,8 +45,8 @@ chmod 400 /etc/openvpn/vpn/vpn_last_update
 
 # Third: Configure to prevent DNS leaks:
 #==============================================================================
-sed -i "s|#     foreign_option_1='dhcp-option DNS 193.43.27.132'|foreign_option_3='dhcp-option DNS 1.1.1.1'|g" /etc/openvpn/update-resolv-conf
-sed -i "s|#     foreign_option_2='dhcp-option DNS 193.43.27.133'|foreign_option_3='dhcp-option DNS 1.0.0.1'|g" /etc/openvpn/update-resolv-conf
+sed -i "s|#     foreign_option_1='dhcp-option DNS 193.43.27.132'|foreign_option_1='dhcp-option DNS 1.1.1.1'|g" /etc/openvpn/update-resolv-conf
+sed -i "s|#     foreign_option_2='dhcp-option DNS 193.43.27.133'|foreign_option_2='dhcp-option DNS 1.0.0.1'|g" /etc/openvpn/update-resolv-conf
 sed -i "s|#     foreign_option_3='dhcp-option DOMAIN be.bnc.ch'|foreign_option_3='dhcp-option DNS 8.8.8.8'|g" /etc/openvpn/update-resolv-conf
 
 # Fourth: Configure Split Tunnel VPN Routing
