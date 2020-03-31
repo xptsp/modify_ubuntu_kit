@@ -23,7 +23,8 @@ fi
 # Check the parameters to make sure we got everything:
 [ -z "${DEST}" ] && DEST=~/.kodi/addons
 [ "${URL}" == "${FILE}" ] && URL=http://mirrors.kodi.tv/addons/leia/${URL}
-[ ! "$(echo ${URL} | cut -d "/" -f 1)" == "http:" ] && URL=http://${URL}
+protocol=$(echo ${URL} | cut -d "/" -f 1)
+[[ "${protocol}" != "http:" && "${protocol}" != "https:" ]] && URL=https://${URL}
 URL=${URL%/}
 DEST=${DEST%/}
 EXT=$([[ "$URL" = *.* ]] && echo ".${URL##*.}" || echo '')
