@@ -14,7 +14,14 @@ fi
 #==============================================================================
 _title "Installing LIRC..."
 #==============================================================================
-# First: Add the xenial repo, install the package, then remove the repo:
+# First: Attempt to set up the LIRC package:
+#==============================================================================
+echo "lirc lirc/dev_input_device select /dev/lirc0" | debconf-set-selections
+echo "lirc lirc/transmitter select None" | debconf-set-selections
+echo "lirc lirc/serialport select /dev/ttyS0" | debconf-set-selections
+echo "lirc lirc/remote select Windows Media Center Transceivers/Remotes (all)" | debconf-set-selections
+
+# Second: Add the xenial repo, install the package, then remove the repo:
 #==============================================================================
 if [[ $OS_VER -gt 1604 ]]; then
 	echo "deb http://ca.archive.ubuntu.com/ubuntu/ xenial universe" > /etc/apt/sources.list.d/xenial.list
@@ -27,7 +34,7 @@ else
 	apt install lirc
 fi
 
-# Second: Add finisher task to configure "LIRC":
+# Third: Add finisher task to configure "LIRC":
 #==============================================================================
 if ischroot; then
 	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
