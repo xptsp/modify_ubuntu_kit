@@ -100,7 +100,7 @@ function kodi_enable() {
 	sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="$1";'
 }
 function kodi_repo() {
-	${MUK_DIR}/files/kodi_repo.sh $@
+	${MUK_DIR:-"/opt/modify_ubuntu_kit"}/files/kodi_repo.sh $@
 }
 
 # If we are not running as root, then run this script as root:
