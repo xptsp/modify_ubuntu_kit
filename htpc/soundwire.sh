@@ -16,6 +16,7 @@ _title "Installing SoundWire Server"
 #==============================================================================
 # First: Download the software (duh! :p)
 #==============================================================================
+apt install -y libcurl3 libqt5widgets5 libportaudio2 pavucontrol
 wget http://georgielabs.altervista.org/SoundWire_Server_linux64.tar.gz -O /tmp/SoundWire_Server_linux64.tar.gz
 tar -xzf /tmp/SoundWire_Server_linux64.tar.gz -C /opt/
 rm /tmp/SoundWire_Server_linux64.tar.gz
@@ -25,9 +26,11 @@ change_ownership /opt/SoundWireServer
 # Second: Create a script to launch the program using right PulseAudio settings:
 #==============================================================================
 cat << EOF > /opt/SoundWireServer/start-soundwire
-#!/bin/sh
+#!/bin/bash
 export PULSE_SOURCE=
-/opt/SoundWireServer/SoundWireServer \$@
+export LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:\${LD_LIBRARY_PATH}
+cd /opt/SoundWireServer
+./SoundWireServer \$@
 EOF
 chown root:root /opt/SoundWireServer/start-soundwire
 chmod +x /opt/SoundWireServer/start-soundwire
@@ -46,28 +49,4 @@ Categories=AudioVideo;Audio
 EOF
 chown root:root /usr/share/applications/soundwire.desktop
 
-# Fourth: Create a service to launch it
-#==============================================================================
-cat << EOF > /etc/systemd/system/soundwire.service
-[Unit]
-Description=SoundWire Server
-
-[Service]
-Type=simple
-User=kodi
-Group=kodi
-ExecStart=/opt/SoundWireServer/start-soundwire -nogui
-Restart=always
-RestartSec=3
-
-[Install]
-WantedBy=multi-user.target
-EOF
-if ischroot; then
-	systemctl disable soundwire
-else
-	systemctl enable soundwire
-	systemctl start soundwire
-fi
-chown root:root /etc/systemd/system/soundwire.service
-change_username /etc/systemd/system/soundwire.service
+# Fourth: Add 

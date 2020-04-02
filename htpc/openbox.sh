@@ -40,6 +40,9 @@ xset s off
 xset s noblank
 # Disable "Display Power Management Signaling"
 xset -dpms
+
+# Start SoundWire Server if available:
+[[ -f /opt/SoundWireServer/start-soundwire ]] && /opt/SoundWireServer/start-soundwire
 EOF
 chown root:root ~/.config/openbox/autostart
 chmod +x ~/.config/openbox/autostart
