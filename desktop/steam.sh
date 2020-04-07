@@ -22,8 +22,6 @@ apt install -y steam
 
 ### Second: Pull the "script.kodi.launches.emulationstation" addon:
 #==============================================================================
-KODI_OPT=${KODI_OPT:-"/opt/kodi"}
-KODI_ADD=${KODI_ADD:-"/etc/skel/.kodi/addons"}
 ### First: Get the repo:
 [[ ! -d ${KODI_OPT} ]] && mkdir -p ${KODI_OPT}
 git clone --depth=1 https://github.com/BrosMakingSoftware/Kodi-Launches-Steam-Addon ${KODI_OPT}/Kodi-Launches-Steam-Addon

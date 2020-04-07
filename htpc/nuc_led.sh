@@ -35,10 +35,8 @@ chown root:root /etc/modules-load.d/nuc_led.conf
 echo "options nuc_led nuc_led_perms=0664 nuc_led_gid=100 nuc_led_uid=1000" > /etc/modprobe.d/nuc_led.conf
 chown root:root /etc/modprobe.d/nuc_led.conf
 
-# Fourth: Pull the "script.kodi.launches.emulationstation" addon:
+# Fourth: Pull the "service.recording-led-for-nuc" addon:
 #==============================================================================
-KODI_OPT=${KODI_OPT:-"/opt/kodi"}
-KODI_ADD=/usr/share/kodi/addons
 KODI_NAME="service.recording-led-for-nuc"
 
 ### First: Get the repo:

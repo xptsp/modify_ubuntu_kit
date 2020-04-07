@@ -35,10 +35,6 @@ ischroot || systemctl start emby-server
 #==============================================================================
 _title "Installing Emby for Kodi addons..."
 #==============================================================================
-### First: Set "KODI_ADD" variable if not set:
-KODI_OPT=${KODI_OPT:-"/opt/kodi"}
-KODI_ADD=/usr/share/kodi/addons
-
 ### Second: Get "Emby-Kodi" repository:
 wget http://kodi.emby.media/repository.emby.kodi-1.0.6.zip -O /tmp/repository.emby.kodi-1.0.6.zip
 7z x /tmp/repository.emby.kodi-1.0.6.zip -aoa -o${KODI_ADD}/

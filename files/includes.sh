@@ -109,6 +109,11 @@ if [[ "$UID" -ne 0 ]]; then
 	exit $?
 fi
 
+# Kodi directories and URL base:
+KODI_ADD=/usr/skel/.kodi/addons
+KODI_OPT=/opt/kodi
+KODI_BASE=https://mirrors.kodi.tv/addons/leia/
+
 # Defined directories:
 USB=${UNPACK_DIR}/usb
 MNT=${UNPACK_DIR}/mnt

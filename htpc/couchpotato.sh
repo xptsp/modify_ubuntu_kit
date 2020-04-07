@@ -45,9 +45,6 @@ fi
 #==============================================================================
 _title "Installing CouchPotato addons for Kodi..."
 #==============================================================================
-KODI_OPT=${KODI_OPT:-"/opt/kodi"}
-KODI_ADD=/usr/share/kodi/addons
-
 ### First: Install the couchpotato manager addon:
 #==============================================================================
 kodi_repo plugin.video.couchpotato_manager

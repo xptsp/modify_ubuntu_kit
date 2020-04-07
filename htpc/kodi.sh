@@ -48,12 +48,6 @@ fi
 #==============================================================================
 _title "Installing a few Kodi addons and activating them..."
 #==============================================================================
-KODI_ADD=/usr/skel/.kodi/addons
-[[ ! -d "${KODI_ADD}" ]] && mkdir -p ${KODI_ADD}
-KODI_OPT=/opt/kodi
-[[ ! -d "${KODI_OPT}" ]] && mkdir -p ${KODI_OPT}
-KODI_BASE=https://mirrors.kodi.tv/addons/leia/
-
 ### First: Pull the "script.module.beautifulsoup4" addon:
 #==============================================================================
 kodi_repo ${KODI_BASE}/script.module.beautifulsoup4 ${KODI_ADD}/

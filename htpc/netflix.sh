@@ -14,9 +14,6 @@ fi
 #==============================================================================
 _title "Installing Netflix for Kodi..."
 #==============================================================================
-KODI_OPT=${KODI_OPT:-"/opt/kodi"}
-KODI_ADD=/usr/share/kodi/addons
-
 ### First: Pull the "script.module.addon.signals" addon:
 #==============================================================================
 kodi_repo ${KODI_BASE}/script.module.addon.signals ${KODI_ADD}/

@@ -51,9 +51,6 @@ fi
 #==============================================================================
 _title "Installing SickChill addon for Kodi..."
 #==============================================================================
-KODI_OPT=${KODI_OPT:-"/opt/kodi"}
-KODI_ADD=/usr/share/kodi/addons
-
 ### First: We need the repository:
 #==============================================================================
 wget https://github.com/Hiltronix/repo/raw/master/repository.Hiltronix.zip -O /tmp/repository.Hiltronix.zip

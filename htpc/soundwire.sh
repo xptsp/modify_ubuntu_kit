@@ -49,4 +49,11 @@ Categories=AudioVideo;Audio
 EOF
 chown root:root /usr/share/applications/soundwire.desktop
 
-# Fourth: Add 
+# Fourth: Add task to run the SoundWireServer after kodi-openbox:
+#==============================================================================
+if ischroot; then
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+	ln -sf ${MUK_DIR}/files/tasks.d/21_soundwire.sh /usr/local/finisher/tasks.d/21_soundwire.sh
+else
+	${MUK_DIR}/files/tasks.d/21_soundwire.sh
+fi	
