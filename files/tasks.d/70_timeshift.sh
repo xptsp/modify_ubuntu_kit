@@ -1,12 +1,13 @@
 #!/bin/bash
 # Get details about root filesystem:
-ROOT_SYS=$(mount | grep " / ")
-ROOT_UUID=$(blkid $(echo $ROOT_SYS | cut -d" " -f 1) | cut -d'"' -f 2)
+ROOT_SYS=$(mount | grep " / " | cut -d" " -f 1)
+ROOT_UUID=$(blkid ${ROOT_SYS} --output export | sed -n 's/^UUID=//p')
+ROOT_TYPE=$(blkid ${ROOT_SYS} --output export | sed -n 's/^TYPE=//p')
 [[ -z "${USERNAME}" ]] && USERNAME=$(id -un 1000)
 [[ -z "${PASSWORD}" ]] && PASSWORD=xubuntu
 
 # If root filesystem is a btrfs, then set up automatic backups:
-if [[ "$(echo $ROOT_SYS | cut -d" " -f 5)" == "btrfs" ]]; then
+if [[ "${ROOT_TYPE}" == "btrfs" ]]; then
 	cat << EOF > /etc/cron.d/timeshift-hourly
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin

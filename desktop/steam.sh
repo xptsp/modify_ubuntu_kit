@@ -22,11 +22,6 @@ apt install -y steam
 
 ### Second: Pull the "script.kodi.launches.emulationstation" addon:
 #==============================================================================
-### First: Get the repo:
-[[ ! -d ${KODI_OPT} ]] && mkdir -p ${KODI_OPT}
 git clone --depth=1 https://github.com/BrosMakingSoftware/Kodi-Launches-Steam-Addon ${KODI_OPT}/Kodi-Launches-Steam-Addon
-### Second: Link the repo:
-[[ ! -d ${KODI_ADD} ]] && mkdir -p ${KODI_ADD}
 ln -sf ${KODI_OPT}/Kodi-Launches-Steam-Addon/script.kodi.launches.steam ${KODI_ADD}/script.kodi.launches.steam
-### Third: Enable addon by default:
 kodi_enable script.kodi.launches.steam

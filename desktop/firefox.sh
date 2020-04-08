@@ -21,10 +21,8 @@ apt install -y firefox thunderbird
 # Second: Install the Kodi addon:
 #==============================================================================
 ### First: Get the repo:
-[[ ! -d ${KODI_OPT} ]] && mkdir -p ${KODI_OPT}
 git clone --depth=1 https://github.com/xptsp/script.kodi.launches.firefox ${KODI_OPT}/script.kodi.launches.firefox
 ### Second: Link the repo:
-[[ ! -d ${KODI_ADD} ]] && mkdir -p ${KODI_ADD}
 ln -sf ${KODI_OPT}/script.kodi.launches.firefox ${KODI_ADD}/script.kodi.launches.firefox
 ### Third: Enable addon by default:
 kodi_enable script.kodi.launches.firefox

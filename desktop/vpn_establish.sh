@@ -31,9 +31,11 @@ _title "Setting up VPN service and scripts..."
 #==============================================================================
 # First: Create our VPN service...
 #==============================================================================
-sed "s|%i|vpn|g" /lib/systemd/system/openvpn@.service > /etc/systemd/system/vpn.service
-sed -i "s|/etc/openvpn/vpn|/etc/openvpn/vpn/vpn|g" /etc/systemd/system/vpn.service
-sed -i "s|ExecStart=|ExecStartPre=${MUK_DIR}/vpn_login.sh\nExecStart=|g" /etc/systemd/system/vpn.service
+[[ ! -d /lib/systemd/system/freevpn.service.d ]] && mkdir /lib/systemd/system/freevpn.service.d
+cat << EOF > /lib/systemd/system/vpn.service.d/openvpn@freevpn.conf
+[Service]
+ExecStartPre=${MUK_DIR}/freevpn_login.sh
+EOF
 
 # Second: Link the scripts necessary in order to set up the service:
 #==============================================================================
@@ -70,11 +72,11 @@ iptables-save > /etc/iptables/rules.v4
 # Seventh: Call/Setup finisher task...
 #==============================================================================
 if ischroot; then
-	systemctl disable vpn
+	systemctl disable openvpn@freevpn
 	[[ -e /usr/local/finisher/tasks.d/30_vpn.sh ]] && rm /usr/local/finisher/tasks.d/30_vpn.sh
 	ln -sf ${MUK_DIR}/files/tasks.d/30_vpn.sh /usr/local/finisher/tasks.d/30_vpn.sh
 else
 	/usr/local/finisher/tasks.d/30_vpn.sh
-	systemctl enable vpn
-	systemctl start vpn
+	systemctl enable openvpn@freevpn
+	systemctl start openvpn@freevpn
 fi

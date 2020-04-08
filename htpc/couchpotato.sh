@@ -26,9 +26,17 @@ change_ownership /opt/couchpotato
 
 # Third : Customize the service file:
 #==============================================================================
-cp /opt/couchpotato/init/couchpotato.service /etc/systemd/system/couchpotato.service
-sed -i "s|/var/lib/CouchPotatoServer|/opt/couchpotato|g" /etc/systemd/system/couchpotato.service
-sed -i "s|=couchpotato|=htpc|g" /etc/systemd/system/couchpotato.service
+ln -sf /opt/couchpotato/init/couchpotato.service /etc/systemd/system/couchpotato.service
+[[ ! -d /etc/systemd/system/couchpotato.service.d ]] && mkdir -p /etc/systemd/system/couchpotato.service.d
+cat << EOF > /etc/systemd/system/couchpotato.service.d/htpc.conf
+[Service]
+User=
+User=htpc
+Group=
+Group=users
+ExecStart=
+ExecStart=/opt/couchpotato/CouchPotato.py
+EOF
 
 # Fourth: Create finisher task
 #==============================================================================
@@ -37,9 +45,9 @@ if ischroot; then
 	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
 	ln -sf ${MUK_DIR}/files/tasks.d/40_couchpotato.sh /usr/local/finisher/tasks.d/40_couchpotato.sh
 else
+	${MUK_DIR}/files/tasks.d/40_couchpotato.sh
 	systemctl enable couchpotato
 	systemctl start couchpotato
-	${MUK_DIR}/files/tasks.d/40_couchpotato.sh
 fi
 
 #==============================================================================

@@ -14,8 +14,8 @@ export LOCALIP=$(ip address show $NETIF | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}'
 [[ "$1" == "-v" ]] && echo "Ethernet IP Address = $LOCALIP"
 
 # Determine what the interface name is and IP address:
-[[ -f /etc/openvpn/vpn/vpn.conf ]] && export INTERFACE=$(cat /etc/openvpn/vpn/vpn.conf | grep "dev " | cut -d" " -f 2)
-[[ -z "$INTERFACE" ]] && export INTERFACE=$(cat /etc/openvpn/freevpn/freevpn.conf | grep "dev " | cut -d" " -f 2)
+[[ -f /etc/openvpn/freevpn/freevpn.conf ]] && export INTERFACE=$(cat /etc/openvpn/freevpn/freevpn.conf | grep "dev " | cut -d" " -f 2)
+[[ -z "$INTERFACE" ]] && export INTERFACE=$(cat /etc/openvpn/vpn.conf | grep "dev " | cut -d" " -f 2)
 [[ "$1" == "-v" ]] && echo "VPN Interface = $INTERFACE"
 export GATEWAYIP=$(ip address show $INTERFACE | egrep -o '([0-9]{1,3}\.){3}[0-9]{1,3}' | egrep -v '255|(127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3})' | tail -n1)
 [[ "$1" == "-v" ]] && echo "VPN IP Address = $GATEWAYIP"

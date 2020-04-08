@@ -55,4 +55,6 @@ if ischroot; then
 	ln -sf ${MUK_DIR}/files/tasks.d/50_samba.sh /usr/local/finisher/tasks.d/50_samba.sh
 else
 	${MUK_DIR}/files/tasks.d/50_samba.sh
+	systemctl restart smbd
+	systemctl restart nmbd
 fi

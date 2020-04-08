@@ -29,9 +29,14 @@ apt install -y transmission-daemon transmission-cli transgui
 #==============================================================================
 ischroot && systemctl disable transmission-daemon
 ischroot || systemctl stop transmission-daemon
-sed -i "s|User=.*|User=htpc|g" /lib/systemd/system/transmission-daemon.service
-sed -i "s|Group=.*|Group=htpc|g" /lib/systemd/system/transmission-daemon.service
-sed -i "s|ExecStart|Restart=on-failure\nRestartSec=10\nExecStart|g" /lib/systemd/system/transmission-daemon.service
+[[ ! -d /lib/systemd/system/transmission-daemon.service.d ]] && mkdir /lib/systemd/system/transmission-daemon.service.d
+cat << EOF > /lib/systemd/system/transmission-daemon.service.d/htpc.conf
+[Service]
+User=
+User=htpc
+Group=
+Group=htpc
+EOF
 
 # Third: Configure the settings for Transmission and TransGUI:
 #==============================================================================

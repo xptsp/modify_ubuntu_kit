@@ -31,11 +31,6 @@ change_ownership /opt/retropie
 
 ### Third: Pull the "script.kodi.launches.emulationstation" addon:
 #==============================================================================
-### First: Get the repo:
-[[ ! -d ${KODI_OPT} ]] && mkdir -p ${KODI_OPT}
 git clone --depth=1 https://github.com/BrosMakingSoftware/Kodi-Launches-EmulationStation-Addon ${KODI_OPT}/Kodi-Launches-EmulationStation-Addon
-### Second: Link the repo:
-[[ ! -d ${KODI_ADD} ]] && mkdir -p ${KODI_ADD}
 ln -sf ${KODI_OPT}/Kodi-Launches-EmulationStation-Addon/script.kodi.launches.emulationstation ${KODI_ADD}/script.kodi.launches.emulationstation
-### Third: Enable addon by default:
 kodi_enable script.kodi.launches.emulationstation

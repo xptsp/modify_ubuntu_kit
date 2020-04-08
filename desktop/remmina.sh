@@ -23,11 +23,8 @@ apt install -y remmina remmina-plugin-rdp remmina-plugin-secret remmina-plugin-s
 # Second: Pull the "script.kodi.launches.emulationstation" addon:
 #==============================================================================
 ### First: Get the repo:
-[[ ! -d ${KODI_OPT} ]] && mkdir -p ${KODI_OPT}
 git clone --depth=1 https://github.com/xptsp/script.kodi.launches.remmina ${KODI_OPT}/script.kodi.launches.remmina
 ### Second: Link the repo:
-[[ ! -d ${KODI_ADD} ]] && mkdir -p ${KODI_ADD}
 ln -sf ${KODI_OPT}/script.kodi.launches.remmina ${KODI_ADD}/script.kodi.launches.remmina
 ### Third: Enable addon by default:
-[[ ! -f /etc/skel/.kodi/userdata/Database/Addons27.db ]] && ${MUK_DIR}/base/kodi_addon_db.sh
-sqlite3 ~/.kodi/userdata/Database/Addons27.db 'update installed set enabled=1 where addonid=="script.kodi.launches.remmina";'
+kodi_enable script.kodi.launches.remmina
