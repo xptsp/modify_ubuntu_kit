@@ -14,4 +14,4 @@ fi
 #==============================================================================
 _title "Adding script to deal with no ethernet connection after suspend/hibernate..."
 #==============================================================================
-ln -sf ${MUK_DIR}/files/restart_network.sh /etc/pm/sleep.d/99-network.sh
+ln -sf ${MUK_DIR}/files/restart_audio.sh /etc/pm/sleep.d/99-audio.sh
