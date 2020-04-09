@@ -58,3 +58,8 @@ else
 	systemctl restart smbd
 	systemctl restart nmbd
 fi
+
+# Fifth: Add "Don't sleep while Samba is serving files" service:
+#==============================================================================
+ln -sf ${MUK_DIR}/files/samba_nosleep.service /etc/systemd/system/samba_nosleep.service
+systemctl enable samba_nosleep

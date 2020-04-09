@@ -1,0 +1,10 @@
+[Unit]
+Description=Inhibit suspend in case of samba activity
+Before=sleep.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/sh -c "! smbstatus -nb | tail -n +5 | grep -q '^[0-9]*'"
+
+[Install]
+RequiredBy=sleep.target

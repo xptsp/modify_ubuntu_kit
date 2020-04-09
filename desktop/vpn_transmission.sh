@@ -38,7 +38,16 @@ Group=
 Group=htpc
 EOF
 
-# Third: Configure the settings for Transmission and TransGUI:
+# Third: Create the "no sleep if transmission-daemon is downloading" service:
+#==============================================================================
+ln -sf ${MUK_DIR}/files/transmission_nosleep.sh /usr/local/bin/transmission_nosleep.sh
+ln -sf ${MUK_DIR}/files/transmission_nosleep.service /etc/systemd/system/transmission_nosleep.service
+sed -i "s|/opt/modify_ubuntu_kit|${MUK_DIR}|g" /etc/systemd/system/transmission_nosleep.service
+systemctl enable transmission_nosleep
+change_username ${MUK_DIR}/files/transmission_nosleep.sh
+change_password ${MUK_DIR}/files/transmission_nosleep.sh
+
+# Fourth: Configure the settings for Transmission and TransGUI:
 #==============================================================================
 # Transmission settings:
 [[ ! -d ~/.config/transmission-daemon ]] && mkdir -p ~/.config/transmission-daemon
@@ -48,22 +57,22 @@ change_password /etc/skel/.config/transmission-daemon/settings.json
 # TransGUI settings:
 unzip -o ${MUK_DIR}/files/transgui.zip -d ~/.config/
 
-# Fourth: Reenable the service if NOT running in CHROOT environment:
+# Fifth: Reenable the service if NOT running in CHROOT environment:
 #==============================================================================
 ischroot && systemctl start transmission-daemon
 
-# Fifth: Create the autoremove.sh script:
+# Sixth: Create the autoremove.sh script:
 #==============================================================================
 ln -sf ${MUK_DIR}/files/transmission_autoremove.sh /etc/transmission-daemon/autoremove.sh
 change_username /etc/transmission-daemon/autoremove.sh
 change_password /etc/transmission-daemon/autoremove.sh
 
-# Sixth: Create the finisher task to create the user "htpc": 
+# Seventh: Create the finisher task to create the user "htpc": 
 #==============================================================================
 [[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
 ln -sf ${MUK_DIR}/files/tasks.d/40_transmission.sh /usr/local/finisher/tasks.d/40_transmission.sh
 
-# Seventh: Creating our Transmission site reverse proxy:
+# Eighth: Creating our Transmission site reverse proxy:
 #==============================================================================
 PROG=$(whereis nginx | cut -d" " -f 2)
 [[ -z "${PROG}" ]] && ${MUK_DIR}/programs/nginx.sh

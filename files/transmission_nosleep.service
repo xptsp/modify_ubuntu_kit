@@ -1,0 +1,10 @@
+[Unit]
+Description=Inhibit suspend while transmission-daemon is downloading
+Before=sleep.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/sh -c "/opt/modify_ubuntu_kit/files/transmission_nosleep.sh"
+
+[Install]
+RequiredBy=sleep.target
