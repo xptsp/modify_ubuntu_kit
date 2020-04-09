@@ -53,5 +53,5 @@ if [[ "$EXT" != "zip" ]]; then
 fi
 
 # Pull the addon and extract it to the destination specified:
-wget ${URL} -O /tmp/${FILE} && unzip -o /tmp/${FILE} -d ${DEST}/
+wget ${URL} --tries=1 -O /tmp/${FILE} && unzip -o /tmp/${FILE} -d ${DEST}/
 [[ -f /tmp/${FILE} ]] && rm /tmp/${FILE}
