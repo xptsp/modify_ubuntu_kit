@@ -25,11 +25,17 @@ relocate_dir /opt/sickchill
 
 # Third: Copy the service file and set defaults:
 #==============================================================================
-cp /opt/sickchill/runscripts/init.ubuntu /etc/init.d/sickchill
-echo "SR_USER=htpc" > /etc/default/sickchill
-chown root:root /etc/init.d/sickchill
-chmod +x /etc/init.d/sickchill
-change_username /etc/default/sickchill
+ln -sf /opt/sickchill/runscripts/init.systemd /etc/systemd/system/sickchill.service
+[[ ! -d /etc/systemd/system/sickchill.service.d ]] && mkdir -p /etc/systemd/system/sickchill.service.d
+cat << EOF > /etc/systemd/system/sickchill.service.d/htpc.conf
+[Service]
+User=
+User=htpc
+Group=
+Group=htpc
+ExecStart=
+ExecStart=/opt/sickchill/SickBeard.py -q --daemon --nolaunch --datadir=/opt/sickchill
+EOF
 
 # Fourth: Get the configuration file:
 #==============================================================================
