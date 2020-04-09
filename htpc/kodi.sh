@@ -23,11 +23,6 @@ apt install -y kodi kodi-pvr-iptvsimple kodi-visualization-[wgs]* kodi-periphera
 #==============================================================================
 7z x ${MUK_DIR}/files/kodi_userdata.7z -aoa -o${HOME}/.kodi/userdata/
 
-### Third: Unpack our modified "skin.estuary" files:
-#==============================================================================
-7z x ${MUK_DIR}/files/kodi_skin.estuary.zip -aoa -o/usr/share/kodi/addons/
-chmod a+rx -R /usr/share/kodi/addons/
-
 ### Fourth: Copy the Harmony Remote keymap and adjust the keymap a little:
 ### Original Source: https://forum.kodi.tv/showthread.php?tid=188542
 #==============================================================================
