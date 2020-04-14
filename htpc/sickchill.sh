@@ -24,8 +24,8 @@ git clone --depth=1 https://github.com/SickChill/SickChill.git /opt/sickchill
 relocate_dir /opt/sickchill
 
 # Third: Copy the service file and set defaults:
-#==============================================================================
-ln -sf /opt/sickchill/runscripts/init.systemd /etc/systemd/system/sickchill.service
+===============================================================================
+cp /opt/sickchill/runscripts/init.systemd /etc/systemd/system/sickchill.service
 [[ ! -d /etc/systemd/system/sickchill.service.d ]] && mkdir -p /etc/systemd/system/sickchill.service.d
 cat << EOF > /etc/systemd/system/sickchill.service.d/htpc.conf
 [Service]

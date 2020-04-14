@@ -26,7 +26,7 @@ change_ownership /opt/couchpotato
 
 # Third : Customize the service file:
 #==============================================================================
-ln -sf /opt/couchpotato/init/couchpotato.service /etc/systemd/system/couchpotato.service
+cp /opt/couchpotato/init/couchpotato.service /etc/systemd/system/couchpotato.service
 [[ ! -d /etc/systemd/system/couchpotato.service.d ]] && mkdir -p /etc/systemd/system/couchpotato.service.d
 cat << EOF > /etc/systemd/system/couchpotato.service.d/htpc.conf
 [Service]
