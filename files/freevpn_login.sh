@@ -7,6 +7,12 @@ export RED='\033[1;31m'
 export BLUE='\033[1;34m'
 export NC='\033[0m'
 
+# If we aren't using this for freevpn.me, exit normally with no error code
+if [[ -f /etc/openvpn/vpn.conf ]]; then
+	host=$(cat /etc/openvpn/vpn.conf | grep "freevpn.me")
+	[[ -z "${host}" ]] && exit 0
+fi
+
 # Get the FreeVPN account page:
 url='https://freevpn.co.uk/accounts/'
 html=$( curl -# -L "${url}" 2> '/dev/null' )
