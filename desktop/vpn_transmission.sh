@@ -7,12 +7,12 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 	echo -e "${RED}Purpose:${NC} Installs Transmission and TransGUI on your computer."
-	echo -e "${RED}Dependency:${NC} VPN browser launchers requires FreeVPN to be established and Nginx to be installed."
+	echo -e "${RED}Dependency:${NC} VPN browser launchers requires FreeVPN to be established."
 	echo ""
 	exit 0
 fi
 
-# Seventh: Make sure "nginx" is installed on the system:
+# Seventh: Make sure our VPN is created on the system:
 #==============================================================================
 [[ ! -e /etc/openvpn/freevpn ]] && ${MUK_DIR}/programs/vpn_establish.sh
 
@@ -71,26 +71,6 @@ change_password /etc/transmission-daemon/autoremove.sh
 #==============================================================================
 [[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
 ln -sf ${MUK_DIR}/files/tasks.d/40_transmission.sh /usr/local/finisher/tasks.d/40_transmission.sh
-
-# Eighth: Creating our Transmission site reverse proxy:
-#==============================================================================
-PROG=$(whereis nginx | cut -d" " -f 2)
-[[ -z "${PROG}" ]] && ${MUK_DIR}/programs/nginx.sh
-
-cat << EOF > /etc/nginx/sites-available/transmission
-server {
-    listen 9090;
-    server_name example.com;
-
-    location /transmission {
-        proxy_pass http://127.0.0.1:19090;
-        proxy_set_header Host \$host;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-    }
-}
-EOF
-ln -sf /etc/nginx/sites-available/transmission /etc/nginx/sites-enabled/transmission
 
 #==============================================================================
 _title "Install Transmission addon for Kodi..."
