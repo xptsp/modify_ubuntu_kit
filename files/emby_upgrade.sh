@@ -24,10 +24,11 @@ export CROSS="\xE2\x9D\x8C"
 # Find out what the most recent version of Emby Server is:
 URL=https://github.com$(wget -O - https://github.com/MediaBrowser/Emby.Releases/releases/latest 2>&1 /dev/null | grep "\-deb" | grep "_amd64.deb" |  grep -o '<a href=['"'"'"][^"'"'"']*['"'"'"]' | sed -e 's/^<a href=["'"'"']//' -e 's/["'"'"']$//')
 FILE=$(basename $URL)
-VER=$(echo $FILE | cut -d"_" -f 2)
+echo "Latest version = ${VER}"
 
 # Get the version of Emby Server that is installed:
 CMP=$([[ -f /var/lib/emby/installed.version ]] && cat /var/lib/emby/installed.version)
+[[ ! -z "${CMP}" ]] && echo "Installed version = ${CMP}"
 
 # If versions are equal, tell user.  Otherwise, install the newest version:
 if [[ "${VER}" == "${CMP}" ]]; then

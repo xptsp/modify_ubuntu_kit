@@ -78,7 +78,7 @@ fi
 for cmd in "${after[@]}"; do $cmd; done
 
 # Dismount all Truecrypt volumes:
-truecrypt -d -f
+[[ "$1" == "--kodi" ]] || truecrypt -d -f
 
 # Notify user that this script is finished running:
 MSG="${TITLE} has finished running!"

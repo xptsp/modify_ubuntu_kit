@@ -37,66 +37,66 @@ do
 done < ${CONFIG_FILE}
 
 # Create our mounting options string here:
-unset MNT
-for option in "${!mount[@]}"; do
-	MNT="${MNT}$([[ ! -z "${MNT}" ]] && echo ",")$option=${mount[$option]}"
-done
-[[ ! -z "${MNT}" ]] && MNT="-o ${MNT}"
+[[ "$1" == "--kodi" ]] && KODI=y || KODI=n
+if [[ "${KODI}" == "n" ]]; then
+	unset MNT
+	for option in "${!mount[@]}"; do
+		MNT="${MNT}$([[ ! -z "${MNT}" ]] && echo ",")$option=${mount[$option]}"
+	done
+	[[ ! -z "${MNT}" ]] && MNT="-o ${MNT}"
 
-# Determine what volumes are present and unmounted:
-for file in "${!volumes[@]}"; do
-	if [[ -e ${file} ]]; then
-		PART=$(ls -l $file | cut -d">" -f 2 | cut -d"/" -f 3)
-		MNT=$(mount | grep " ${volumes[${file}]} ")
-		[[ ! -z "${PART}" && -z "${MNT}" ]] && declare -A "uuid[${file}]=${volumes[${file}]}"
-	fi
-done
-if [[ -z "${!uuid[@]}" ]]; then
-	MSG="No unmounted TrueCrypt volumes found!  Exiting..."
-	if [[ -z "${options[q]}" && -z "${options[quiet]}" ]]; then
-		[[ -z "${DISPLAY}" ]] && _title "${MSG}" || zenity --info --no-wrap --title "${TITLE}" --text="${MSG}"
-	fi
-	exit 0
-fi
-
-# Loop until no volumes left to mount OR user cancels the script:
-while [[ ! -z "${!uuid[@]}" ]]; do
-	# Was password specified on command-line?  If so, use it!
-	if [[ ! -z "${options[p]}" || ! -z "${options[password]}" ]]; then
-		[[ -z "${options[p]}" ]] && declare -A "options[p]=${options[password]}"
-		PASS=${options[p]}
-	# Get the password to use to attempt to open the TrueCrypt volumes:
-	elif [[ -z "${DISPLAY}" ]]; then
-	    read -s -p "Enter Password: " PASS; echo ""
-	else
-		PASS=$(zenity --password "Type in your TrueCrypt password:" --title "${TITLE}")
-	fi
-	[[ -z "${PASS}" || $? -gt 0 ]] && exit 0
-
-	# Attempt to mount the specified partitions using the supplied password:
-	for part in "${!uuid[@]}"; do
-		dst=${uuid[${part}]}
-		[[ ! -d ${dst} ]] && mkdir -p ${dst}
-		OUT=$(unset DISPLAY; truecrypt --non-interactive -k "" --protect-hidden=no -p ${PASS} ${part} ${dst} 2>&1)
-		if [[ ! -z "${OUT}" ]]; then
-			[[ -z "${DISPLAY}" ]] && _error "$OUT" || notify-send --icon=error "${TITLE}" "${OUT}"
-		else
-			MSG="$(basename ${dst}) mounted successfully!"
-			[[ -z "${DISPLAY}" ]] && _title "${MSG}" || notify-send --icon=info "${TITLE}" "${MSG}"
-			PART=$(mount | grep "${uuid[${part}]}" | cut -d" " -f 1)
-			if [[ ! -z "${MNT}" ]]; then
-				umount ${dst} && mount ${MNT} ${PART} ${dst}
-			fi
-			unset uuid[${part}]
+	# Determine what volumes are present and unmounted:
+	for file in "${!volumes[@]}"; do
+		if [[ -e ${file} ]]; then
+			PART=$(ls -l $file | cut -d">" -f 2 | cut -d"/" -f 3)
+			MNT=$(mount | grep " ${volumes[${file}]} ")
+			[[ ! -z "${PART}" && -z "${MNT}" ]] && declare -A "uuid[${file}]=${volumes[${file}]}"
 		fi
 	done
+	if [[ -z "${!uuid[@]}" ]]; then
+		MSG="No unmounted TrueCrypt volumes found!  Exiting..."
+		if [[ -z "${options[q]}" && -z "${options[quiet]}" ]]; then
+			[[ -z "${DISPLAY}" ]] && _title "${MSG}" || zenity --info --no-wrap --title "${TITLE}" --text="${MSG}"
+		fi
+		exit 0
+	fi
 
-	# If password was specified on command-line, abort if everything isn't mounted:
-	[[ ! -z "${options[p]}" && ! -z "${!uuid[@]}" ]] && exit 1
-done
+	# Loop until no volumes left to mount OR user cancels the script:
+	while [[ ! -z "${!uuid[@]}" ]]; do
+		# Was password specified on command-line?  If so, use it!
+		if [[ ! -z "${options[p]}" || ! -z "${options[password]}" ]]; then
+			[[ -z "${options[p]}" ]] && declare -A "options[p]=${options[password]}"
+			PASS=${options[p]}
+		# Get the password to use to attempt to open the TrueCrypt volumes:
+		elif [[ -z "${DISPLAY}" ]]; then
+			read -s -p "Enter Password: " PASS; echo ""
+		else
+			PASS=$(zenity --password "Type in your TrueCrypt password:" --title "${TITLE}")
+		fi
+		[[ -z "${PASS}" || $? -gt 0 ]] && exit 0
 
-# How many tasks are there to complete?
-let tasks=$((${#before[@]}+${#stopped[@]}*2+${#bind[@]}+${#after[@]}))
+		# Attempt to mount the specified partitions using the supplied password:
+		for part in "${!uuid[@]}"; do
+			dst=${uuid[${part}]}
+			[[ ! -d ${dst} ]] && mkdir -p ${dst}
+			OUT=$(unset DISPLAY; truecrypt --non-interactive -k "" --protect-hidden=no -p ${PASS} ${part} ${dst} 2>&1)
+			if [[ ! -z "${OUT}" ]]; then
+				[[ -z "${DISPLAY}" ]] && _error "$OUT" || notify-send --icon=error "${TITLE}" "${OUT}"
+			else
+				MSG="$(basename ${dst}) mounted successfully!"
+				[[ -z "${DISPLAY}" ]] && _title "${MSG}" || notify-send --icon=info "${TITLE}" "${MSG}"
+				PART=$(mount | grep "${uuid[${part}]}" | cut -d" " -f 1)
+				if [[ ! -z "${MNT}" ]]; then
+					umount ${dst} && mount ${MNT} ${PART} ${dst}
+				fi
+				unset uuid[${part}]
+			fi
+		done
+
+		# If password was specified on command-line, abort if everything isn't mounted:
+		[[ ! -z "${options[p]}" && ! -z "${!uuid[@]}" ]] && exit 1
+	done
+fi
 
 # Run any commands requested by the settings file before binding directories together:
 for cmd in "${before[@]}"; do $cmd; done
@@ -109,14 +109,14 @@ done
 rm /tmp/services.list
 if [[ ! -z "${stopped[@]}" ]]; then
 	MSG="Stopping services...  Please wait!"
-	[[ -z "${DISPLAY}" ]] && _title "${MSG}" || notify-send --icon=info "${TITLE}" "${MSG}"
+	[[ "${KODI}" == "n" ]] && ([[ -z "${DISPLAY}" ]] && _title "${MSG}" || notify-send --icon=info "${TITLE}" "${MSG}")
 	for service in "${stopped[@]}"; do systemctl stop ${service}; done
 fi
 
 # Notify user if we need to rebind directories:
 if [[ ! -z "${rebind[@]}" || ! -z "${bind[@]}" ]]; then
 	MSG="Binding directories together...  Please wait!"
-	[[ -z "${DISPLAY}" ]] && _title "${MSG}" || notify-send --icon=info "${TITLE}" "${MSG}"
+	[[ "${KODI}" == "n" ]] && ([[ -z "${DISPLAY}" ]] && _title "${MSG}" || notify-send --icon=info "${TITLE}" "${MSG}")
 
 	# Unmount the specified folders before binding others together:
 	for dir in "${rebind[@]}"; do [[ -d ${dir} ]] && umount ${dir} >& /dev/null; done
@@ -134,7 +134,7 @@ fi
 # Start the specified services:
 if [[ ! -z "${stopped[@]}" ]]; then
 	MSG="Restarting services...  Please wait!"
-	[[ -z "${DISPLAY}" ]] && _title "${MSG}" || notify-send --icon=info "${TITLE}" "${MSG}"
+	[[ "${KODI}" == "n" ]] && ([[ -z "${DISPLAY}" ]] && _title "${MSG}" || notify-send --icon=info "${TITLE}" "${MSG}")
 	for service in "${stopped[@]}"; do systemctl start ${service}; done
 fi
 
@@ -143,4 +143,4 @@ for cmd in "${after[@]}"; do $cmd; done
 
 # Notify user that this script is finished running:
 MSG="${TITLE} has finished running!"
-[[ -z "${DISPLAY}" ]] && _title "${MSG}" || notify-send --icon=info "${TITLE}" "${MSG}"
+[[ "${KODI}" == "n" ]] && ([[ -z "${DISPLAY}" ]] && _title "${MSG}" || notify-send --icon=info "${TITLE}" "${MSG}")

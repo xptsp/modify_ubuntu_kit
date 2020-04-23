@@ -17,7 +17,7 @@ _title "Installing Kodi..."
 ### First: Install the software (duh):
 #==============================================================================
 apt-add-repository -y ppa:team-xbmc/ppa
-apt install -y kodi kodi-pvr-iptvsimple kodi-visualization-[wgs]* kodi-peripheral-* kodi-screensaver-*
+apt install -y kodi kodi-pvr-iptvsimple kodi-visualization-[wgs]* kodi-peripheral-* kodi-screensaver-* kodi-eventclients-kodi-send
 
 ### Second: Download the default Kodi settings:
 #==============================================================================
