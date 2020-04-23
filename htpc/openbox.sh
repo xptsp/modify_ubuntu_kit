@@ -53,7 +53,7 @@ cat << EOF > ~/.kodi-openbox/onfinish
 # Get last run time, then update to current time:
 LAST_RUN=\$(cat /tmp/.kodi_last_run 2> /dev/null || echo "0")
 THIS_RUN=\$(date +%s)
-echo ${THIS_RUN} > \${HOME}/.kodi-openbox/last_run
+echo ${THIS_RUN} > /tmp/last_run
 
 # If Kodi ran for more than 10 seconds, then do these lines:
 [[ \$((\${THIS_RUN} - \${LAST_RUN})) -lt 10 ]] && exit
@@ -66,7 +66,6 @@ echo ${THIS_RUN} > \${HOME}/.kodi-openbox/last_run
 
 # Otherwise, restart Kodi openbox:
 /usr/bin/kodi-openbox-session
-fi
 EOF
 chown root:root ~/.kodi-openbox/onfinish
 chmod +x ~/.kodi-openbox/onfinish
@@ -74,13 +73,27 @@ cp ~/.kodi-openbox/onfinish ~/.kodi-openbox/onkill
 
 ### Fifth: Set up the LAST_RUN variable for "onfinish" script:
 #==============================================================================
-cat << EOF >> ~/.kodi-openbox/onstart
+cat << EOF > ~/.kodi-openbox/onstart
+#!/bin/bash
+# Put some code here to run when a kodi-openbox session successfully starts
 
 # Record last start of Kodi:
 echo \$(date +%s) > /tmp/.kodi_last_run
 
 # Start SoundWire Server if available:
 pgrep SoundWireServer || /opt/SoundWireServer/start-soundwire -nogui &
+
+# Execute the kodi binding script:
+sudo /usr/local/bin/kodi_bind.sh
 EOF
 chown root:root ~/.kodi-openbox/onstart
 chmod +x ~/.kodi-openbox/onstart
+
+### Sixth: Link the "kodi-bind.sh" script:
+#==============================================================================
+[[ ! -d /mnt/hdd ]] && mkdir -p /mnt/hdd
+ln -sf ${MUK_DIR}/files/kodi-bind.sh /usr/local/bin/kodi-bind.sh
+
+### Seventh: Create sudoers.d rule to run "kodi-bind.sh" as root:
+#==============================================================================
+echo "ALL ALL=(ALL) NOPASSWD:/usr/local/bin/kodi-bind.sh" >> /etc/sudoers.d/kodi-bind
