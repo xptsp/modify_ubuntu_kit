@@ -40,24 +40,47 @@ xset s off
 xset s noblank
 # Disable "Display Power Management Signaling"
 xset -dpms
-
-# Start SoundWire Server if available:
-[[ -f /opt/SoundWireServer/start-soundwire ]] && /opt/SoundWireServer/start-soundwire
 EOF
 chown root:root ~/.config/openbox/autostart
 chmod +x ~/.config/openbox/autostart
 
 ### Fourth: Set up automatic restart for Kodi
 #==============================================================================
-mkdir ~/.kodi-openbox
+[[ ! -d ~/.kodi-openbox ]] && mkdir -p ~/.kodi-openbox
 cat << EOF > ~/.kodi-openbox/onfinish
 #!/bin/bash
-if [[ -f \${HOME}/.kodi-openbox/norestart ]]; then
-    rm \${HOME}/.kodi-openbox/norestart
-else
-    /usr/bin/kodi-openbox-session
+
+# Get last run time, then update to current time:
+LAST_RUN=\$(cat /tmp/.kodi_last_run 2> /dev/null || echo "0")
+THIS_RUN=\$(date +%s)
+echo ${THIS_RUN} > \${HOME}/.kodi-openbox/last_run
+
+# If Kodi ran for more than 10 seconds, then do these lines:
+[[ \$((\${THIS_RUN} - \${LAST_RUN})) -lt 10 ]] && exit
+
+# Run the "b4_restart" script before a restart of Kodi if it exists:
+[[ -x \${HOME}/.kodi-openbox/b4_restart ]] && (\${HOME}/.kodi-openbox/b4_restart; rm \${HOME}/.kodi-openbox/b4_restart)
+
+# Exit this script if the "no_restart" file exists:
+[[ -f \${HOME}/.kodi-openbox/no_restart ]] && exit
+
+# Otherwise, restart Kodi openbox:
+/usr/bin/kodi-openbox-session
 fi
 EOF
 chown root:root ~/.kodi-openbox/onfinish
 chmod +x ~/.kodi-openbox/onfinish
 cp ~/.kodi-openbox/onfinish ~/.kodi-openbox/onkill
+
+### Fifth: Set up the LAST_RUN variable for "onfinish" script:
+#==============================================================================
+cat << EOF >> ~/.kodi-openbox/onstart
+
+# Record last start of Kodi:
+echo \$(date +%s) > /tmp/.kodi_last_run
+
+# Start SoundWire Server if available:
+pgrep SoundWireServer || /opt/SoundWireServer/start-soundwire -nogui &
+EOF
+chown root:root ~/.kodi-openbox/onstart
+chmod +x ~/.kodi-openbox/onstart
