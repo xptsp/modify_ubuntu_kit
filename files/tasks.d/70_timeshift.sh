@@ -1,8 +1,11 @@
 #!/bin/bash
 # Get details about root filesystem:
 ROOT_SYS=$(mount | grep " / " | cut -d" " -f 1)
+echo "Root Partition      = ${ROOT_SYS}"
 ROOT_UUID=$(blkid ${ROOT_SYS} --output export | sed -n 's/^UUID=//p')
+echo "Root Partition UUID = ${ROOT_UUID}"
 ROOT_TYPE=$(blkid ${ROOT_SYS} --output export | sed -n 's/^TYPE=//p')
+echo "Root Partition Type = ${ROOT_TYPE}"
 [[ -z "${USERNAME}" ]] && USERNAME=$(id -un 1000)
 [[ -z "${PASSWORD}" ]] && PASSWORD=xubuntu
 
@@ -47,5 +50,4 @@ EOF
 }
 EOF
 	change_username /etc/timeshift.json
-	
 fi
