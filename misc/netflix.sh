@@ -56,14 +56,16 @@ kodi_enable script.module.urllib3
 
 ### Ninth: Pull the "plugin.video.netflix" addon:
 #==============================================================================
-wget https://github.com/CastagnaIT/repository.castagnait/blob/master/zip/plugin.video.netflix/plugin.video.netflix-0.16.4.zip -O /tmp/plugin.video.netflix-0.16.4.zip
-unzip /tmp/plugin.video.netflix-0.16.4.zip -O ${KODI_ADD}/
+wget https://github.com/CastagnaIT/repository.castagnait/raw/master/zip/plugin.video.netflix/plugin.video.netflix-1.2.0.zip -O /tmp/plugin.video.netflix-1.2.0.zip
+unzip /tmp/plugin.video.netflix-1.2.0.zip-O ${KODI_ADD}/
+rm /tmp/plugin.video.netflix-1.2.0.zip
 kodi_enable plugin.video.netflix
 
 ### Tenth: Pull the "repository.castagnait" addon:
 #==============================================================================
-wget https://github.com/castagnait/repository.castagnait/raw/master/repository.castagnait-1.0.0.zip -O /tmp/repository.castagnait-1.0.0.zip
-unzip /tmp/repository.castagnait-1.0.0.zip -O ${KODI_ADD}/
+wget https://github.com/castagnait/repository.castagnait/raw/master/repository.castagnait-1.0.1.zip -O /tmp/repository.castagnait-1.0.1.zip
+unzip /tmp/repository.castagnait-1.0.1.zip -O ${KODI_ADD}/
+rm /tmp/repository.castagnait-1.0.1.zip
 kodi_enable repository.castagnait
 
 ### Eleventh: Get Widevine Library:
