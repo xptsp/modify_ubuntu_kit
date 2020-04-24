@@ -19,19 +19,19 @@ _title "Installing Kodi..."
 apt-add-repository -y ppa:team-xbmc/ppa
 apt install -y kodi kodi-pvr-iptvsimple kodi-visualization-[wgs]* kodi-peripheral-* kodi-screensaver-* kodi-eventclients-kodi-send
 
-### Second: Download the default Kodi settings:
-#==============================================================================
-7z x ${MUK_DIR}/files/kodi_userdata.7z -aoa -o${HOME}/.kodi/userdata/
-
-### Fourth: Copy the Harmony Remote keymap and adjust the keymap a little:
+### Second: Copy the Harmony Remote keymap and adjust the keymap a little:
 ### Original Source: https://forum.kodi.tv/showthread.php?tid=188542
 #==============================================================================
-[[ ! -d ${HOME}/.kodi/userdata/keymaps ]] && mkdir ${HOME}/.kodi/userdata/keymaps
-ln -sf ${MUK_DIR}/files/harmony_remote.xml ${HOME}/.kodi/userdata/keymaps/harmony_remote.xml
+[[ ! -d ${HOME}/.kodi/userdata/keymaps ]] && mkdir -p ${HOME}/.kodi/userdata/keymaps
+cp ${MUK_DIR}/files/harmony_remote.xml ${HOME}/.kodi/userdata/keymaps/harmony_remote.xml
 sed -i '/FullScreen/d' ${HOME}/.kodi/userdata/keymaps/harmony_remote.xml
 sed -i '/XBMC.ShutDown()/d' ${HOME}/.kodi/userdata/keymaps/harmony_remote.xml
 
-### Fifth: Create a post-install task to configure Kodi:
+### Third: Download the default Kodi settings:
+#==============================================================================
+7z x ${MUK_DIR}/files/kodi_userdata.7z -aoa -o${HOME}/.kodi/userdata/
+
+### Fourth: Create a post-install task to finish configuring Kodi:
 #==============================================================================
 if [[ ! -z "${CHROOT}" ]]; then
 	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
