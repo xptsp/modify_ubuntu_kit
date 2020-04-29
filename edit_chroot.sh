@@ -329,6 +329,30 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	[ -f ${UNPACK_DIR}/edit/etc/debian_chroot ] && rm ${UNPACK_DIR}/edit/etc/debian_chroot
 	rm -rf ${UNPACK_DIR}/edit${MUK_DIR}
 	cp -R ${MUK_DIR} ${UNPACK_DIR}/edit/opt/
+	_title "Copying kernel and initrd from unpacked filesystem...."
+	cd ${UNPACK_DIR}/edit/boot
+	INITRD_SRC=$(ls initrd.img-* 2> /dev/null | sort -r | head -1)
+	if [[ -z "${INITRD_SRC}" ]]; then
+		if [[ "$(echo $@ | grep skip-kernel)" == "" ]]; then
+			_error "ABORTING!!  No kernel detected in chroot environment!$"
+			echo -e "  ${BLUE}NOTE:${NC} You can use ${BLUE}skip-kernel${NC} as additional param to skip this check...."
+			exit 1
+		fi
+		echo -e "${BLUE}NOTE:${NC} ${BLUE}skip-kernel${NC} used as additional param to skip kernel check...."
+	fi
+	VMLINUZ=$(ls vmlinuz-* 2> /dev/null | sort -r | head -1)
+	if [[ -z "${VMLINUZ}" ]]; then
+		if [[ "$(echo $@ | grep skip-vmlinuz)" == "" ]]; then
+			_error "ABORTING!!  No VMLINUZ file detected in chroot environment!"
+			echo -e "  ${BLUE}NOTE:${NC} You can use ${BLUE}skip-vmlinuz${NC} as additional param to skip this check...."
+			exit 1
+		fi
+		echo -e "${BLUE}NOTE:${NC} ${BLUE}skip-vmlinuz${NC} used as additional param to skip vmlinuz check...."
+	fi
+	cd ${UNPACK_DIR}/extract
+	INITRD=$(cat boot/grub/grub.cfg | grep "initrd" | head -1 | cut -d/ -f 3)
+	[[ ! -z "${VMLINUZ}" ]] && cp -p ${UNPACK_DIR}/edit/boot/${VMLINUZ} casper/vmlinuz
+ 	[[ ! -z "${INITRD}" ]] && cp -p ${UNPACK_DIR}/edit/boot/${INITRD_SRC} casper/${INITRD}
 	_title "Building list of installed packages...."
 	chmod +w extract/casper/filesystem.manifest >& /dev/null
 	chroot edit dpkg-query -W --showformat='${Package} ${Version}\n' | tee extract/casper/filesystem.manifest >& /dev/null
@@ -345,24 +369,6 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	cd extract
 	[ -f md5sum.list ] && rm md5sum.list
 	find -type f -print0 | xargs -0 md5sum | grep -v isolinux/boot.cat | tee md5sum.list >& /dev/null
-	_title "Copying kernel and initrd from unpacked filesystem...."
-	cd ${UNPACK_DIR}/edit/boot
-	INITRD_SRC=$(ls initrd.img-* | sort -r | head -1)
-	if [[ -z "${INITRD_SRC}" && "$(echo $@ | grep skip-kernel)" == "" ]]; then
-		_error "ABORTING!!  No kernel detected in chroot environment!$"
-		echo -e "  ${BLUE}NOTE:${NC} You can use ${BLUE}skip-kernel${NC} as additional param to skip this check...."
-		exit 1
-	fi
-	VMLINUZ=$(ls vmlinuz-* | sort -r | head -1)
-	if [[ -z "${VMLINUZ}" && "$(echo $@ | grep skip-vmlinuz)" == "" ]]; then
-		_error "ABORTING!!  No VMLINUZ file detected in chroot environment!"
-		echo -e "  ${BLUE}NOTE:${NC} You can use ${BLUE}skip-vmlinuz${NC} as additional param to skip this check...."
-		exit 1
-	fi
-	cd ${UNPACK_DIR}/extract
-	INITRD_DST=$(cat boot/grub/grub.cfg | grep "initrd" | head -1 | cut -d/ -f 3)
-	cp -p ${UNPACK_DIR}/edit/boot/${VMLINUZ} casper/vmlinuz
- 	cp -p ${UNPACK_DIR}/edit/boot/${INITRD_SRC} casper/${INITRD_DST}
 	_title "Done packing and preparing extracted filesystem!"
 
 #==============================================================================
