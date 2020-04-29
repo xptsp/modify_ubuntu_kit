@@ -27,8 +27,8 @@ unzip -o /opt/modify_ubuntu_kit/files/red_dragon.zip -d /etc/skel/.config/
 
 # Second: Create link to new plymouth background:
 DIR=/usr/share/xfce4/backdrops
-ln -sf ${MUK_DIR}/files/red-dragon.png ${DIR}/red-dragon.png
-ln -sf ${DIR}/red-dragon.png ${DIR}/xubuntu-wallpaper.png
+ln -sf ${MUK_DIR}/files/red_dragon.png ${DIR}/red_dragon.png
+ln -sf ${DIR}/red_dragon.png ${DIR}/xubuntu-wallpaper.png
 
 # Third: Configuring the LightDM greeter:
 #==============================================================================
