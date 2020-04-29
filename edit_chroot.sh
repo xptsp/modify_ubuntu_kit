@@ -348,15 +348,15 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	_title "Copying kernel and initrd from unpacked filesystem...."
 	cd ${UNPACK_DIR}/edit/boot
 	INITRD_SRC=$(ls initrd.img-* | sort -r | head -1)
-	if [[ -z "${INITRD_SRC}" && "$2" != "skip-kernel" ]]; then
+	if [[ -z "${INITRD_SRC}" && "$(echo $@ | grep skip-kernel)" == "" ]]; then
 		_error "ABORTING!!  No kernel detected in chroot environment!$"
-		echo -e "  ${BLUE}NOTE:${NC} You can use ${BLUE}skip-kernel${NC} as 2nd param to skip this check...."
+		echo -e "  ${BLUE}NOTE:${NC} You can use ${BLUE}skip-kernel${NC} as additional param to skip this check...."
 		exit 1
 	fi
 	VMLINUZ=$(ls vmlinuz-* | sort -r | head -1)
-	if [[ -z "${VMLINUZ}" && "$2" != "skip-vmlinuz" ]]; then
+	if [[ -z "${VMLINUZ}" && "$(echo $@ | grep skip-vmlinuz)" == "" ]]; then
 		_error "ABORTING!!  No VMLINUZ file detected in chroot environment!"
-		echo -e "  ${BLUE}NOTE:${NC} You can use ${BLUE}skip-vmlinuz${NC} as 2nd param to skip this check...."
+		echo -e "  ${BLUE}NOTE:${NC} You can use ${BLUE}skip-vmlinuz${NC} as additional param to skip this check...."
 		exit 1
 	fi
 	cd ${UNPACK_DIR}/extract

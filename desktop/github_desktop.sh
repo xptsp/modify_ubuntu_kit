@@ -14,6 +14,12 @@ fi
 #==============================================================================
 _title "Installing GitHub Desktop for Linux..."
 #==============================================================================
-wget https://github.com/shiftkey/desktop/releases/download/release-2.1.0-linux1/GitHubDesktop-linux-2.1.0-linux1.deb -O /tmp/GitHubDesktop-linux-2.1.0-linux1.deb
-apt install -y /tmp/GitHubDesktop-linux-2.1.0-linux1.deb
-rm /tmp/GitHubDesktop-linux-2.1.0-linux1.deb
+# First: Install the software:
+${MUK_DIR}/files/github_upgrade.sh
+
+#==============================================================================
+_title "Installing Atom Editor for GitHub for Linux..."
+#==============================================================================
+wget https://atom.io/download/deb -O /tmp/atom.deb
+apt install -y /tmp/atom.deb
+rm /tmp/atom.deb
