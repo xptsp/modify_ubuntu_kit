@@ -356,9 +356,11 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	pushd ${UNPACK_DIR}/edit/boot
 	INITRD_SRC=$(ls initrd.img-* 2> /dev/null | sort -r | head -1)
 	if [[ ! -z "${INITRD_SRC}" ]]; then
-		_title "Copying initrd from unpacked filesystem...."
 		INITRD=$(cat ${UNPACK_DIR}/extract/boot/grub/grub.cfg | grep "initrd" | head -1 | cut -d/ -f 3)
-	 	cp -p ${UNPACK_DIR}/edit/boot/${INITRD_SRC} casper/${INITRD}
+		if [[ -f ${INITRD} ]]; then
+			_title "Copying initrd from unpacked filesystem...."
+		 	cp -p ${UNPACK_DIR}/edit/boot/${INITRD_SRC} casper/${INITRD}
+		fi
 	else
 		_error "No INITRD kernel detected in chroot environment!"
 	fi
