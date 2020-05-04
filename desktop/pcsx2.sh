@@ -14,5 +14,7 @@ fi
 #==============================================================================
 _title "Installing PCSX2..."
 #==============================================================================
-add-apt-repository -y ppa:gregory-hainaut/pcsx2.official.ppa
+dpkg --add-architecture i386
+[[ "$OS_VER" -lt 2004 ]] && add-apt-repository -y --no-update ppa:gregory-hainaut/pcsx2.official.ppa
+apt update
 apt-get install -y pcsx2

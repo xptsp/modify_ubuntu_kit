@@ -17,7 +17,7 @@ _title "Installing Nginx to be a reverse proxy to our services"
 apt-get -y install nginx php-fpm php-zip apache2-utils
 if ischroot; then
 	systemctl disable nginx
-	systemctl disable php7.2-fpm
+	systemctl disable php7.4-fpm
 fi
 chown -R www-data:www-data /var/www/html
 chmod -R 755 /var/www/html

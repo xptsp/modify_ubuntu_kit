@@ -14,5 +14,5 @@ fi
 #==============================================================================
 _title "Installs Dolphin (GameCube/Wii emulator)..."
 #==============================================================================
-apt-add-repository -y ppa:dolphin-emu/ppa
+[[ "$OS_VER" -lt 2004 ]] && apt-add-repository -y ppa:dolphin-emu/ppa
 apt install -y dolphin-emu

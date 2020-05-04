@@ -27,7 +27,9 @@ apt install -y --install-recommends wine-stable
 #==============================================================================
 _title "Installing PlayOnLinux..."
 #==============================================================================
-wget -q "http://deb.playonlinux.com/public.gpg" -O- | sudo apt-key add -
-echo "deb http://deb.playonlinux.com/ ${LSB} main" > /etc/apt/sources.list/playonlinux-${LSB}.list
-sudo apt-get update
-sudo apt-get install -y playonlinux
+if [[ "$OS_VER" -lt 2004 ]]; then
+	wget -q "http://deb.playonlinux.com/public.gpg" -O- | sudo apt-key add -
+	echo "deb http://deb.playonlinux.com/ ${LSB} main" > /etc/apt/sources.list.d/playonlinux-${LSB}.list
+	apt-get update
+fi
+apt-get install -y playonlinux

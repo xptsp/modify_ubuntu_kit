@@ -16,7 +16,7 @@ _title "Installing NCID (Network Caller ID)..."
 #==============================================================================
 # First: Pull the NCID packages we need:
 #==============================================================================
-NCID_VER=1.10.1
+NCID_VER=1.11
 wget https://sourceforge.net/projects/ncid/files/ncid/${NCID_VER}/ncid_${NCID_VER}-1_amd64.deb -O /tmp/ncid_${NCID_VER}-1_amd64.deb
 wget https://sourceforge.net/projects/ncid/files/ncid/${NCID_VER}/ncid-client_${NCID_VER}-1_all.deb -O /tmp/ncid-client_${NCID_VER}-1_all.deb
 
