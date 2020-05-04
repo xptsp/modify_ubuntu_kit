@@ -16,6 +16,9 @@ _title "Install VirtualBox and VirtualBox Extension Pack..."
 #==============================================================================
 # First: Install the software :p
 #==============================================================================
-wget https://download.virtualbox.org/virtualbox/6.1.2/virtualbox-6.1_6.1.2-135662~Ubuntu~bionic_amd64.deb -O /tmp/virtualbox-6.1_6.1.2-135662~Ubuntu~bionic_amd64.deb
-apt install -y /tmp/virtualbox-6.1_6.1.2-135662~Ubuntu~bionic_amd64.deb
-rm /tmp/virtualbox-6.1_6.1.2-135662~Ubuntu~bionic_amd64.deb
+wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | apt-key add -
+DIST=$(lsb_release -cs)
+[[ "${DIST}" == "focal" ]] && DIST=eoan
+echo "deb [arch=amd64] http://download.virtualbox.org/virtualbox/debian ${DIST} contrib" > /etc/apt/sources.list.d/virtualbox.list
+apt update
+sudo apt install virtualbox-6.1

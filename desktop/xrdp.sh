@@ -18,7 +18,7 @@ _title "Install XRDP (Remote Desktop server)..."
 # Src: https://bugs.launchpad.net/ubuntu/+source/linux/+bug/1817225/comments/25
 #==============================================================================
 [[ "$OS_VER" -eq 1804 ]] && add-apt-repository -y ppa:martinx/xrdp-hwe-18.04
-apt install -y xrdp
+apt install -y xrdp light-locker
 adduser xrdp ssl-cert
 systemctl disable xrdp
 sed -i '/xrdp/d' /usr/local/finisher/disabled.list

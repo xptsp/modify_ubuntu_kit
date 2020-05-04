@@ -14,7 +14,7 @@ fi
 
 # Seventh: Make sure our VPN is created on the system:
 #==============================================================================
-[[ ! -e /etc/openvpn/freevpn ]] && ${MUK_DIR}/programs/vpn_establish.sh
+[[ ! -e /etc/openvpn/freevpn ]] && ${MUK_DIR}/desktop/vpn_establish.sh
 
 #==============================================================================
 _title "Install Transmission (port 9090)..."

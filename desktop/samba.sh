@@ -16,7 +16,7 @@ _title "Install and configure Samba"
 #==============================================================================
 # First: Install the packages:
 #==============================================================================
-apt install -y samba cifs-utils system-config-samba
+apt install -y samba cifs-utils $([[ "$OS_VER" -lt 2004 ]] && echo system-config-samba)
 
 # Second: Create a GKSU replacement script:
 #==============================================================================
@@ -61,5 +61,5 @@ fi
 
 # Fifth: Add "Don't sleep while Samba is serving files" service:
 #==============================================================================
-ln -sf ${MUK_DIR}/files/samba_nosleep.service /etc/systemd/system/samba_nosleep.service
+cp ${MUK_DIR}/files/samba_nosleep.service /etc/systemd/system/samba_nosleep.service
 systemctl enable samba_nosleep

@@ -14,8 +14,8 @@ fi
 #==============================================================================
 _title "Install required software for Split Tunnel VPN..."
 #==============================================================================
-wget https://swupdate.openvpn.net/repos/repo-public.gpg -O - | sudo apt-key add -
-echo "deb http://build.openvpn.net/debian/openvpn/stable bionic main" | sudo tee -a /etc/apt/sources.list.d/openvpn.list
+curl -s https://swupdate.openvpn.net/repos/repo-public.gpg | sudo apt-key add -
+echo "deb http://build.openvpn.net/debian/openvpn/stable bionic main" | sudo tee /etc/apt/sources.list.d/openvpn.list
 apt update
 
 #==============================================================================

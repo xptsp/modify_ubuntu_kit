@@ -11,32 +11,40 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 	exit 0
 fi
 
-#==============================================================================
-_title "Get ScrCpy dependencies..."
-#==============================================================================
-apt install -y adb ffmpeg libsdl2-2.0.0 make gcc pkg-config meson ninja-build libavcodec-dev libavformat-dev libavutil-dev libsdl2-dev fastboot
+if [[ ${OS_VER} -lt 2004 ]]; then
+	#==============================================================================
+	_title "Get ScrCpy dependencies..."
+	#==============================================================================
+	apt install -y adb ffmpeg make gcc pkg-config meson ninja-build libavcodec-dev libavformat-dev libavutil-dev fastboot
+	libsdl2-dev libsdl2-2.0.0 
 
-#==============================================================================
-_title "Compile ScrCpy for Ubuntu..."
-#==============================================================================
-wget https://github.com/Genymobile/scrcpy/releases/download/v1.11/scrcpy-server-v1.11 -O /tmp/scrcpy-server-v1.11.jar
-wget https://github.com/Genymobile/scrcpy/archive/v1.11.tar.gz -O /tmp/v1.11.tar.gz
-pushd /tmp
-tar xfv v1.11.tar.gz
-rm v1.11.tar.gz
-cd scrcpy-1.11
-meson build --buildtype release --strip -Db_lto=true  -Dprebuilt_server=../scrcpy-server-v1.11.jar
-cd build
-ninja
-ninja install
-cd ../..
-rm -rf scrcpy-1.11
-rm scrcpy-server-v1.11.jar
-popd
+	#==============================================================================
+	_title "Compile ScrCpy for Ubuntu..."
+	#==============================================================================
+	wget https://github.com/Genymobile/scrcpy/releases/download/v1.11/scrcpy-server-v1.11 -O /tmp/scrcpy-server-v1.11.jar
+	wget https://github.com/Genymobile/scrcpy/archive/v1.11.tar.gz -O /tmp/v1.11.tar.gz
+	pushd /tmp
+	tar xfv v1.11.tar.gz
+	rm v1.11.tar.gz
+	cd scrcpy-1.11
+	meson build --buildtype release --strip -Db_lto=true  -Dprebuilt_server=../scrcpy-server-v1.11.jar
+	cd build
+	ninja
+	ninja install
+	cd ../..
+	rm -rf scrcpy-1.11
+	rm scrcpy-server-v1.11.jar
+	popd
 
-#==============================================================================
-_title "Install ScrCpy GUI for Ubuntu..."
-#==============================================================================
-wget https://github.com/Tomotoes/scrcpy-gui/releases/download/1.0.0/ScrcpyGui-1.0.0.deb -O /tmp/ScrcpyGui-1.0.0.deb
-apt install -y /tmp/ScrcpyGui-1.0.0.deb
-rm /tmp/ScrcpyGui-1.0.0.deb
+	#==============================================================================
+	_title "Install ScrCpy GUI for Ubuntu..."
+	#==============================================================================
+	wget https://github.com/Tomotoes/scrcpy-gui/releases/download/1.0.0/ScrcpyGui-1.0.0.deb -O /tmp/ScrcpyGui-1.0.0.deb
+	apt install -y /tmp/ScrcpyGui-1.0.0.deb
+	rm /tmp/ScrcpyGui-1.0.0.deb
+else
+	#==============================================================================
+	_title "Installs ScrCpy for Ubuntu..."
+	#==============================================================================
+	apt install scrcpy
+fi
