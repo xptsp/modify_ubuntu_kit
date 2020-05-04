@@ -16,7 +16,7 @@ _title "Installing TimeShift..."
 #==============================================================================
 # First: Install the software :p
 #==============================================================================
-[[ "$OS_VER" -le 2004 ]] && apt-add-repository -y ppa:teejee2008/ppa
+[[ "$OS_VER" -lt 2004 ]] && apt-add-repository -y ppa:teejee2008/ppa
 apt install -y timeshift
 
 # Second: Add the finisher script:
