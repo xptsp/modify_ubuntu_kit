@@ -23,3 +23,5 @@ _title "Installing and Building the DVD decoder..."
 apt-get install -y libdvd-pkg
 dpkg-reconfigure -f noninteractive libdvd-pkg
 apt-mark hold libdvd-pkg libdvdcss2
+CNF=$(find / -name 'CommandNotFound' 2> /dev/null)
+[[ ! -z "${CNF}" ]] && cp -r ${CNF} /usr/lib/
