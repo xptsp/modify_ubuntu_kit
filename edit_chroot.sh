@@ -203,7 +203,8 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		apt-get dist-upgrade -y
 
 		### Ninth: Remove any unnecessary packages:
-		CURRENT=$(ls -l /initrd.img* | cut -d">" -f 2 | cut -d"-" -f2,3 | sort -r | head -1)
+		cd /boot
+		CURRENT=$(ls -l initrd.img* | cut -d">" -f 2 | cut -d"-" -f2,3 | sort -r | head -1)
 		KERNELS=$(dpkg -l | grep linux-image | grep "ii" | awk '{print$2}' | grep -v "$CURRENT" | grep -v "hwe")
 		if [[ "${OLD_KERNEL:-"0"}" == "0" && ! -z "${KERNELS}" ]]; then
 			_title "Removing old kernels packages and unnecessary packages..."
@@ -212,6 +213,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		_title "Cleaning up cached packages..."
 		apt-get autoclean -y >& /dev/null
 		apt-get clean -y >& /dev/null
+
 		### Tenth: Disable services not required during Live ISO:
 		if [[ -f /usr/local/finisher/disabled.list ]]; then
 			_title "Disabling unnecessary services for Live CD..."
