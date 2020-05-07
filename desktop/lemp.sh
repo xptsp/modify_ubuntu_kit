@@ -33,7 +33,7 @@ ischroot && systemctl disable nginx
 _title "Installing MySQL"
 #==============================================================================
 # First: Install the software:
-apt install -y mysql-server
+apt install -y mariadb-server
 ischroot && systemctl disable mysql
 
 # Second: Secure the MYSQL database software:

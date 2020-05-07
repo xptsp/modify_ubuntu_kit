@@ -17,10 +17,6 @@ _title "Install required software for Split Tunnel VPN..."
 curl -s https://swupdate.openvpn.net/repos/repo-public.gpg | sudo apt-key add -
 echo "deb http://build.openvpn.net/debian/openvpn/stable bionic main" | sudo tee /etc/apt/sources.list.d/openvpn.list
 apt update
-
-#==============================================================================
-_title "Install required software for Split Tunnel VPN..."
-#==============================================================================
 apt install -y debconf-utils
 echo "iptables-persistent iptables-persistent/autosave_v4 boolean false" | debconf-set-selections
 echo "iptables-persistent iptables-persistent/autosave_v6 boolean false" | debconf-set-selections

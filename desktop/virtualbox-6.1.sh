@@ -21,4 +21,4 @@ DIST=$(lsb_release -cs)
 [[ "${DIST}" == "focal" ]] && DIST=eoan
 echo "deb [arch=amd64] http://download.virtualbox.org/virtualbox/debian ${DIST} contrib" > /etc/apt/sources.list.d/virtualbox.list
 apt update
-sudo apt install virtualbox-6.1
+apt install -y virtualbox-6.1
