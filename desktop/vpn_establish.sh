@@ -37,11 +37,10 @@ EOF
 
 # Second: Link the scripts necessary in order to set up the service:
 #==============================================================================
-mkdir /etc/openvpn/vpn
-touch /etc/openvpn/vpn/vpn_creds
-chmod 400 /etc/openvpn/vpn/vpn_creds
-touch /etc/openvpn/vpn/vpn_last_update
-chmod 400 /etc/openvpn/vpn/vpn_last_update
+touch /etc/openvpn/vpn/.vpn_creds
+chmod 400 /etc/openvpn/.vpn_creds
+touch /etc/openvpn/vpn/.vpn_last_update
+chmod 400 /etc/openvpn/.freevpn_last_update
 
 # Third: Configure to prevent DNS leaks:
 #==============================================================================
@@ -70,11 +69,11 @@ iptables-save > /etc/iptables/rules.v4
 # Seventh: Call/Setup finisher task...
 #==============================================================================
 if ischroot; then
-	systemctl disable openvpn@freevpn
+	systemctl disable openvpn@vpn
 	[[ -e /usr/local/finisher/tasks.d/30_vpn.sh ]] && rm /usr/local/finisher/tasks.d/30_vpn.sh
 	ln -sf ${MUK_DIR}/files/tasks.d/30_vpn.sh /usr/local/finisher/tasks.d/30_vpn.sh
 else
 	/usr/local/finisher/tasks.d/30_vpn.sh
-	systemctl enable openvpn@freevpn
-	systemctl start openvpn@freevpn
+	systemctl enable openvpn@vpn
+	systemctl start openvpn@vpn
 fi

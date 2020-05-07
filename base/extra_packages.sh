@@ -15,4 +15,4 @@ fi
 _title "Installing some extra packages on your machine..."
 #==============================================================================
 apt install -y dh-modaliases build-essential linux-headers-generic dkms dpkg-dev debhelper checkinstall ttf-ubuntu-font-family
-apt install -y p7zip-full p7zip-rar rar unrar net-tools rename tree
+apt install -y p7zip-full p7zip-rar rar unrar net-tools rename tree squashfs-tools git genisoimage

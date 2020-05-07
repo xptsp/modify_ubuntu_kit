@@ -16,8 +16,7 @@ _title "Installing Remmina...."
 #==============================================================================
 # First: Install the software:
 #==============================================================================
-add-apt-repository -y ppa:remmina-ppa-team/remmina-next
-apt-get install remmina remmina-plugin-* libfreerdp-plugins-standard
+apt-get install -y remmina remmina-plugin-* libfreerdp-plugins-standard
 
 # Second: Pull the "script.kodi.launches.emulationstation" addon:
 #==============================================================================

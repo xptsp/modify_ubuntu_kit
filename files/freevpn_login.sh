@@ -66,7 +66,7 @@ if [[ ! "${last_update}" == "${this_update}" ]]; then
 	cat "${file}" | egrep -v "(auth-user-pass|script-security|block-outside-dns)" > /etc/openvpn/freevpn/freevpn.conf
 	sed -i "s|;comp-lzo|comp-lzo|g" /etc/openvpn/freevpn/freevpn.conf
 	sed -i "s|dev tun|dev vpn_out\ndev-type tun|g" /etc/openvpn/freevpn/freevpn.conf
-	cat << EOF >> /etc/openvpn/.freevpn_last_update
+	cat << EOF >> /etc/openvpn/freevpn/freevpn.conf
 
 #user authorization stuff:
 auth-user-pass /etc/openvpn/.vpn_creds

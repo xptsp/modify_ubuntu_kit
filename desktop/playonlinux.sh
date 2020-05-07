@@ -16,18 +16,13 @@ _title "Installing Wine..."
 #==============================================================================
 dpkg --add-architecture i386
 apt update
-apt install -y software-properties-common
-wget -qO- https://dl.winehq.org/wine-builds/winehq.key | apt-key add -
-LSB=$(lsb_release -cs)
-echo "deb http://dl.winehq.org/wine-builds/ubuntu/ ${LSB} main" > /etc/apt/sources.list.d/wine-${LSB}.list
-echo "# deb-src http://dl.winehq.org/wine-builds/ubuntu/ ${LSB} main" >> /etc/apt/sources.list.d/wine-${LSB}.list
-apt update
-apt install -y --install-recommends wine-stable
+apt install -y --install-recommends wine-stable software-properties-common 
 
 #==============================================================================
 _title "Installing PlayOnLinux..."
 #==============================================================================
 if [[ "$OS_VER" -lt 2004 ]]; then
+	LSB=$(lsb_release -cs)
 	wget -q "http://deb.playonlinux.com/public.gpg" -O- | sudo apt-key add -
 	echo "deb http://deb.playonlinux.com/ ${LSB} main" > /etc/apt/sources.list.d/playonlinux-${LSB}.list
 	apt-get update
