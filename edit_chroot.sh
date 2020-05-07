@@ -94,6 +94,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 				exit 1
 			fi
 		fi
+
 		### Second: Update MUK, then setup the CHROOT environment:
 		$0 update
 		cd ${UNPACK_DIR}
@@ -102,12 +103,15 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		cp /etc/hosts ${UNPACK_DIR}/edit/etc/
 		mount --bind /run/ ${UNPACK_DIR}/edit/run
 		mount --bind /dev/ ${UNPACK_DIR}/edit/dev
+
 		### Third: Copy MUK into chroot environment:
 		rm -rf ${UNPACK_DIR}/edit${MUK_DIR}
 		cp -RL ${MUK_DIR} ${UNPACK_DIR}/edit/opt/
+
 		### Fourth: Enter the CHROOT environment:
 		_title "Entering CHROOT environment"
 		chroot ${UNPACK_DIR}/edit ${MUK_DIR}/edit_chroot.sh $@
+
 		### Fifth: Remove mounts for CHROOT environment:
 		$0 unmount
 		_title "Exited CHROOT environment"
@@ -132,8 +136,10 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		export KODI_OPT=/opt/kodi
 		export KODI_ADD=/etc/skel/.kodi/addons
 		export KODI_BASE=http://mirrors.kodi.tv/addons/leia/
+
 		### Second: Install the chroot tools if required:
 		${MUK_DIR}/install.sh
+
 		### Third: Next action depends on parameter passed....
 		if [[ "$1" == "enter" ]]; then
 			### "enter": Create a bash shell for user to make alterations to chroot environment
@@ -154,6 +160,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 			for file in *.sh; do ./$file; done
 			echo $2 > /usr/local/finisher/build.txt
 		fi
+
 		### Fourth: If user 999 exists, change that user ID so that LiveCD works:
 		if [[ "$(id -u 999 >& /dev/null; echo $?)" -eq 0 ]]; then
 			uid_name=$(id -un 999)
@@ -163,6 +170,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 			usermod -u ${uid_new} ${uid_name}
 			chown -Rhc --from=999 ${uid_new} / >& /dev/null
 		fi
+
 		### Fifth: If group 999 exists, change that group ID so that LiveCD works:
 		gid_line=$(getent group 999)
 		if [[ ! -z "${gid_line}" ]]; then
@@ -173,10 +181,12 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 			groupmod -g ${gid_new} ${gid_name}
 			chown -Rhc --from=:999 :${gid_new} / >& /dev/null
 		fi
+
 		### Sixth: Upgrade the installed GitHub repositories:
 		_title "Updating GitHub repositories in ${BLUE}/opt${GREEN}..."
 		cd /opt
 		(ls | while read p; do pushd $p; [ -d .git ] && git pull; popd; done) >& /dev/null
+
 		### Seventh: Upgrade the pre-installed Kodi addons via GitHub repositories:
 		if [ -d /opt/kodi ]; then
 			_title "Updating Kodi addons from GitHub repositories in ${BLUE}/opt/kodi${GREEN}...."
@@ -184,6 +194,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 			(ls | while read p; do pushd $p; [ -d .git ] && git pull; popd; done) >& /dev/null
 			popd >& /dev/null
 		fi
+
 		### Eighth: Update packages:
 		_title "Updating repository lists...."
 		apt-get update >& /dev/null
@@ -191,6 +202,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		apt-get install -f --autoremove --purge -y
 		_title "Upgrading any packages requiring upgrading..."
 		apt-get dist-upgrade -y
+
 		### Ninth: Remove any unnecessary packages:
 		CURRENT=$(ls -l /initrd.img* | cut -d">" -f 2 | cut -d"-" -f2,3 | sort -r | head -1)
 		KERNELS=$(dpkg -l | grep linux-image | grep "ii" | awk '{print$2}' | grep -v "$CURRENT" | grep -v "hwe")
@@ -201,11 +213,13 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		_title "Cleaning up cached packages..."
 		apt-get autoclean -y >& /dev/null
 		apt-get clean -y >& /dev/null
+
 		### Tenth: Disable services not required during Live ISO:
 		if [[ -f /usr/local/finisher/disabled.list ]]; then
 			_title "Disabling unnecessary services for Live CD..."
 			(while read p r; do systemctl disable $p; done) < /usr/local/finisher/disabled.list >& /dev/null
 		fi
+
 		### Eleventh: Clean up everything done to "chroot" into this ISO image:
 		_title "Undoing CHROOT environment modifications..."
 		chmod 440 /etc/sudoers.d/*
@@ -324,51 +338,58 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 		_error "No unpacked filesystem!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 		exit 1
 	fi
+	# First: Prep the unpacked filesystem to be packaged:
 	cd ${UNPACK_DIR}
 	$0 unmount
 	[ -f ${UNPACK_DIR}/edit/etc/debian_chroot ] && rm ${UNPACK_DIR}/edit/etc/debian_chroot
 	rm -rf ${UNPACK_DIR}/edit${MUK_DIR}
 	cp -R ${MUK_DIR} ${UNPACK_DIR}/edit/opt/
-	_title "Copying kernel and initrd from unpacked filesystem...."
-	cd ${UNPACK_DIR}/edit/boot
-	INITRD_SRC=$(ls initrd.img-* 2> /dev/null | sort -r | head -1)
+
+	# Second: Copy the new INITRD from the unpacked filesystem:
+	cd ${UNPACK_DIR}/edit
+	INITRD=$(ls initrd.img-* 2> /dev/null | sort -r | head -1)
+	[[ -z "${INITRD}" ]] && INITRD_SRC=$(ls boot/initrd.img-* 2> /dev/null | sort -r | head -1)
 	if [[ -z "${INITRD_SRC}" ]]; then
-		if [[ "$(echo $@ | grep skip-kernel)" == "" ]]; then
-			_error "ABORTING!!  No kernel detected in chroot environment!$"
-			echo -e "  ${BLUE}NOTE:${NC} You can use ${BLUE}skip-kernel${NC} as additional param to skip this check...."
-			exit 1
-		fi
-		echo -e "${BLUE}NOTE:${NC} ${BLUE}skip-kernel${NC} used as additional param to skip kernel check...."
+		_error "No VMLINUZ file detected in chroot environment!  Skipping!"
+	else
+		_title "Copying INITRD from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
+		cp -p ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/${INITRD}
 	fi
+
+	# Third: Copy the new VMLINUZ from the unpacked filesystem:	
 	VMLINUZ=$(ls vmlinuz-* 2> /dev/null | sort -r | head -1)
+	[[ -z "${VMLINUZ}" ]] && VMLINUZ=$(ls boot/vmlinuz-* 2> /dev/null | sort -r | head -1)
 	if [[ -z "${VMLINUZ}" ]]; then
-		if [[ "$(echo $@ | grep skip-vmlinuz)" == "" ]]; then
-			_error "ABORTING!!  No VMLINUZ file detected in chroot environment!"
-			echo -e "  ${BLUE}NOTE:${NC} You can use ${BLUE}skip-vmlinuz${NC} as additional param to skip this check...."
-			exit 1
-		fi
-		echo -e "${BLUE}NOTE:${NC} ${BLUE}skip-vmlinuz${NC} used as additional param to skip vmlinuz check...."
+		_error "No VMLINUZ file detected in chroot environment!  Skipping!"
+	else
+		_title "Copying VMLINUZ from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
+		cp -p ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
 	fi
-	cd ${UNPACK_DIR}/extract
-	INITRD=$(cat boot/grub/grub.cfg | grep "initrd" | head -1 | cut -d/ -f 3)
-	[[ ! -z "${VMLINUZ}" ]] && cp -p ${UNPACK_DIR}/edit/boot/${VMLINUZ} casper/vmlinuz
- 	[[ ! -z "${INITRD}" ]] && cp -p ${UNPACK_DIR}/edit/boot/${INITRD_SRC} casper/${INITRD}
+
+	# Fourth: Build the list of installed packages in unpacked filesystem:
+	cd ${UNPACK_DIR}
 	_title "Building list of installed packages...."
 	chmod +w extract/casper/filesystem.manifest >& /dev/null
 	chroot edit dpkg-query -W --showformat='${Package} ${Version}\n' | tee extract/casper/filesystem.manifest >& /dev/null
 	cp extract/casper/filesystem.manifest extract/casper/filesystem.manifest-desktop
 	sed -i '/ubiquity/d' extract/casper/filesystem.manifest-desktop
 	sed -i '/casper/d' extract/casper/filesystem.manifest-desktop
+
+	# Fifth: Pack the filesystem:
 	_title "Building ${BLUE}filesystem.squashfs${GREEN}...."
 	[ -f extract/casper/filesystem.squashfs ] && rm extract/casper/filesystem.squashfs
-	[[ "$1" == "pack-xz" ]] && FLAG_XZ=1
+	[[ ! "$(echo $@ | grep pack-xz)" == "" ]] && FLAG_XZ=1
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 	mksquashfs edit extract/casper/filesystem.squashfs -b 1048576 ${XZ}
 	printf $(du -sx --block-size=1 edit | cut -f1) | tee extract/casper/filesystem.size >& /dev/null
+
+	# Sixth: Create the "md5sum.list" file:
 	_title "Building ${BLUE}md5sum.list${GREEN}...."
 	cd extract
 	[ -f md5sum.list ] && rm md5sum.list
 	find -type f -print0 | xargs -0 md5sum | grep -v isolinux/boot.cat | tee md5sum.list >& /dev/null
+
+	# Seventh: Tell user we done!
 	_title "Done packing and preparing extracted filesystem!"
 
 #==============================================================================
@@ -388,6 +409,8 @@ elif [[ "$1" == "iso" ]]; then
 		_error "Changing ISO destination to ${BLUE}$(pwd)${GREEN}...."
 		ISO_DIR=$(pwd)
 	fi
+
+	# First: Figure out what to name the ISO to avoid conflicts
 	_title "Determining ISO filename...."
 	[[ "$(dirname ${ISO_DIR})" == "." ]] && ISO_DIR=$(pwd)
 	[[ -e ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ]] && ISO_POSTFIX=$(cat ${UNPACK_DIR}/edit/usr/local/finisher/build.txt)
@@ -398,6 +421,8 @@ elif [[ "$1" == "iso" ]]; then
 		while [ -f "${ISO_DIR}/${ISO_FILE}-${COUNTER}.iso" ]; do COUNTER=$((COUNTER+1)); done
 		ISO_FILE=${ISO_FILE}-${COUNTER}
 	fi
+
+	# Second: Create the ISO
 	_title "Building ${BLUE}${ISO_FILE}.iso${GREEN}...."
 	cd ${UNPACK_DIR}/extract
 	if [[ "${FLAG_MKISOFS}" == "0" ]]; then
@@ -405,6 +430,8 @@ elif [[ "$1" == "iso" ]]; then
 	else
 		genisoimage -allow-limited-size -D -r -V "${ISO_LABEL}" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ${ISO_DIR}/${ISO_FILE}.iso .
 	fi
+
+	# Third: Tell user we done!
 	_title "Done building ${BLUE}${ISO_DIR}/${ISO_FILE}.iso${GREEN}!"
 
 #==============================================================================

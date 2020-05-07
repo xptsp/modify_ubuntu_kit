@@ -72,6 +72,11 @@ change_password /etc/transmission-daemon/autoremove.sh
 [[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
 ln -sf ${MUK_DIR}/files/tasks.d/40_transmission.sh /usr/local/finisher/tasks.d/40_transmission.sh
 
+# Eighth: Create the "transmission_nosleep" service:
+#==============================================================================
+cp ${MUK_DIR}/files/transmission_nosleep.service /etc/systemd/system/transmission_nosleep.service
+systemctl enable transmission_nosleep
+
 #==============================================================================
 _title "Install Transmission addon for Kodi..."
 #==============================================================================

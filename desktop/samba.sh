@@ -16,7 +16,7 @@ _title "Install and configure Samba"
 #==============================================================================
 # First: Install the packages:
 #==============================================================================
-apt install -y samba cifs-utils $([[ "$OS_VER" -lt 2004 ]] && echo system-config-samba)
+apt install -y samba cifs-utils smbclient winbind $([[ "$OS_VER" -lt 2004 ]] && echo system-config-samba)
 
 # Second: Create a GKSU replacement script:
 #==============================================================================
@@ -31,7 +31,7 @@ touch /etc/libuser.conf
 # Third: Configure Samba for user 1000 (whoever that is):
 #==============================================================================
 sed -i 's/#   wins support = .*/   wins support = yes/g' /etc/samba/smb.conf
-sed -i 's/\[global\]/[global]\n   security = user/g' /etc/samba/smb.conf
+sed -i 's/\[global\]/[global]\n   security = user\n   min protocol = SMB2/g' /etc/samba/smb.conf
 cat << EOF >> /etc/samba/smb.conf
 
 [kodi]

@@ -27,10 +27,10 @@ fi
 
 # Second: Download the new code and replace the binary:
 #==============================================================================
-wget http://downloads.sourceforge.net/project/ddclient/ddclient/ddclient-3.8.3.tar.bz2 -O /tmp/ddclient-3.8.3.tar.bz2
+wget https://github.com/ddclient/ddclient/archive/v3.9.0.zip -O /tmp/v3.9.0.zip
 pushd /tmp
-tar -jxvf ddclient-3.8.3.tar.bz2
-cp -f ddclient-3.8.3/ddclient /usr/sbin/ddclient
+unzip v3.9.0.zip
+cp -f ddclient-3.9.0/ddclient /usr/sbin/ddclient
 rm -rf ddclient*
 popd
 
