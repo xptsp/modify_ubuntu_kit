@@ -354,7 +354,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 		_error "No VMLINUZ file detected in chroot environment!  Skipping!"
 	else
 		_title "Copying INITRD from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
-		cp -p ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/${INITRD}
+		cp -p ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
 	fi
 
 	# Third: Copy the new VMLINUZ from the unpacked filesystem:	
