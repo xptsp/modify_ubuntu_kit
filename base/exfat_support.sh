@@ -14,6 +14,5 @@ fi
 #==============================================================================
 _title "Installing ExFAT support on your computer"
 #==============================================================================
-add-apt-repository -y universe
-apt update
+add-apt-repository -y universe && apt update
 apt install -y exfat-fuse exfat-utils
