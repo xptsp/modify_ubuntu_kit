@@ -30,7 +30,7 @@ _title "Setting up VPN service and scripts..."
 [[ ! -d /lib/systemd/system/openvpn@vpn.service.d ]] && mkdir /lib/systemd/system/openvpn@vpn.service.d
 cat << EOF > /lib/systemd/system/openvpn@vpn.service.d/login.conf
 [Service]
-ExecStartPre=${MUK_DIR}/freevpn_login.sh
+ExecStartPre=${MUK_DIR}/files/freevpn_login.sh
 Restart=
 Restart=always
 EOF
@@ -69,11 +69,8 @@ iptables-save > /etc/iptables/rules.v4
 # Seventh: Call/Setup finisher task...
 #==============================================================================
 if ischroot; then
-	systemctl disable openvpn@vpn
 	[[ -e /usr/local/finisher/tasks.d/30_vpn.sh ]] && rm /usr/local/finisher/tasks.d/30_vpn.sh
 	ln -sf ${MUK_DIR}/files/tasks.d/30_vpn.sh /usr/local/finisher/tasks.d/30_vpn.sh
 else
 	/usr/local/finisher/tasks.d/30_vpn.sh
-	systemctl enable openvpn@vpn
-	systemctl start openvpn@vpn
 fi
