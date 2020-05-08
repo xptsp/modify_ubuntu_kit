@@ -111,6 +111,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		### Fourth: Enter the CHROOT environment:
 		_title "Entering CHROOT environment"
 		chroot ${UNPACK_DIR}/edit ${MUK_DIR}/edit_chroot.sh $@
+		[[ -f ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ]] && cp ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ISO_POSTFIX=$(cat ${UNPACK_DIR}/extract/casper/build.txt
 
 		### Fifth: Remove mounts for CHROOT environment:
 		$0 unmount
@@ -413,7 +414,13 @@ elif [[ "$1" == "iso" ]]; then
 	# First: Figure out what to name the ISO to avoid conflicts
 	_title "Determining ISO filename...."
 	[[ "$(dirname ${ISO_DIR})" == "." ]] && ISO_DIR=$(pwd)
-	[[ -e ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ]] && ISO_POSTFIX=$(cat ${UNPACK_DIR}/edit/usr/local/finisher/build.txt)
+	if [[ -f ${UNPACK_DIR}/extract/casper/build.txt ]]; then
+		ISO_POSTFIX=$(cat ${UNPACK_DIR}/extract/casper/build.txt)
+	elif [[ -e ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ]]; then
+		ISO_POSTFIX=$(cat ${UNPACK_DIR}/edit/usr/local/finisher/build.txt)
+	else
+		ISO_POSTFIX=amd64
+	fi
 	ISO_FILE=${ISO_PREFIX}-${ISO_VERSION}-${ISO_POSTFIX}
 	[[ "${FLAG_ADD_DATE}" == "1" ]] && ISO_FILE=${ISO_FILE}-$(date +"%Y%m%d")
 	if [[ -f "${ISO_DIR}/${ISO_FILE}.iso" ]]; then
