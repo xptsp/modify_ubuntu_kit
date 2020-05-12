@@ -76,7 +76,7 @@ if [[ "$1" == "update" ]]; then
 #==============================================================================
 # Are we changing the unpacked CHROOT environment?
 #==============================================================================
-elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
+elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" || "$1" == "mkinitramfs" ]]; then
 	#==========================================================================
 	# Determine if we are working inside or outside the CHROOT environment
 	#==========================================================================
@@ -161,6 +161,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 			for file in *.sh; do ./$file; done
 			echo $2 > /usr/local/finisher/build.txt
 		elif [[ "$1" == "mkinitramfs" ]]; then
+			_title "Added script to mount ${BLUE}filesystem-opt.packed_alt${GREEN} during LiveCD..."
 			cp ${MUK_DIR}/files/muk_livecd.sh /usr/share/initramfs-tools/scripts/casper-bottom/99_muk_livecd
 			mkinitramfs -o $(ls /boot/initrd.img-* | sort -r | head -1)
 		fi
