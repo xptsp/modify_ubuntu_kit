@@ -1,2 +1,2 @@
 #!/bin/bash
-sed -i "/livecd_mount.sh/d" /etc/rc.local
+sed -i "/muk_livecd.sh/d" /etc/rc.local

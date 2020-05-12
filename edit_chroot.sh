@@ -377,17 +377,19 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	sed -i '/casper/d' extract/casper/filesystem.manifest-desktop
 
 	# Fifth: Pack the filesystem into specified squashfs file(s):
-	_title "Building ${BLUE}filesystem.squashfs${GREEN}...."
 	[ -f extract/casper/filesystem.squashfs ] && rm extract/casper/filesystem.squashfs
 	[[ ! "$(echo $@ | grep pack-xz)" == "" ]] && FLAG_XZ=1
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 	sed -i "/muk_livecd.sh/d" edit/etc/rc.local
 	if [[ ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
+		_title "Building ${BLUE}filesystem-opt.squashfs${GREEN}...."
 		echo opt/${SPLIT_OPT}/* > /tmp/exclude
 		mksquashfs edit/opt/${SPLIT_OPT} extract/casper/filesystem-opt.squashfs -b 1048576 ${XZ}
 		sed -i "s|^exit 0|${MUK_DIR}/files/muk_livecd.sh ${SPLIT_OPT}\nexit 0|g" edit/etc/rc.local
 		ln -sf ${MUK_DIR}/files/99_livecd.sh edit/usr/local/finisher/99_livecd.sh
+		XZ=${XZ} -ef /tmp/exclude
 	fi
+	_title "Building ${BLUE}filesystem.squashfs${GREEN}...."
 	mksquashfs edit extract/casper/filesystem.squashfs -b 1048576 ${XZ}
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
 
