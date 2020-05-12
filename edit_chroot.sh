@@ -411,6 +411,8 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 		_title "Building ${BLUE}filesystem-opt.squashfs${GREEN}...."
 		mksquashfs edit/opt/${SPLIT_OPT} extract/casper/filesystem-opt.packed_alt -b 1048576 ${XZ}
 		echo opt/${SPLIT_OPT} > extract/casper/filesystem-opt.location
+	fi
+	if [[ ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
 		# Subtask 2: Specify what to exclude during the main compression:
 		echo opt/${SPLIT_OPT}/* > /tmp/exclude
 		XZ="${XZ} -ef /tmp/exclude -wildcards"
