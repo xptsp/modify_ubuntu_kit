@@ -1,6 +1,6 @@
 #!/bin/bash
 C=/cdrom/casper/filesystem-opt
-if [[ -f ${C}.packed_alt && -f ${C}.location ]]; then
-	mount ${C}.packed_alt /$(cat ${C}.location)
-	mount ${C}.packed_alt /rofs/$(cat ${C}.location)
-fi
+[[ -f ${C}.squashfs && -f ${C}.location ]] && cat << EOF >> /etc/fstab
+${C}.packed_alt  /$(cat ${C}.location  auto  defaults,nofail  0  0
+${C}.packed_alt  /rofs/$(cat ${C}.location  auto  defaults,nofail  0  0
+EOF
