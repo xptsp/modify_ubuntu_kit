@@ -326,11 +326,11 @@ elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" || "$
 	unsquashfs -f -d edit ${MNT}/casper/filesystem.squashfs
 
 	# Fourth: Unpack the split squashfs file into the main unpacked filesystem:
-	if [[ -f ${MNT}/casper/filesystem-opt.squashfs && -f ${MNT}/casper/filesystem-opt.location ]]; then
+	if [[ -f ${MNT}/casper/filesystem-opt.packed_alt && -f ${MNT}/casper/filesystem-opt.location ]]; then
 		LOC=edit/$(cat ${MNT}/casper/filesystem-opt.location)
 		_title "Unpacking ${BLUE}filesystem-opt.squashfs${GREEN} to ${BLUE}${LOC}${GREEN}..."
 		[[ -d ${LOC} ]] && rmdir -rf ${LOC}
-		unsquashfs -f -d ${LOC} ${MNT}/casper/filesystem-opt.squashfs
+		unsquashfs -f -d ${LOC} ${MNT}/casper/filesystem-opt.packed_alt
 	fi
 		
 	# Fifth: Unmount the DVD/ISO if necessary:
@@ -394,7 +394,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	sed -i '/casper/d' extract/casper/filesystem.manifest-desktop
 
 	# Fifth: Remove squashfs and set necessary flags for compression:
-	[[ -f extract/casper/filesystem-opt.squashfs ]] && rm extract/casper/filesystem-opt.*
+	[[ -f extract/casper/filesystem-opt.packed_alt ]] && rm extract/casper/filesystem-opt.*
 	[[ -f extract/casper/filesystem.squashfs ]] && rm extract/casper/filesystem.squashfs
 	[[ ! "$(echo $@ | grep pack-xz)" == "" ]] && FLAG_XZ=1
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
@@ -404,7 +404,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	if [[ "$(echo $@ | grep skip-opt)" == "" && ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
 		# Subtask 1: Pack the opt squashfs:
 		_title "Building ${BLUE}filesystem-opt.squashfs${GREEN}...."
-		mksquashfs edit/opt/${SPLIT_OPT} extract/casper/filesystem-opt.squashfs -b 1048576 ${XZ}
+		mksquashfs edit/opt/${SPLIT_OPT} extract/casper/filesystem-opt.packed_alt -b 1048576 ${XZ}
 		echo opt/${SPLIT_OPT} > extract/casper/filesystem-opt.location
 		# Subtask 2: Patch the rc.local to mount the new squashfs file properly:
 		sed -i "s|^exit 0|${MUK_DIR}/files/muk_livecd.sh ${SPLIT_OPT}\nexit 0|g" edit/etc/rc.local
