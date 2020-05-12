@@ -414,6 +414,8 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 		# Subtask 2: Specify what to exclude during the main compression:
 		echo opt/${SPLIT_OPT}/* > /tmp/exclude
 		XZ="${XZ} -ef /tmp/exclude -wildcards"
+		# Subtask 3: Modify INITRD to mount the "filesystem-opt.packed_alt" file:
+		$0 mkinitramfs
 	fi
 
 	# Seventh: Pack the filesystem-opt.squashfs if required:
