@@ -278,6 +278,7 @@ elif [[ "$1" == "remove" ]]; then
 # Did user request to unpack the ISO?
 #==============================================================================
 elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" || "$1" == "unpack-distro" ]]; then
+	# First: Make sure everything is okay before proceeding:
 	if [[ $(ischroot; echo $?) -ne 1 ]]; then
 		_error "Cannot use ${BLUE}unpack${GREEN} inside chroot environment!"
 		exit 1
@@ -307,6 +308,8 @@ elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" || "$
 		_error "Cannot find a ${BLUE}filesystem.squashfs${GREEN} to extract!!!"
 		exit 1
 	fi
+
+	# Second: Copy the necessary files to the hard drive:
 	_title "Found ${BLUE}filesystem.squashfs${GREEN} in ${BLUE}${UNPACK_DIR}/${MNT}${GREEN}!!!"
 	if [[ ! "$1" == "unpack-distro" && "$MNT" == "mnt" ]] ; then
 		_title "Copying everything$([[ "$1" == "unpack-full" ]] || echo " but ${BLUE}filesystem.squashfs${GREEN}")..."
@@ -317,12 +320,26 @@ elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" || "$
 		_title "Removing folder ${BLUE}edit${GREEN} for clean extraction..."
 		$0 remove
 	fi
+
+	# Third: Unpack the main squashfs file:
 	_title "Unpacking ${BLUE}filesystem.squashfs${GREEN} to ${BLUE}edit${GREEN}..."
 	unsquashfs -f -d edit ${MNT}/casper/filesystem.squashfs
+
+	# Fourth: Unpack the split squashfs file into the main unpacked filesystem:
+	if [[ -f ${MNT}/casper/filesystem-opt.squashfs && -f ${MNT}/casper/filesystem-opt.location ]]; then
+		LOC=edit/$(cat ${MNT}/casper/filesystem-opt.location)
+		_title "Unpacking ${BLUE}filesystem-opt.squashfs${GREEN} to ${BLUE}${LOC}${GREEN}..."
+		[[ -d ${LOC} ]] && rmdir -rf ${LOC}
+		unsquashfs -f -d ${LOC} ${MNT}/casper/filesystem-opt.squashfs
+	fi
+		
+	# Fifth: Unmount the DVD/ISO if necessary:
 	if [[ "${MNT}" == "mnt" || ("$1" != "unpack" && ! "$1" == "unpack-distro") ]]; then
 		_title "Unmounting DVD/ISO from mount point...."
 		umount mnt
 	fi
+
+	# Sixth: Tell user we done!
 	_title "Ubuntu ISO unpacked!"
 
 #==============================================================================
@@ -376,10 +393,13 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	sed -i '/ubiquity/d' extract/casper/filesystem.manifest-desktop
 	sed -i '/casper/d' extract/casper/filesystem.manifest-desktop
 
-	# Fifth: Pack the filesystem into specified squashfs file(s):
+	# Fifth: Remove squashfs and set necessary flags for compression:
 	[[ -f extract/casper/filesystem-opt.squashfs ]] && rm extract/casper/filesystem-opt.*
+	[[ -f extract/casper/filesystem.squashfs ]] && rm extract/casper/filesystem.squashfs
 	[[ ! "$(echo $@ | grep pack-xz)" == "" ]] && FLAG_XZ=1
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
+
+	# Sixth: Pack the filesystem-opt.squashfs if required:
 	sed -i "/muk_livecd.sh/d" edit/etc/rc.local
 	if [[ "$(echo $@ | grep skip-opt)" == "" && ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
 		# Subtask 1: Pack the opt squashfs:
@@ -393,14 +413,16 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 		echo opt/${SPLIT_OPT}/* > /tmp/exclude
 		XZ="${XZ} -ef /tmp/exclude -wildcards"
 	fi
+
+	# Seventh: Pack the filesystem-opt.squashfs if required:
 	_title "Building ${BLUE}filesystem.squashfs${GREEN}...."
 	mksquashfs edit extract/casper/filesystem.squashfs -b 1048576 ${XZ}
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
 
-	# Sixth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
+	# Eighth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
 	[[ "${KEEP_CIFS:-"0"}" == "1" ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
 
-	# Seventh: Create the "filesystem.size" and "md5sum.list" files:
+	# Ninth: Create the "filesystem.size" and "md5sum.list" files:
 	_title "Building ${BLUE}filesystem.size${GREEN} and ${BLUE}md5sum.list${GREEN}...."
 	printf $(du -sx --block-size=1 edit | cut -f1) | tee extract/casper/filesystem.size >& /dev/null
 	cd extract
