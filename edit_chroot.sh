@@ -400,13 +400,12 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	sed -i '/ubiquity/d' extract/casper/filesystem.manifest-desktop
 	sed -i '/casper/d' extract/casper/filesystem.manifest-desktop
 
-	# Fifth: Remove squashfs and set necessary flags for compression:
-	[[ -f extract/casper/filesystem-opt.packed_alt ]] && rm extract/casper/filesystem-opt.*
-	[[ -f extract/casper/filesystem.squashfs ]] && rm extract/casper/filesystem.squashfs
+	# Fifth: Set necessary flags for compression:
 	[[ ! "$(echo $@ | grep pack-xz)" == "" ]] && FLAG_XZ=1
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 
 	# Sixth: Pack the filesystem-opt.squashfs if required:
+	[[ "$(echo $@ | grep skip-opt)" == "" && -f extract/casper/filesystem-opt.packed_alt ]] && rm extract/casper/filesystem-opt.*
 	if [[ "$(echo $@ | grep skip-opt)" == "" && ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
 		# Subtask 1: Pack the opt squashfs:
 		_title "Building ${BLUE}filesystem-opt.squashfs${GREEN}...."
@@ -421,6 +420,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 
 	# Seventh: Pack the filesystem-opt.squashfs if required:
 	_title "Building ${BLUE}filesystem.squashfs${GREEN}...."
+	[[ -f extract/casper/filesystem.squashfs ]] && rm extract/casper/filesystem.squashfs
 	mksquashfs edit extract/casper/filesystem.squashfs -b 1048576 ${XZ}
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
 
