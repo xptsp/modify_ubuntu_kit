@@ -384,6 +384,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	if [[ ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
 		_title "Building ${BLUE}filesystem-opt.squashfs${GREEN}...."
 		echo opt/${SPLIT_OPT}/* > /tmp/exclude
+		[[ -f extract/casper/filesystem-opt.squashfs ]] && rm extract/casper/filesystem-opt.squashfs
 		mksquashfs edit/opt/${SPLIT_OPT} extract/casper/filesystem-opt.squashfs -b 1048576 ${XZ}
 		sed -i "s|^exit 0|${MUK_DIR}/files/muk_livecd.sh ${SPLIT_OPT}\nexit 0|g" edit/etc/rc.local
 		ln -sf ${MUK_DIR}/files/99_livecd.sh edit/usr/local/finisher/99_livecd.sh
