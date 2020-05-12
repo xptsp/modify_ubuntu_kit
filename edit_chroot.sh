@@ -376,21 +376,32 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	sed -i '/ubiquity/d' extract/casper/filesystem.manifest-desktop
 	sed -i '/casper/d' extract/casper/filesystem.manifest-desktop
 
-	# Fifth: Pack the filesystem:
+	# Fifth: Pack the filesystem into specified squashfs file(s):
 	_title "Building ${BLUE}filesystem.squashfs${GREEN}...."
 	[ -f extract/casper/filesystem.squashfs ] && rm extract/casper/filesystem.squashfs
 	[[ ! "$(echo $@ | grep pack-xz)" == "" ]] && FLAG_XZ=1
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
+	sed -i "/muk_livecd.sh/d" edit/etc/rc.local
+	if [[ ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
+		echo opt/${SPLIT_OPT}/* > /tmp/exclude
+		mksquashfs edit/opt/${SPLIT_OPT} extract/casper/filesystem-opt.squashfs -b 1048576 ${XZ}
+		sed -i "s|^exit 0|${MUK_DIR}/files/muk_livecd.sh ${SPLIT_OPT}\nexit 0|g" edit/etc/rc.local
+		ln -sf ${MUK_DIR}/files/99_livecd.sh edit/usr/local/finisher/99_livecd.sh
+	fi
 	mksquashfs edit extract/casper/filesystem.squashfs -b 1048576 ${XZ}
-	printf $(du -sx --block-size=1 edit | cut -f1) | tee extract/casper/filesystem.size >& /dev/null
+	[[ -f /tmp/exclude ]] && rm /tmp/exclude
 
 	# Sixth: Create the "md5sum.list" file:
-	_title "Building ${BLUE}md5sum.list${GREEN}...."
+	_title "Building ${BLUE}filesystem.size${GREEN} and ${BLUE}md5sum.list${GREEN}...."
+	printf $(du -sx --block-size=1 edit | cut -f1) | tee extract/casper/filesystem.size >& /dev/null
 	cd extract
 	[ -f md5sum.list ] && rm md5sum.list
 	find -type f -print0 | xargs -0 md5sum | grep -v isolinux/boot.cat | tee md5sum.list >& /dev/null
 
-	# Seventh: Tell user we done!
+	# Seventh: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
+	[[ "${KEEP_CIFS:-"0"}" == "1" ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
+
+	# Eighth: Tell user we done!
 	_title "Done packing and preparing extracted filesystem!"
 
 #==============================================================================
