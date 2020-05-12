@@ -400,7 +400,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	sed -i '/ubiquity/d' extract/casper/filesystem.manifest-desktop
 	sed -i '/casper/d' extract/casper/filesystem.manifest-desktop
 
-	# Fifth: Set necessary flags for compression:
+	# Fifth: Sset necessary flags for compression:
 	[[ ! "$(echo $@ | grep pack-xz)" == "" ]] && FLAG_XZ=1
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 
