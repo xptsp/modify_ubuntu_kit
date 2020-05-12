@@ -377,32 +377,35 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	sed -i '/casper/d' extract/casper/filesystem.manifest-desktop
 
 	# Fifth: Pack the filesystem into specified squashfs file(s):
-	[ -f extract/casper/filesystem.squashfs ] && rm extract/casper/filesystem.squashfs
+	[[ -f extract/casper/filesystem-opt.squashfs ]] && rm extract/casper/filesystem-opt.*
 	[[ ! "$(echo $@ | grep pack-xz)" == "" ]] && FLAG_XZ=1
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 	sed -i "/muk_livecd.sh/d" edit/etc/rc.local
-	if [[ ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
+	if [[ "$(echo $@ | grep skip-opt)" == "" && ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
+		# Subtask 1: Pack the opt squashfs:
 		_title "Building ${BLUE}filesystem-opt.squashfs${GREEN}...."
-		echo opt/${SPLIT_OPT}/* > /tmp/exclude
-		[[ -f extract/casper/filesystem-opt.squashfs ]] && rm extract/casper/filesystem-opt.squashfs
 		mksquashfs edit/opt/${SPLIT_OPT} extract/casper/filesystem-opt.squashfs -b 1048576 ${XZ}
+		echo opt/${SPLIT_OPT} > extract/casper/filesystem-opt.location
+		# Subtask 2: Patch the rc.local to mount the new squashfs file properly:
 		sed -i "s|^exit 0|${MUK_DIR}/files/muk_livecd.sh ${SPLIT_OPT}\nexit 0|g" edit/etc/rc.local
 		ln -sf ${MUK_DIR}/files/99_livecd.sh edit/usr/local/finisher/99_livecd.sh
-		XZ=${XZ} -ef /tmp/exclude
+		# Subtask 3: Specify what to exclude during the main compression:
+		echo opt/${SPLIT_OPT}/* > /tmp/exclude
+		XZ="${XZ} -ef /tmp/exclude -wildcards"
 	fi
 	_title "Building ${BLUE}filesystem.squashfs${GREEN}...."
 	mksquashfs edit extract/casper/filesystem.squashfs -b 1048576 ${XZ}
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
 
-	# Sixth: Create the "md5sum.list" file:
+	# Sixth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
+	[[ "${KEEP_CIFS:-"0"}" == "1" ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
+
+	# Seventh: Create the "filesystem.size" and "md5sum.list" files:
 	_title "Building ${BLUE}filesystem.size${GREEN} and ${BLUE}md5sum.list${GREEN}...."
 	printf $(du -sx --block-size=1 edit | cut -f1) | tee extract/casper/filesystem.size >& /dev/null
 	cd extract
 	[ -f md5sum.list ] && rm md5sum.list
 	find -type f -print0 | xargs -0 md5sum | grep -v isolinux/boot.cat | tee md5sum.list >& /dev/null
-
-	# Seventh: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
-	[[ "${KEEP_CIFS:-"0"}" == "1" ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
 
 	# Eighth: Tell user we done!
 	_title "Done packing and preparing extracted filesystem!"
