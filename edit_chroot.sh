@@ -331,7 +331,7 @@ elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" || "$
 	if [[ -f ${MNT}/casper/filesystem-opt.squashfs && -f ${MNT}/casper/filesystem-opt.location ]]; then
 		_title "Unpacking ${BLUE}filesystem-opt.squashfs${GREEN} to ${BLUE}${LOC}${GREEN}..."
 		IN2=edit/tmp/$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-		DST=opt/$(cat ${MNT}/casper/filesystem-opt.location)
+		DST=$(cat ${MNT}/casper/filesystem-opt.location)
 		unsquashfs -f -d ${IN2} ${MNT}/casper/filesystem-opt.squashfs
 		mv ${IN2}/${DST}/* edit/${DST}/
 		rm -rf ${IN2}
