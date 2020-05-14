@@ -21,7 +21,7 @@ apt install -y libcec
 
 # Second: Add finisher task:
 #==============================================================================
-if [[ ! -z "${CHROOT}" ]]; then
+if ischroot; then
 	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
 	ln -sf ${MUK_DIR}/files/tasks.d/60_libcec.sh /usr/local/finisher/tasks.d/60_libcec.sh
 else

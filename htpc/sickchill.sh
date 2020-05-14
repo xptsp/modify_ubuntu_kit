@@ -60,7 +60,7 @@ _title "Installing SickChill addon for Kodi..."
 ### First: We need the repository:
 #==============================================================================
 wget https://github.com/Hiltronix/repo/raw/master/repository.Hiltronix.zip -O /tmp/repository.Hiltronix.zip
-7z x /tmp/repository.Hiltronix.zip -aoa -o${KODI_ADD}/
+7z x -aoa /tmp/repository.Hiltronix.zip -aoa -o${KODI_ADD}/
 rm /tmp/repository.Hiltronix.zip
 kodi_enable repository.Hiltronix
 

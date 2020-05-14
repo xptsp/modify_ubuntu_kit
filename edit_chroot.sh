@@ -409,7 +409,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 		FILE=.$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 		touch edit/${FILE}
 		mksquashfs edit extract/casper/filesystem-opt.squashfs -b 1048576 -ef /tmp/exclude ${XZ}
-		rm edit/.${FILE}
+		rm edit/${FILE}
 		echo opt/${SPLIT_OPT} > extract/casper/filesystem-opt.location
 	fi
 
