@@ -47,6 +47,7 @@ if ! [[ -z "$1" || "$1" == "--help" ]]; then
 	GIT=$(whereis git | cut -d ":" -f 2 | cut -d " " -f 2)
 	if [[ -z $MKSQUASH || -z $GENISO || -z $GIT ]]; then
 		_title "Installing necessary packages"
+		apt-get update >& /dev/null
 		apt-get install -y $([[ -z $MKSQUASH ]] && echo "squashfs-tools") $([[ -z $GENISO ]] && echo "genisoimage") $([[ -z $GIT ]] && echo "git")
 	fi
 fi
