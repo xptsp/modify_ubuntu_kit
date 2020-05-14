@@ -76,7 +76,7 @@ if [[ "$1" == "update" ]]; then
 #==============================================================================
 # Are we changing the unpacked CHROOT environment?
 #==============================================================================
-elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" || "$1" == "mkinitramfs" ]]; then
+elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 	#==========================================================================
 	# Determine if we are working inside or outside the CHROOT environment
 	#==========================================================================
@@ -160,72 +160,65 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" || "$1" == "mkin
 			cd ${MUK_DIR}/$2
 			for file in *.sh; do ./$file; done
 			echo $2 > /usr/local/finisher/build.txt
-		elif [[ "$1" == "mkinitramfs" ]]; then
-			_title "Added script to mount ${BLUE}filesystem-opt.packed_alt${GREEN} during LiveCD..."
-			cp ${MUK_DIR}/files/muk_livecd.sh /usr/share/initramfs-tools/scripts/casper-bottom/99_muk_livecd
-			mkinitramfs -o $(ls /boot/initrd.img-* | sort -r | head -1)
 		fi
 
-		# We do these only not rebuilding the INITRD file:
-		if [[ "$1" != "mkinitramfs" ]]; then
-			### Fourth: If user 999 exists, change that user ID so that LiveCD works:
-			if [[ "$(id -u 999 >& /dev/null; echo $?)" -eq 0 ]]; then
-				uid_name=$(id -un 999)
-				uid_new=998
-				while [ "$(id -u ${uid_new} >& /dev/null; echo $?)" -eq 0 ]; do uid_new=$((uid_new-1)); done
-				_title "Changing user \"${uid_name}\" from UID 999 to ${uid_new} so LiveCD works..."
-				usermod -u ${uid_new} ${uid_name}
-				chown -Rhc --from=999 ${uid_new} / >& /dev/null
-			fi
+		### Fourth: If user 999 exists, change that user ID so that LiveCD works:
+		if [[ "$(id -u 999 >& /dev/null; echo $?)" -eq 0 ]]; then
+			uid_name=$(id -un 999)
+			uid_new=998
+			while [ "$(id -u ${uid_new} >& /dev/null; echo $?)" -eq 0 ]; do uid_new=$((uid_new-1)); done
+			_title "Changing user \"${uid_name}\" from UID 999 to ${uid_new} so LiveCD works..."
+			usermod -u ${uid_new} ${uid_name}
+			chown -Rhc --from=999 ${uid_new} / >& /dev/null
+		fi
 
-			### Fifth: If group 999 exists, change that group ID so that LiveCD works:
-			gid_line=$(getent group 999)
-			if [[ ! -z "${gid_line}" ]]; then
-				gid_name=$(echo $gid_line | cut -d":" -f 1)
-				gid_new=998
-				while [ "$(getent group ${gid_new} >& /dev/null; echo $?)" -eq 0 ]; do gid_new=$((gid_new-1)); done
-				_title "Changing group \"${gid_name}\" from GID 999 to ${gid_new} so LiveCD works..."
-				groupmod -g ${gid_new} ${gid_name}
-				chown -Rhc --from=:999 :${gid_new} / >& /dev/null
-			fi
+		### Fifth: If group 999 exists, change that group ID so that LiveCD works:
+		gid_line=$(getent group 999)
+		if [[ ! -z "${gid_line}" ]]; then
+			gid_name=$(echo $gid_line | cut -d":" -f 1)
+			gid_new=998
+			while [ "$(getent group ${gid_new} >& /dev/null; echo $?)" -eq 0 ]; do gid_new=$((gid_new-1)); done
+			_title "Changing group \"${gid_name}\" from GID 999 to ${gid_new} so LiveCD works..."
+			groupmod -g ${gid_new} ${gid_name}
+			chown -Rhc --from=:999 :${gid_new} / >& /dev/null
+		fi
 
-			### Sixth: Upgrade the installed GitHub repositories:
-			_title "Updating GitHub repositories in ${BLUE}/opt${GREEN}..."
-			cd /opt
+		### Sixth: Upgrade the installed GitHub repositories:
+		_title "Updating GitHub repositories in ${BLUE}/opt${GREEN}..."
+		cd /opt
+		(ls | while read p; do pushd $p; [ -d .git ] && git pull; popd; done) >& /dev/null
+
+		### Seventh: Upgrade the pre-installed Kodi addons via GitHub repositories:
+		if [ -d /opt/kodi ]; then
+			_title "Updating Kodi addons from GitHub repositories in ${BLUE}/opt/kodi${GREEN}...."
+			pushd /opt/kodi >& /dev/null
 			(ls | while read p; do pushd $p; [ -d .git ] && git pull; popd; done) >& /dev/null
+			popd >& /dev/null
+		fi
 
-			### Seventh: Upgrade the pre-installed Kodi addons via GitHub repositories:
-			if [ -d /opt/kodi ]; then
-				_title "Updating Kodi addons from GitHub repositories in ${BLUE}/opt/kodi${GREEN}...."
-				pushd /opt/kodi >& /dev/null
-				(ls | while read p; do pushd $p; [ -d .git ] && git pull; popd; done) >& /dev/null
-				popd >& /dev/null
-			fi
+		### Eighth: Update packages:
+		_title "Updating repository lists...."
+		apt-get update >& /dev/null
+		_title "Removing unnecessary packages and fixing any broken packages..."
+		apt-get install -f --autoremove --purge -y
+		_title "Upgrading any packages requiring upgrading..."
+		apt-get dist-upgrade -y
 
-			### Eighth: Update packages:
-			_title "Updating repository lists...."
-			apt-get update >& /dev/null
-			_title "Removing unnecessary packages and fixing any broken packages..."
-			apt-get install -f --autoremove --purge -y
-			_title "Upgrading any packages requiring upgrading..."
-			apt-get dist-upgrade -y
+		### Ninth: Remove any unnecessary packages:
+		CURRENT=$(ls -l /initrd.img* | cut -d">" -f 2 | cut -d"-" -f2,3 | sort -r | head -1)
+		KERNELS=$(dpkg -l | grep linux-image | grep "ii" | awk '{print$2}' | grep -v "$CURRENT" | grep -v "hwe")
+		if [[ "${OLD_KERNEL:-"0"}" == "0" && ! -z "${KERNELS}" ]]; then
+			_title "Removing old kernels packages and unnecessary packages..."
+			apt-get remove --autoremove --purge -y ${KERNELS}
+		fi
+		_title "Cleaning up cached packages..."
+		apt-get autoclean -y >& /dev/null
+		apt-get clean -y >& /dev/null
 
-			### Ninth: Remove any unnecessary packages:
-			CURRENT=$(ls -l /initrd.img* | cut -d">" -f 2 | cut -d"-" -f2,3 | sort -r | head -1)
-			KERNELS=$(dpkg -l | grep linux-image | grep "ii" | awk '{print$2}' | grep -v "$CURRENT" | grep -v "hwe")
-			if [[ "${OLD_KERNEL:-"0"}" == "0" && ! -z "${KERNELS}" ]]; then
-				_title "Removing old kernels packages and unnecessary packages..."
-				apt-get remove --autoremove --purge -y ${KERNELS}
-			fi
-			_title "Cleaning up cached packages..."
-			apt-get autoclean -y >& /dev/null
-			apt-get clean -y >& /dev/null
-
-			### Tenth: Disable services not required during Live ISO:
-			if [[ -f /usr/local/finisher/disabled.list ]]; then
-				_title "Disabling unnecessary services for Live CD..."
-				(while read p r; do systemctl disable $p; done) < /usr/local/finisher/disabled.list >& /dev/null
-			fi
+		### Tenth: Disable services not required during Live ISO:
+		if [[ -f /usr/local/finisher/disabled.list ]]; then
+			_title "Disabling unnecessary services for Live CD..."
+			(while read p r; do systemctl disable $p; done) < /usr/local/finisher/disabled.list >& /dev/null
 		fi
 
 		### Eleventh: Clean up everything done to "chroot" into this ISO image:
@@ -333,11 +326,14 @@ elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" || "$
 	unsquashfs -f -d edit ${MNT}/casper/filesystem.squashfs
 
 	# Fourth: Unpack the split squashfs file into the main unpacked filesystem:
-	if [[ -f ${MNT}/casper/filesystem-opt.packed_alt && -f ${MNT}/casper/filesystem-opt.location ]]; then
-		LOC=edit/$(cat ${MNT}/casper/filesystem-opt.location)
+	if [[ -f ${MNT}/casper/filesystem-opt.squashfs && -f ${MNT}/casper/filesystem-opt.location ]]; then
 		_title "Unpacking ${BLUE}filesystem-opt.squashfs${GREEN} to ${BLUE}${LOC}${GREEN}..."
-		[[ -d ${LOC} ]] && rmdir -rf ${LOC}
-		unsquashfs -f -d ${LOC} ${MNT}/casper/filesystem-opt.packed_alt
+		DST=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+		LOC=$(cat ${MNT}/casper/filesystem-opt.location)
+		[[ -d ${LOC} ]] && rmdir -rf edit/${LOC}
+		unsquashfs -f -d edit/${DST} ${MNT}/casper/filesystem-opt.squashfs
+		mv edit/${DST}/opt/${LOC}/* edit/opt/${LOC}/
+		rm -rf edit//${DST}
 	fi
 		
 	# Fifth: Unmount the DVD/ISO if necessary:
@@ -405,23 +401,23 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 
 	# Sixth: Pack the filesystem-opt.squashfs if required:
-	[[ "$(echo $@ | grep skip-opt)" == "" && -f extract/casper/filesystem-opt.packed_alt ]] && rm extract/casper/filesystem-opt.*
+	[[ "$(echo $@ | grep skip-opt)" == "" && -f extract/casper/filesystem-opt.squashfs ]] && rm extract/casper/filesystem-opt.*
 	if [[ "$(echo $@ | grep skip-opt)" == "" && ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
-		# Subtask 1: Pack the opt squashfs:
 		_title "Building ${BLUE}filesystem-opt.squashfs${GREEN}...."
-		mksquashfs edit/opt/${SPLIT_OPT} extract/casper/filesystem-opt.packed_alt -b 1048576 ${XZ}
+		(ls edit | grep -v "^opt$"; for file in $(ls edit/opt | grep -v "^${SPLIT_OPT}$"); do echo opt/${file}; done) > /tmp/exclude
+		FILE=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+		touch edit/${FILE}
+		mksquashfs edit extract/casper/filesystem-opt.squashfs -b 1048576 -ef /tmp/exclude ${XZ}
+		rm edit/${FILE}
 		echo opt/${SPLIT_OPT} > extract/casper/filesystem-opt.location
-	fi
-	if [[ ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
-		# Subtask 2: Specify what to exclude during the main compression:
-		echo opt/${SPLIT_OPT}/* > /tmp/exclude
-		XZ="${XZ} -ef /tmp/exclude -wildcards"
-		# Subtask 3: Modify INITRD to mount the "filesystem-opt.packed_alt" file:
-		$0 mkinitramfs
 	fi
 
 	# Seventh: Pack the filesystem-opt.squashfs if required:
 	_title "Building ${BLUE}filesystem.squashfs${GREEN}...."
+	if [[ ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
+		echo opt/${SPLIT_OPT}/* > /tmp/exclude
+		XZ="${XZ} -ef /tmp/exclude -wildcards"
+	fi
 	[[ -f extract/casper/filesystem.squashfs ]] && rm extract/casper/filesystem.squashfs
 	mksquashfs edit extract/casper/filesystem.squashfs -b 1048576 ${XZ}
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
