@@ -330,12 +330,11 @@ elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" || "$
 	# Fourth: Unpack the split squashfs file into the main unpacked filesystem:
 	if [[ -f ${MNT}/casper/filesystem-opt.squashfs && -f ${MNT}/casper/filesystem-opt.location ]]; then
 		_title "Unpacking ${BLUE}filesystem-opt.squashfs${GREEN} to ${BLUE}${LOC}${GREEN}..."
-		DST=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-		LOC=$(cat ${MNT}/casper/filesystem-opt.location)
-		[[ -d ${LOC} ]] && rmdir -rf edit/${LOC}
-		unsquashfs -f -d edit/${DST} ${MNT}/casper/filesystem-opt.squashfs
-		mv edit/${DST}/opt/${LOC}/* edit/opt/${LOC}/
-		rm -rf edit//${DST}
+		IN2=edit/tmp/$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+		DST=opt/$(cat ${MNT}/casper/filesystem-opt.location)
+		unsquashfs -f -d ${IN2} ${MNT}/casper/filesystem-opt.squashfs
+		mv ${IN2}/${DST}/* edit/${DST}/
+		rm -rf ${IN2}
 	fi
 		
 	# Fifth: Unmount the DVD/ISO if necessary:
@@ -407,10 +406,10 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	if [[ "$(echo $@ | grep skip-opt)" == "" && ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
 		_title "Building ${BLUE}filesystem-opt.squashfs${GREEN}...."
 		(ls edit | grep -v "^opt$"; for file in $(ls edit/opt | grep -v "^${SPLIT_OPT}$"); do echo opt/${file}; done) > /tmp/exclude
-		FILE=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+		FILE=.$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
 		touch edit/${FILE}
 		mksquashfs edit extract/casper/filesystem-opt.squashfs -b 1048576 -ef /tmp/exclude ${XZ}
-		rm edit/${FILE}
+		rm edit/.${FILE}
 		echo opt/${SPLIT_OPT} > extract/casper/filesystem-opt.location
 	fi
 
