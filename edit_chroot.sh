@@ -68,6 +68,7 @@ if [[ "$1" == "update" ]]; then
 		git clone --depth=1 https://github.com/xptsp/modify_ubuntu_kit ${MUK_DIR}
 	else
 		cd ${MUK_DIR}
+		git reset --hard
 		git pull
 	fi
 	[[ -f ${MUK_DIR}/install.sh ]] && ${MUK_DIR}/install.sh
