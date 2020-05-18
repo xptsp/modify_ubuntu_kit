@@ -39,8 +39,8 @@ EOF
 #==============================================================================
 touch /etc/openvpn/vpn/.vpn_creds
 chmod 400 /etc/openvpn/.vpn_creds
-touch /etc/openvpn/vpn/.vpn_last_update
-chmod 400 /etc/openvpn/.freevpn_last_update
+touch /etc/openvpn/.vpn_last_update
+chmod 400 /etc/openvpn/.vpn_last_update
 
 # Third: Configure to prevent DNS leaks:
 #==============================================================================

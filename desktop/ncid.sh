@@ -55,8 +55,8 @@ ExecStart=
 ExecStart=/usr/bin/ncid --no-gui --pidfile /run/kodi_ncid.pid -P kodi_ncid
 EOF
 if ischroot; then
+	systemctl disable kodi_ncid
+else
 	systemctl enable kodi_ncid
 	systemctl start kodi_ncid
-else
-	systemctl disable kodi_ncid
 fi
