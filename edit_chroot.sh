@@ -564,11 +564,8 @@ elif [[ "$1" == "rdbuild" ]]; then
 #==============================================================================
 elif [[ "$1" == "rdcopy" ]]; then
 	# Abort if the RedDragon USB stick isn't found:
+	${MUK_DIR}/files/RD_Restore.sh || exit 1
 	DEV=$(blkid | grep "RedDragon USB" | cut -d":" -f 1)
-	if [[ -z "${DEV}" ]]; then
-		_error "USB stick with ${BLUE}RedDragon USB${GREEN} label was not detected!  Aborting!"
-		exit 1
-	fi
 
 	# Mount the RedDragon USB stick:
 	_title "Mounting the RedDragon USB Stick...."
@@ -602,8 +599,10 @@ elif [[ "$1" == "rdcopy" ]]; then
 
 	_title "Unmounting RedDragon USB stick..."
 	umount ${USB}
-	_title "Ejecting RedDragon USB stick..."
-	eject ${DEV}
+	if [[ ! "$(echo $@ | grep "noeject") == "" ]]; then
+		_title "Ejecting RedDragon USB stick..."
+		eject ${DEV}
+	fi
 	_title "Done!"
 
 #==============================================================================
