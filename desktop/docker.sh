@@ -14,7 +14,7 @@ fi
 #==============================================================================
 _title "Installing Docker..."
 #==============================================================================
-apt install -y docker
+apt install -y docker.io
 if ischroot; then
 	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
 	ln -sf ${MUK_DIR}/files/tasks.d/80_docker.sh /usr/local/finisher/tasks.d/80_docker.sh
