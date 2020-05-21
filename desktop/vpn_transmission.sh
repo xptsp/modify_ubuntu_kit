@@ -51,9 +51,9 @@ change_password ${MUK_DIR}/files/transmission_nosleep.sh
 #==============================================================================
 # Transmission settings:
 [[ ! -d ~/.config/transmission-daemon ]] && mkdir -p ~/.config/transmission-daemon
-cp ${MUK_DIR}/files/transmission_settings.json /etc/skel/.config/transmission-daemon/settings.json
-change_username /etc/skel/.config/transmission-daemon/settings.json
-change_password /etc/skel/.config/transmission-daemon/settings.json
+cp ${MUK_DIR}/files/transmission_settings.json ~/.config/transmission-daemon/settings.json
+change_username ~/.config/transmission-daemon/settings.json
+change_password ~/.config/transmission-daemon/settings.json
 # TransGUI settings:
 unzip -o ${MUK_DIR}/files/transgui.zip -d ~/.config/
 

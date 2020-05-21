@@ -42,7 +42,7 @@ chmod -x /usr/lib/systemd/system/ncid*.service
 # Sixth: Create the notification service from NCID to Kodi:
 #==============================================================================
 ln -sf ${MUK_DIR}/files/kodi_ncid.sh /usr/share/ncid/modules/ncid-kodi
-ln -sf /usr/lib/systemd/system/ncid-page.service /usr/lib/systemd/system/ncid-kodi.service
+cp /usr/lib/systemd/system/ncid-page.service /usr/lib/systemd/system/ncid-kodi.service
 sed -i "s|Page|Kodi|g" /usr/lib/systemd/system/ncid-kodi.service
 sed -i "s|ncid-page|ncid-kodi|g" /usr/lib/systemd/system/ncid-kodi.service
 if ischroot; then
