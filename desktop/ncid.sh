@@ -41,22 +41,13 @@ chmod -x /usr/lib/systemd/system/ncid*.service
 
 # Sixth: Create the notification service from NCID to Kodi:
 #==============================================================================
-ln -sf ${MUK_DIR}/files/kodi_ncid.sh /usr/share/ncid/modules/ncid_kodi
-ln -sf /usr/lib/systemd/system/ncid-page.service /usr/lib/systemd/system/kodi_ncid.service
-[[ ! -d /usr/lib/systemd/system/kodi_ncid.service.d ]] && mkdir -p /usr/lib/systemd/system/kodi_ncid.service.d
-cat << EOF > /usr/lib/systemd/system/kodi_ncid.service.d/customize.conf
-[Unit]
-Description=NCID client using the Kodi Module
-
-[Service]
-PIDFile=
-PIDFile=/run/kodi_ncid.pid
-ExecStart=
-ExecStart=/usr/bin/ncid --no-gui --pidfile /run/kodi_ncid.pid -P kodi_ncid
-EOF
+ln -sf ${MUK_DIR}/files/kodi_ncid.sh /usr/share/ncid/modules/ncid-kodi
+ln -sf /usr/lib/systemd/system/ncid-page.service /usr/lib/systemd/system/ncid-kodi.service
+sed -i "s|Page|Kodi|g" /usr/lib/systemd/system/ncid-kodi.service
+sed -i "s|ncid-page|ncid-kodi|g" /usr/lib/systemd/system/ncid-kodi.service
 if ischroot; then
-	systemctl disable kodi_ncid
+	systemctl disable ncid-kodi
 else
-	systemctl enable kodi_ncid
-	systemctl start kodi_ncid
+	systemctl enable ncid-kodi
+	systemctl start ncid-kodi
 fi

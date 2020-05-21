@@ -37,7 +37,7 @@ EOF
 
 # Second: Link the scripts necessary in order to set up the service:
 #==============================================================================
-touch /etc/openvpn/vpn/.vpn_creds
+touch /etc/openvpn/.vpn_creds
 chmod 400 /etc/openvpn/.vpn_creds
 touch /etc/openvpn/.vpn_last_update
 chmod 400 /etc/openvpn/.vpn_last_update
@@ -72,5 +72,5 @@ if ischroot; then
 	[[ -e /usr/local/finisher/tasks.d/30_vpn.sh ]] && rm /usr/local/finisher/tasks.d/30_vpn.sh
 	ln -sf ${MUK_DIR}/files/tasks.d/30_vpn.sh /usr/local/finisher/tasks.d/30_vpn.sh
 else
-	/usr/local/finisher/tasks.d/30_vpn.sh
+	${MUK_DIR}/files/tasks.d/30_vpn.sh
 fi
