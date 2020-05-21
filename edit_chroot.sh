@@ -599,7 +599,7 @@ elif [[ "$1" == "rdcopy" ]]; then
 
 	_title "Unmounting RedDragon USB stick..."
 	umount ${USB}
-	if [[ ! "$(echo $@ | grep "noeject") == "" ]]; then
+	if [[ ! "$(echo $@ | grep "noeject")" == "" ]]; then
 		_title "Ejecting RedDragon USB stick..."
 		eject ${DEV}
 	fi
