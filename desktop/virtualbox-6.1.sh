@@ -1,4 +1,4 @@
-7#!/bin/bash
+#!/bin/bash
 [[ -f /usr/local/finisher/settings.conf ]] && . /usr/local/finisher/settings.conf
 MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 [[ ! -e ${MUK_DIR}/files/includes.sh ]] && (echo Missing includes file!  Aborting!; exit 1)

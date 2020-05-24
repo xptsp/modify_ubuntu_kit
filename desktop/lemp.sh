@@ -6,7 +6,7 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs a LEMP (Linux/Ngnix/MySQL/PHP) stack on your computer."
+	echo -e "${RED}Purpose:${NC} Installs a LEMP (Linux/Ngnix/MariaSQL/PHP) stack on your computer."
 	echo ""
 	exit 0
 fi
@@ -30,7 +30,7 @@ ufw allow 'Nginx HTTP'
 ischroot && systemctl disable nginx
 
 #==============================================================================
-_title "Installing MySQL"
+_title "Installing MariaSQL"
 #==============================================================================
 # First: Install the software:
 apt install -y mariadb-server

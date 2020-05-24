@@ -4,7 +4,7 @@ Before=sleep.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/sh -c "/opt/modify_ubuntu_kit/files/transmission_nosleep.sh"
+ExecStart=/bin/sh -c "/opt/modify_ubuntu_kit/files/transmission_nosleep.sh"
 
 [Install]
 RequiredBy=sleep.target

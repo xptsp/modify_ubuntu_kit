@@ -20,8 +20,10 @@ _title "Install XRDP (Remote Desktop server)..."
 [[ "$OS_VER" -eq 1804 ]] && add-apt-repository -y ppa:martinx/xrdp-hwe-18.04
 apt install -y xrdp light-locker
 adduser xrdp ssl-cert
-systemctl disable xrdp
-sed -i '/xrdp/d' /usr/local/finisher/disabled.list
+if ischroot; then
+	systemctl disable xrdp
+	sed -i '/xrdp/d' /usr/local/finisher/disabled.list
+fi
 
 # Second: Fix the "second session" issue with 18.04.x:
 # Src: https://catch22cats.blogspot.com/2018/05/xrdp-blank-screen-with-ubuntu-1804.html
@@ -31,19 +33,16 @@ sed -i "s|test -x /etc/X11/Xsession|unset DBUS_SESSION_BUS_ADDRESS\nunset XDG_RU
 # Third: Fix the "Authentication Required to Create Managed Color Device" issue:
 # Src: https://c-nergy.be/blog/?p=12073
 #==============================================================================
-cat << EOF > /etc/polkit-1/localauthority.conf.d/02-allow-colord.conf
-polkit.addRule(function(action, subject) {
- if ((action.id == "org.freedesktop.color-manager.create-device" ||
- action.id == "org.freedesktop.color-manager.create-profile" ||
- action.id == "org.freedesktop.color-manager.delete-device" ||
- action.id == "org.freedesktop.color-manager.delete-profile" ||
- action.id == "org.freedesktop.color-manager.modify-device" ||
- action.id == "org.freedesktop.color-manager.modify-profile") &&
- subject.isInGroup("{users}")) {
- return polkit.Result.YES;
- }
- });
+[[ -f /etc/polkit-1/localauthority.conf.d/02-allow-colord.conf ]] && rm /etc/polkit-1/localauthority.conf.d/02-allow-colord.conf
+cat << EOF > /etc/polkit-1/localauthority/50-local.d/45-allow-colord.pkla
+[Allow Colord all Users]
+Identity=unix-user:*
+Action=org.freedesktop.color-manager.create-device;org.freedesktop.color-manager.create-profile;org.freedesktop.color-manager.delete-device;org.freedesktop.color-manager.delete-profile;org.freedesktop.color-manager.modify-device;org.freedesktop.color-manager.modify-profile
+ResultAny=no
+ResultInactive=no
+ResultActive=yes
 EOF
+[[ -f /var/crash/* ]] && rm /var/crash/*
 
 # Fourth: Configuring XRDP properly:
 #==============================================================================
