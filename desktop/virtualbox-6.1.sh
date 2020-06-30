@@ -12,7 +12,31 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
-_title "Create "missing" /etc/rc.local file..."
+_title "Install VirtualBox..."
+#==============================================================================
+if [[ "$1" == "repo" ]]; then
+	wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | apt-key add -
+	DIST=$(lsb_release -cs)
+	[[ "${DIST}" == "focal" ]] && DIST=eoan
+	echo "deb [arch=amd64] http://download.virtualbox.org/virtualbox/debian ${DIST} contrib" > /etc/apt/sources.list.d/virtualbox.list
+	apt update
+	apt install -y virtualbox-6.1
+else
+	wget https://download.virtualbox.org/virtualbox/6.1.6/virtualbox-6.1_6.1.6-137129~Ubuntu~bionic_amd64.deb -O /tmp/virtualbox.deb
+	apt install -y /tmp/virtualbox.deb
+	rm /tmp/virtualbox.deb
+fi
+
+# Third: Create finisher task:
+#==============================================================================
+if ischroot; then
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+	ln -sf ${MUK_DIR}/files/tasks.d/75_virtualbox.sh /usr/local/finisher/tasks.d/75_virtualbox.sh
+else
+	${MUK_DIR}/files/tasks.d/75_virtualbox.sh
+fi
+
+# Fourth: Add command to load virtualbox kernel modules:
 #==============================================================================
 [[ ! -f /etc/rc.local ]] && cat << EOF > /etc/rc.local
 #!/bin/sh -e
@@ -30,17 +54,12 @@ _title "Create "missing" /etc/rc.local file..."
 
 exit 0
 EOF
+sed -i "s|^exit 0|# Initialize VirtualBox kernel modules:\n/sbin/vboxconfig\n\nexit 0|g" /etc/rc.local
 chmod +x /etc/rc.local
 
 #==============================================================================
-_title "Install VirtualBox and VirtualBox Extension Pack..."
+_title "Installing VirtualBox Extension Pack..."
 #==============================================================================
-# First: Install the software :p
-#==============================================================================
-wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | apt-key add -
-DIST=$(lsb_release -cs)
-[[ "${DIST}" == "focal" ]] && DIST=eoan
-echo "deb [arch=amd64] http://download.virtualbox.org/virtualbox/debian ${DIST} contrib" > /etc/apt/sources.list.d/virtualbox.list
-apt update
-apt install -y virtualbox-6.1
-sed -i "s|^exit 0|# Initialize VirtualBox kernel modules:\n/sbin/vboxconfig\n\nexit 0|g" /etc/rc.local
+wget https://download.virtualbox.org/virtualbox/6.1.6/Oracle_VM_VirtualBox_Extension_Pack-6.1.6.vbox-extpack -O /tmp/Oracle_VM_VirtualBox_Extension_Pack-6.1.6.vbox-extpack
+VBoxManage extpack install /tmp/Oracle_VM_VirtualBox_Extension_Pack-6.1.6.vbox-extpack --accept-license=56be48f923303c8cababb0bb4c478284b688ed23f16d775d729b89a2e8e5f9eb
+rm /tmp/Oracle_VM_VirtualBox_Extension_Pack-6.1.6.vbox-extpack

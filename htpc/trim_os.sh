@@ -17,6 +17,6 @@ _title "Removing packages not required for a HTPC machine:"
 apt remove -y --purge --autoremove catfish* gigolo* gnome-mines* gnome-sudoku* libreoffice-* python3-uno* mugshot* onboard* atril*
 apt remove -y --purge --autoremove onboard-data* orage* parole* pidgin* pidgin-libnotify* python3-uno* ristretto* simple-scan* zathura 
 apt remove -y --purge --autoremove thunderbird* xfburn*  xfce4-dict* xfce4-notes* xfce4-screenshooter* engrampa* puzzles* evince* 
-apt remove -y --purge --autoremove cups-daemon thunar-dropbox-plugin
+apt remove -y --purge --autoremove cups-daemon thunar-dropbox-plugin remarkable github-desktop
 [ -f ~/.config/Trolltech.conf ] && rm ~/.config/Trolltech.conf
 [ -d ~/.config/libreoffice ] && rm -R ~/.config/libreoffice
