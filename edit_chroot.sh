@@ -91,8 +91,8 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 			_error "No unpacked filesystem!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 			exit 1
 		elif [[ "$1" == "build" ]]; then
-			if [[ ! "$2" == "base" && ! "$2" == "desktop" && ! "$2" == "htpc" ]]; then
-				_error "Invalid parameter!  Supported values are: ${RED}base${GREEN}, ${RED}desktop${GREEN}, and ${RED}htpc${GREEN}!"
+			if [[ ! "$2" == "base" && ! "$2" == "desktop" && ! "$2" == "htpc" && ! "$2" == "docker" ]]; then
+				_error "Invalid parameter!  Supported values are: ${RED}base${GREEN}, ${RED}desktop${GREEN}, ${RED}htpc${GREEN} and ${RED}docker${GREEN}!"
 				exit 1
 			fi
 		fi
@@ -105,6 +105,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		cp /etc/hosts ${UNPACK_DIR}/edit/etc/
 		mount --bind /run/ ${UNPACK_DIR}/edit/run
 		mount --bind /dev/ ${UNPACK_DIR}/edit/dev
+		[[ -f /var/run/docker.sock ]] && mount --bind /var/run/docker.sock /img/edit/var/run/docker.sock
 
 		### Third: Copy MUK into chroot environment:
 		rm -rf ${UNPACK_DIR}/edit${MUK_DIR}
