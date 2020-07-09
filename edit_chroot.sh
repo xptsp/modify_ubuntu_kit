@@ -105,7 +105,10 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		cp /etc/hosts ${UNPACK_DIR}/edit/etc/
 		mount --bind /run/ ${UNPACK_DIR}/edit/run
 		mount --bind /dev/ ${UNPACK_DIR}/edit/dev
-		[[ -f /var/run/docker.sock ]] && mount --bind /var/run/docker.sock /img/edit/var/run/docker.sock
+		if [[ -e /var/run/docker.sock ]]; then
+			touch ${UNPACK_DIR}/edit/var/run/docker.sock
+			mount --bind /var/run/docker.sock ${UNPACK_DIR}/edit/var/run/docker.sock
+		fi
 
 		### Third: Copy MUK into chroot environment:
 		rm -rf ${UNPACK_DIR}/edit${MUK_DIR}
@@ -253,6 +256,10 @@ elif [[ "$1" == "unmount" ]]; then
 	umount ${UNPACK_DIR}/edit/dev/pts >& /dev/null
 	umount ${UNPACK_DIR}/edit/dev >& /dev/null
 	umount ${UNPACK_DIR}/edit/run >& /dev/null
+	if [[ -e ${UNPACK_DIR}/edit/var/run/docker.sock ]]; then
+		umount ${UNPACK_DIR}/edit/var/run/docker.sock
+		rm ${UNPACK_DIR}/edit/var/run/docker.sock
+	fi
 	_title "All filesystem mount points should be unmounted now."
 
 #==============================================================================
