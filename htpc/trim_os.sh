@@ -14,9 +14,12 @@ fi
 #==============================================================================
 _title "Removing packages not required for a HTPC machine:"
 #==============================================================================
-apt remove -y --purge --autoremove catfish* gigolo* gnome-mines* gnome-sudoku* libreoffice-* python3-uno* mugshot* onboard* atril*
-apt remove -y --purge --autoremove onboard-data* orage* parole* pidgin* pidgin-libnotify* python3-uno* ristretto* simple-scan* zathura 
-apt remove -y --purge --autoremove thunderbird* xfburn*  xfce4-dict* xfce4-notes* xfce4-screenshooter* engrampa* puzzles* evince* 
-apt remove -y --purge --autoremove cups-daemon thunar-dropbox-plugin remarkable github-desktop
+apt purge -y --autoremove xfce4-utils xfce4-dict* xfce4-notes* xfce4-screenshooter* xfce4-session xfce4-panel xfce4-terminal xfce4-taskmanager
+apt purge -y --autoremove xfconf xfburn* xfwm4 xfdesktop4 thunar* exo-utils thunderbird* engrampa* puzzles* evince*
+apt purge -y --autoremove catfish* gigolo* gnome-mines* gnome-sudoku* libreoffice-* python3-uno* mugshot* onboard* atril*
+apt purge -y --autoremove onboard-data* orage* parole* pidgin* pidgin-libnotify* python3-uno* ristretto* simple-scan* zathura 
+apt purge -y --autoremove cups-daemon thunar-dropbox-plugin mate-calc* printer-driver* system-config*
+apt purge -y --autoremove remarkable
+apt purge -y --autoremove github-desktop
 [ -f ~/.config/Trolltech.conf ] && rm ~/.config/Trolltech.conf
 [ -d ~/.config/libreoffice ] && rm -R ~/.config/libreoffice
