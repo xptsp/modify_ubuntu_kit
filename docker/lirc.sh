@@ -1,0 +1,1 @@
+../htpc/lirc.sh
