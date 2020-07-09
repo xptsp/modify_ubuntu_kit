@@ -213,7 +213,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		### Ninth: Remove any unnecessary packages:
 		CURRENT=$(ls -l /initrd.img* | cut -d">" -f 2 | cut -d"-" -f2,3 | sort -r | head -1)
 		KERNELS=$(dpkg -l | grep linux-image | grep "ii" | awk '{print$2}' | grep -v "$CURRENT" | grep -v "hwe")
-		if [[ "${OLD_KERNEL:-"0"}" == "0" && ! -z "${KERNELS}" ]]; then
+		if [[ "${OLD_KERNEL:-"0"}" == "1" && ! -z "${KERNELS}" ]]; then
 			_title "Removing old kernels packages and unnecessary packages..."
 			apt-get remove --autoremove --purge -y ${KERNELS}
 		fi
@@ -257,7 +257,7 @@ elif [[ "$1" == "unmount" ]]; then
 	umount ${UNPACK_DIR}/edit/dev >& /dev/null
 	umount ${UNPACK_DIR}/edit/run >& /dev/null
 	if [[ -e ${UNPACK_DIR}/edit/var/run/docker.sock ]]; then
-		umount ${UNPACK_DIR}/edit/var/run/docker.sock
+		umount ${UNPACK_DIR}/edit/var/run/docker.sock >& /dev/null
 		rm ${UNPACK_DIR}/edit/var/run/docker.sock
 	fi
 	_title "All filesystem mount points should be unmounted now."
