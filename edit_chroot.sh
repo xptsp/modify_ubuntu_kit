@@ -112,7 +112,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 
 		### Third: Copy MUK into chroot environment:
 		rm -rf ${UNPACK_DIR}/edit${MUK_DIR}
-		cp -aR ${MUK_DIR} ${UNPACK_DIR}/edit/opt/
+		cp -laR ${MUK_DIR} ${UNPACK_DIR}/edit/opt/
 
 		### Fourth: Enter the CHROOT environment:
 		_title "Entering CHROOT environment"
