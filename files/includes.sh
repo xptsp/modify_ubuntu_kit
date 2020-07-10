@@ -71,6 +71,12 @@ function change_username() {
 function relocate_dir() {
 	__insert_into relocate $@
 }
+function add_outside() {
+	__insert_into outside_chroot $@
+}
+function del_outside() {
+	__remove_from outside_chroot $@
+}
 
 # Functions enabling and disabling sleep/hibernate functions:
 function sleep_allow() {

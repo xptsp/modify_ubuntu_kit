@@ -112,14 +112,21 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 
 		### Third: Copy MUK into chroot environment:
 		rm -rf ${UNPACK_DIR}/edit${MUK_DIR}
-		cp -laR ${MUK_DIR} ${UNPACK_DIR}/edit/opt/
+		cp -aR ${MUK_DIR} ${UNPACK_DIR}/edit/opt/
 
 		### Fourth: Enter the CHROOT environment:
 		_title "Entering CHROOT environment"
 		chroot ${UNPACK_DIR}/edit ${MUK_DIR}/edit_chroot.sh $@
 		[[ -f ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ]] && cp ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ${UNPACK_DIR}/extract/casper/build.txt
 
-		### Fifth: Remove mounts for CHROOT environment:
+		### Fifth: Run required commands outside chroot commands:
+		if [[ -f /usr/local/finisher/outside_chroot.list ]]; then
+			_title "Executing scripts outside of CHROOT environment..."
+			(while read r p; do ${UNPACK_DIR}/edit/$p; done) < /usr/local/finisher/outside_chroot.list >& /dev/null
+			rm /usr/local/finisher/outside_chroot.list
+		fi
+
+		### Sixth: Remove mounts for CHROOT environment:
 		$0 unmount
 		_title "Exited CHROOT environment"
 	else
@@ -432,7 +439,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
 
 	# Eighth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
-	[[ "${KEEP_CIFS:-"0"}" == "1" ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
+	[[ "${KEEP_CIFS:-"0"}" == "1" && -f extract/casper/filesystem.manifest-remove ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
 
 	# Ninth: Create the "filesystem.size" and "md5sum.list" files:
 	_title "Building ${BLUE}filesystem.size${GREEN} and ${BLUE}md5sum.list${GREEN}...."
