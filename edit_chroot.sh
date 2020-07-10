@@ -120,10 +120,10 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		[[ -f ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ]] && cp ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ${UNPACK_DIR}/extract/casper/build.txt
 
 		### Fifth: Run required commands outside chroot commands:
-		if [[ -f /usr/local/finisher/outside_chroot.list ]]; then
+		if [[ -f ${UNPACK_DIR}/img/usr/local/finisher/outside_chroot.list ]]; then
 			_title "Executing scripts outside of CHROOT environment..."
-			(while read r p; do ${UNPACK_DIR}/edit/$p; done) < /usr/local/finisher/outside_chroot.list >& /dev/null
-			rm /usr/local/finisher/outside_chroot.list
+			(while read r p; do ${UNPACK_DIR}/edit/$p; done) < ${UNPACK_DIR}/img/usr/local/finisher/outside_chroot.list >& /dev/null
+			rm ${UNPACK_DIR}/img/usr/local/finisher/outside_chroot.list
 		fi
 
 		### Sixth: Remove mounts for CHROOT environment:
