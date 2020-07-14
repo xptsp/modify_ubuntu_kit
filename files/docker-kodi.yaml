@@ -1,0 +1,5 @@
+version: "2.1"
+services:
+  kodi:
+    image: erichough/kodi
+    container_name: kodi

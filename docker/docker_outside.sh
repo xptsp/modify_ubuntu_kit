@@ -41,6 +41,7 @@ add_outside ${MUK_DIR}/files/docker_outside.sh
 
 ### Third: Link to the docker-compose files for our services:
 #==============================================================================
+[[ ! -d /home/docker ]] && mkdir -p /home/docker
 ln -sf ${MUK_DIR}/files/docker-always.yaml /home/docker/always.yaml
 ln -sf ${MUK_DIR}/files/docker-mounts.yaml /home/docker/mounts.yaml
 ln -sf ${MUK_DIR}/files/docker-kodi.yaml /home/docker/kodi.yaml

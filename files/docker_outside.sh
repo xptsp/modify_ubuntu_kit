@@ -1,9 +1,14 @@
 #!/bin/bash
+[[ -f /usr/local/settings/finisher.conf ]] && . /usr/local/finisher/settings.conf
+MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
+[[ ! -e ${MUK_DIR}/files/includes.sh ]] && (echo Missing includes file!  Aborting!; exit 1)
+. ${MUK_DIR}/files/includes.sh
+
 # Install docker on host system if not already installed:
 [[ ! -f /usr/bin/docker ]] && ${MUK_DIR}/desktop/docker.sh
 
 #==============================================================================
-_title "Pulling Docker images for chroot environment..."
+_title "Mounting cdroot docker directory on live system:"
 #==============================================================================
 # Create the necessary directories:
 UNPACK_DIR=${UNPACK_DIR:-"/img"}
@@ -18,10 +23,15 @@ systemctl start docker
 # Pull the images using docker-compose:
 OLD_DIR=$(pwd)
 cd ${UNPACK_DIR}/edit/home/docker
-for file in *.yaml; do docker-compose -f $file pull; done
+for file in *.yaml; do 
+	_title "Pulling images specified in ${BLUE}${file}${GREEN}..."
+	docker-compose -f $file pull; 
+done
 cd ${OLD_DIR}
 
-# Stop docker, unmount docker directory inside chroot environment, then start docker:
+#==============================================================================
+_title "Unmounting cdroot docker directory from live system:"
+#==============================================================================
 systemctl stop docker
 umount /var/lib/docker
 systemctl start docker
