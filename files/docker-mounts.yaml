@@ -1,0 +1,57 @@
+version: "2.1"
+services:
+  emby:
+    image: linuxserver/emby
+    container_name: emby
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+      - UMASK_SET=022 #optional
+    volumes:
+      - /mnt/hdd/.docker/emby:/config
+      - /mnt/hdd/Series:/data/tvshows
+      - /mnt/hdd/Movies:/data/movies
+      #- /path/for/transcoding:/transcode #optional
+      #- /opt/vc/lib:/opt/vc/lib #optional
+    ports:
+      - 8096:8096
+      - 8920:8920 #optional
+    devices:
+      - /dev/dri:/dev/dri #optional
+      - /dev/vchiq:/dev/vchiq #optional
+      - /dev/video10:/dev/video10 #optional
+      - /dev/video11:/dev/video11 #optional
+      - /dev/video12:/dev/video12 #optional
+    restart: unless-stopped
+
+  sickchill:
+    image: linuxserver/sickchill
+    container_name: sickchill
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+    volumes:
+      - /mnt/hdd/.docker/sickchill:/config
+      - /mnt/hdd/Downloads:/downloads
+      - /mnt/hdd/Series/:/tv
+    ports:
+      - 8081:8081
+    restart: unless-stopped
+
+  couchpotato:
+    image: linuxserver/couchpotato
+    container_name: couchpotato
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/Chicago
+      - UMASK_SET=022
+    volumes:
+      - /mnt/hdd/.docker/couchpotato:/config
+      - /mnt/hdd/Downloads:/downloads
+      - /mnt/hdd/Movies:/movies
+    ports:
+      - 5050:5050
+    restart: unless-stopped

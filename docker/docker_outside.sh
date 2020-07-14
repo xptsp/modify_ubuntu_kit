@@ -6,14 +6,41 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs Docker on your computer."
+	echo -e "${RED}Purpose:${NC} Adds task to pull necessary Docker images for inclusion in Live CD."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Adding task to pull Docker images outside chroot environment..."
+_title "Setting up to pull necessary Docker images for inclusion in Live CD..."
 #==============================================================================
-[[ ! -d /home/docker/.sys ]] && mkdir -p /home/docker/.sys
-wget https://gist.githubusercontent.com/xptsp/7472b786a478664e4e3dbbf4c4a481db/raw/1a891aa3706787fb7964853d336b9bd10f3fdf82/docker-compose.yaml -O /home/docker/docker-compose.yaml
+### First: Create the service file to launch the services upon boot:
+#==============================================================================
+cat << EOF > /etc/systemd/system/docker-compose@.service
+[Unit]
+Description=Docker Compose Service
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/home/docker
+ExecStart=/usr/local/bin/docker-compose -f %i.yaml up -d
+ExecStop=/usr/local/bin/docker-compose -f %i.yaml stop
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl disable docker-compose@always
+
+### Second: Add an "outside chroot environment" task for edit_chroot to run:
+#==============================================================================
 add_outside ${MUK_DIR}/files/docker_outside.sh
+
+### Third: Link to the docker-compose files for our services:
+#==============================================================================
+ln -sf ${MUK_DIR}/files/docker-always.yaml /home/docker/always.yaml
+ln -sf ${MUK_DIR}/files/docker-mounts.yaml /home/docker/mounts.yaml
+ln -sf ${MUK_DIR}/files/docker-kodi.yaml /home/docker/kodi.yaml

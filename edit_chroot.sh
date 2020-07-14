@@ -123,7 +123,6 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		if [[ -f ${UNPACK_DIR}/edit/usr/local/finisher/outside_chroot.list ]]; then
 			_title "Executing scripts outside of CHROOT environment..."
 			(while read p; do ${UNPACK_DIR}/edit/$p; done) < ${UNPACK_DIR}/edit/usr/local/finisher/outside_chroot.list >& /dev/null
-			rm ${UNPACK_DIR}/edit/usr/local/finisher/outside_chroot.list
 		fi
 
 		### Sixth: Remove mounts for CHROOT environment:

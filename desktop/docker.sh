@@ -36,5 +36,3 @@ chmod +x /usr/local/bin/docker-compose
 _title "Creating docker user..."
 #==============================================================================
 useradd -M -g docker -r -s /usr/sbin/nologin docker
-
-

@@ -16,8 +16,10 @@ mount --bind $UNPACK_DIR/edit/home/docker/.sys /var/lib/docker
 systemctl start docker
 
 # Pull the images using docker-compose:
+OLD_DIR=$(pwd)
 cd ${UNPACK_DIR}/edit/home/docker
-docker-compose pull --no-parallel
+for file in *.yaml; do docker-compose -f $file pull; done
+cd ${OLD_DIR}
 
 # Stop docker, unmount docker directory inside chroot environment, then start docker:
 systemctl stop docker
