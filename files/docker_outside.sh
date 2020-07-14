@@ -8,7 +8,7 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 [[ ! -f /usr/bin/docker ]] && ${MUK_DIR}/desktop/docker.sh
 
 #==============================================================================
-_title "Mounting cdroot docker directory on live system:"
+_title "Mounting chroot docker directory on live system:"
 #==============================================================================
 # Create the necessary directories:
 UNPACK_DIR=${UNPACK_DIR:-"/img"}
@@ -25,12 +25,17 @@ OLD_DIR=$(pwd)
 cd ${UNPACK_DIR}/edit/home/docker
 for file in *.yaml; do 
 	_title "Pulling images specified in ${BLUE}${file}${GREEN}..."
-	docker-compose -f $file pull; 
+	docker-compose -f $file pull
+	BUILD=$(cat $file | grep "build:")
+	if [[ ! -z "${BUILD}" ]]; then
+		_title "Building images specified in ${BLUE}${file}${GREEN}..."
+		docker-compose -f $file build
+	fi
 done
 cd ${OLD_DIR}
 
 #==============================================================================
-_title "Unmounting cdroot docker directory from live system:"
+_title "Unmounting chroot docker directory from live system:"
 #==============================================================================
 systemctl stop docker
 umount /var/lib/docker
