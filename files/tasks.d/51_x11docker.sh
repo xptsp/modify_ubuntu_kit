@@ -8,3 +8,5 @@ autologin-session=x11docker-openbox
 greeter-session=lightdm-gtk-greeter
 allow-guest=false
 DONE
+# Change user login screen to passwordless login:
+usermod -aG nopasswdlogin kodi

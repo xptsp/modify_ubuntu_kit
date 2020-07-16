@@ -19,7 +19,10 @@ curl -fsSL https://raw.githubusercontent.com/mviereck/x11docker/master/x11docker
 #==============================================================================
 _title "Installing X11Docker...."
 #==============================================================================
+### First: Build the package, then install it:
 git clone https://github.com/xptsp/x11docker-openbox /tmp/x11docker-openbox
 cd /tmp/x11docker-openbox
 ./build.sh
 apt install -y ./x11docker-openbox.deb
+### Second: Remove the openbox option, since it just gives a blank screen:
+rm /usr/share/xsessions/openbox.desktop

@@ -26,11 +26,6 @@ cd ${UNPACK_DIR}/edit/home/docker
 for file in *.yaml; do 
 	_title "Pulling images specified in ${BLUE}${file}${GREEN}..."
 	docker-compose -f $file pull
-	BUILD=$(cat $file | grep "build:")
-	if [[ ! -z "${BUILD}" ]]; then
-		_title "Building images specified in ${BLUE}${file}${GREEN}..."
-		docker-compose -f $file build
-	fi
 done
 cd ${OLD_DIR}
 
