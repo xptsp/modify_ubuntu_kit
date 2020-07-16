@@ -16,3 +16,4 @@ _title "Setup the computer to always start Kodi on next login..."
 #==============================================================================
 [[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
 ln -sf ${MUK_DIR}/files/tasks.d/51_x11docker.sh /usr/local/finisher/tasks.d/51_x11docker.sh
+change_username /usr/local/finisher/tasks.d/51_x11docker.sh
