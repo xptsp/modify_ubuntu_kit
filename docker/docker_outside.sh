@@ -44,4 +44,3 @@ add_outside ${MUK_DIR}/files/docker_outside.sh
 [[ ! -d /home/docker ]] && mkdir -p /home/docker
 ln -sf ${MUK_DIR}/files/docker-always.yaml /home/docker/always.yaml
 ln -sf ${MUK_DIR}/files/docker-mounts.yaml /home/docker/mounts.yaml
-ln -sf ${MUK_DIR}/files/docker-misc.yaml /home/docker/misc.yaml

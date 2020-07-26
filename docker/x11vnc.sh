@@ -1,1 +1,0 @@
-../desktop/x11vnc.sh
