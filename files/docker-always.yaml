@@ -30,29 +30,6 @@ services:
       timeout: 1s
       retries: 24
       
-  homeassistant:
-    container_name: homeassistant
-    image: homeassistant/home-assistant:latest
-    network_mode: "host"
-    volumes:
-      - /home/docker/homeassistant:/config
-      - /etc/localtime:/etc/localtime:ro
-      - /etc/letsencrypt:/etc/letsencrypt:ro
-    #devices:
-    #  - /dev/ttyUSB0:/dev/ttyUSB0:rwm
-    #  - /dev/ttyUSB1:/dev/ttyUSB1:rwm
-    restart: on-failure
-    depends_on:
-      influxdb:
-        condition: service_healthy
-      mosquitto:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://127.0.0.1:8123"]
-      interval: 30s
-      timeout: 10s
-      retries: 6
-
   node-red:
     container_name: node-red
     image: nodered/node-red
@@ -68,8 +45,6 @@ services:
         condition: service_started
       mqtt-bridge:
         condition: service_started
-      homeassistant:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:1880"]
       interval: 30s
@@ -98,9 +73,6 @@ services:
     volumes:
       - /home/docker/mqtt-bridge:/config
     restart: on-failure
-    depends_on:
-      homeassistant:
-        condition: service_healthy
 
   portainer:
     container_name: portainer
