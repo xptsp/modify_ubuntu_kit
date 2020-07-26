@@ -43,6 +43,4 @@ ln -sf ${MUK_DIR}/files/docker-mounts.yaml /home/docker/mounts.yaml
 
 ### Third: Add an "outside chroot environment" task for edit_chroot to run:
 #==============================================================================
-add_outside docker-compose -f /home/docker/always.yaml pull
-add_outside docker-compose -f /home/docker/mounts.yaml pull
-
+add_outside ${MUK_DIR}/files/docker_outside.sh

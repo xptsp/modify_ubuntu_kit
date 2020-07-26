@@ -72,10 +72,12 @@ function relocate_dir() {
 	__insert_into relocate $@
 }
 function add_outside() {
-	__insert_into outside_chroot $@
+	del_outside $@
+	echo $@ >> /usr/local/finisher/outside_chroot.list
 }
 function del_outside() {
-	__remove_from outside_chroot $@
+	cat /usr/local/finisher/outside_chroot.list | grep -v "$@" > /tmp/outside_chroot.list
+	mv /tmp/outside_chroot.list /usr/local/finisher/outside_chroot.list
 }
 
 # Functions enabling and disabling sleep/hibernate functions:

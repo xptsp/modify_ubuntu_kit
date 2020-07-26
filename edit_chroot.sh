@@ -125,7 +125,6 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 			_title "Mounting chroot docker directory on live system:"
 			#==============================================================================
 			# Create the necessary directories:
-			UNPACK_DIR=${UNPACK_DIR:-"/img"}
 			[[ ! -d ${UNPACK_DIR}/edit/home/docker/.sys ]] && mkdir -p ${UNPACK_DIR}/edit/home/docker/.sys
 			[[ ! -d /var/lib/docker ]] && mkdir -p /var/lib/docker
 
