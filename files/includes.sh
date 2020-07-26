@@ -100,6 +100,11 @@ function _chroot() {
 	[[ $(ischroot; echo $?) -ne 1 ]] && return 1
 }
 
+# Function that delays docker command executions until outside of chroot:
+docker() {
+	add_outside $&
+}
+
 # Function that enables specified Kodi addons:
 function kodi_enable() {
 	[[ ! -f /etc/skel/.kodi/userdata/Database/Addons27.db ]] && ${MUK_DIR}/base/kodi_addon_db.sh

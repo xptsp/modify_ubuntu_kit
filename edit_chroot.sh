@@ -121,8 +121,30 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 
 		### Fifth: Run required commands outside chroot commands:
 		if [[ -f ${UNPACK_DIR}/edit/usr/local/finisher/outside_chroot.list ]]; then
+			#==============================================================================
+			_title "Mounting chroot docker directory on live system:"
+			#==============================================================================
+			# Create the necessary directories:
+			UNPACK_DIR=${UNPACK_DIR:-"/img"}
+			[[ ! -d ${UNPACK_DIR}/edit/home/docker/.sys ]] && mkdir -p ${UNPACK_DIR}/edit/home/docker/.sys
+			[[ ! -d /var/lib/docker ]] && mkdir -p /var/lib/docker
+
+			# Stop docker, mount docker directory inside chroot environment, then start docker:
+			systemctl stop docker
+			mount --bind $UNPACK_DIR/edit/home/docker/.sys /var/lib/docker
+			systemctl start docker
+
+			#==============================================================================
 			_title "Executing scripts outside of CHROOT environment..."
+			#==============================================================================
 			(while read p; do ${UNPACK_DIR}/edit/$p; done) < ${UNPACK_DIR}/edit/usr/local/finisher/outside_chroot.list
+
+			#==============================================================================
+			_title "Unmounting chroot docker directory from live system:"
+			#==============================================================================
+			systemctl stop docker
+			umount /var/lib/docker
+			systemctl start docker
 		fi
 
 		### Sixth: Remove mounts for CHROOT environment:

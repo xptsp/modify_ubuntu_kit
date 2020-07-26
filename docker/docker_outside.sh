@@ -35,12 +35,14 @@ WantedBy=multi-user.target
 EOF
 systemctl disable docker-compose@always
 
-### Second: Add an "outside chroot environment" task for edit_chroot to run:
-#==============================================================================
-add_outside ${MUK_DIR}/files/docker_outside.sh
-
-### Third: Link to the docker-compose files for our services:
+### Second: Link to the docker-compose files for our services:
 #==============================================================================
 [[ ! -d /home/docker ]] && mkdir -p /home/docker
 ln -sf ${MUK_DIR}/files/docker-always.yaml /home/docker/always.yaml
 ln -sf ${MUK_DIR}/files/docker-mounts.yaml /home/docker/mounts.yaml
+
+### Third: Add an "outside chroot environment" task for edit_chroot to run:
+#==============================================================================
+add_outside docker-compose -f /home/docker/always.yaml pull
+add_outside docker-compose -f /home/docker/mounts.yaml pull
+
