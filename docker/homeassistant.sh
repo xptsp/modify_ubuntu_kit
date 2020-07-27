@@ -26,7 +26,7 @@ wget https://raw.githubusercontent.com/home-assistant/supervised-installer/maste
 chmod +x /tmp/installer.sh
 sed -i -n "/^docker/{s| > /dev/null||};p" /tmp/installer.sh
 sed -i -n "/^docker/{s|^docker |add_outside docker |};p" /tmp/installer.sh
-/tmp/installer.sh -m amd64 -h /home/docker/hass
+/tmp/installer.sh -d /home/docker/hass
 rm /tmp/installer.sh
 systemctl disable hassio-supervisor
 systemctl disable hassio-apparmor
