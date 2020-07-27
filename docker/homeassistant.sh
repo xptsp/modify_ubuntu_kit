@@ -24,7 +24,7 @@ apt purge -y modemmanager
 #==============================================================================
 wget https://raw.githubusercontent.com/home-assistant/supervised-installer/master/installer.sh -O /tmp/installer.sh
 chmod +x /tmp/installer.sh
-sed -i -n "s|^set -e|set -e\n. ${MUK_DIR}/files/includes.sh|g" /tmp/installer.sh
+sed -i "s|^set -e|set -e\n. ${MUK_DIR}/files/includes.sh|g" /tmp/installer.sh
 sed -i -n "/^docker/{s| > /dev/null||};p" /tmp/installer.sh
 sed -i -n "/^docker/{s|\"||g};p" /tmp/installer.sh
 sed -i -n "/^docker/{s|^docker |add_outside docker |};p" /tmp/installer.sh
@@ -33,4 +33,4 @@ rm /tmp/installer.sh
 sed -i "s|^docker |/usr/bin/docker |g" /usr/local/finisher/outside_chroot.list
 systemctl disable hassio-supervisor
 systemctl disable hassio-apparmor
-add_outside /usr/bin/docker pull $(cat /etc/hassio.json | grep "\"homeassistant\":" | cut -d":" -f 2)
+add_outside /usr/bin/docker pull $(cat /etc/hassio.json | grep "\"homeassistant\":" | cut -d":" -f 2 | sed "s|,||g")
