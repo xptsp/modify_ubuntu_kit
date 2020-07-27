@@ -121,29 +121,10 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 
 		### Fifth: Run required commands outside chroot commands:
 		if [[ -f ${UNPACK_DIR}/edit/usr/local/finisher/outside_chroot.list ]]; then
-			#==============================================================================
-			_title "Mounting chroot docker directory on live system:"
-			#==============================================================================
-			# Create the necessary directories:
-			[[ ! -d ${UNPACK_DIR}/edit/home/docker/.sys ]] && mkdir -p ${UNPACK_DIR}/edit/home/docker/.sys
-			[[ ! -d /var/lib/docker ]] && mkdir -p /var/lib/docker
-
-			# Stop docker, mount docker directory inside chroot environment, then start docker:
-			systemctl stop docker
-			mount --bind $UNPACK_DIR/edit/home/docker/.sys /var/lib/docker
-			systemctl start docker
-
-			#==============================================================================
+			$0 docker_mount
 			_title "Executing scripts outside of CHROOT environment..."
-			#==============================================================================
 			(while read p; do ${UNPACK_DIR}/edit/$p; done) < ${UNPACK_DIR}/edit/usr/local/finisher/outside_chroot.list
-
-			#==============================================================================
-			_title "Unmounting chroot docker directory from live system:"
-			#==============================================================================
-			systemctl stop docker
-			umount /var/lib/docker
-			systemctl start docker
+			$0 docker_umount
 		fi
 
 		### Sixth: Remove mounts for CHROOT environment:
@@ -597,6 +578,30 @@ elif [[ "$1" == "rdbuild" ]]; then
 #==============================================================================
 # Did user request to copy RedDragon distros to USB stick?
 #==============================================================================
+elif [[ "$1" == "docker_mount" ]]; then
+	_title "Mounting chroot docker directory on live system:"
+
+	# Create the necessary directories:
+	[[ ! -d ${UNPACK_DIR}/edit/home/docker/.sys ]] && mkdir -p ${UNPACK_DIR}/edit/home/docker/.sys
+	[[ ! -d /var/lib/docker ]] && mkdir -p /var/lib/docker
+
+	# Stop docker, mount docker directory inside chroot environment, then start docker:
+	systemctl stop docker
+	mount --bind $UNPACK_DIR/edit/home/docker/.sys /var/lib/docker
+	systemctl start docker
+
+#==============================================================================
+# Did user request to copy RedDragon distros to USB stick?
+#==============================================================================
+elif [[ "$1" == "docker_umount" ]]; then
+	_title "Unmounting chroot docker directory from live system:"
+	systemctl stop docker
+	umount /var/lib/docker
+	systemctl start docker
+
+#==============================================================================
+# Did user request to copy RedDragon distros to USB stick?
+#==============================================================================
 elif [[ "$1" == "rdcopy" ]]; then
 	# Abort if the RedDragon USB stick isn't found:
 	${MUK_DIR}/files/RD_Restore.sh || exit 1
@@ -648,25 +653,29 @@ else
 	echo "Usage: edit_chroot [OPTION]"
 	echo ""
 	echo "Available commands:"
-	echo -e "  ${GREEN}unpack${NC}      Unpacks the Ubuntu filesystem from DVD or extracted ISO on hard drive."
-	echo -e "  ${GREEN}unpack-iso${NC}  Unpacks the Ubuntu filesystem from ISO on hard drive."
-	echo -e "  ${GREEN}unpack-full${NC} Unpacks the Ubuntu filesystem from ISO on hard drive, including ${GREEN}filesystem.squashfs{$NC}!"
-	echo -e "  ${GREEN}pack${NC}        Packs the unpacked filesystem into ${BLUE}filesystem.squashfs${NC}."
-	echo -e "  ${GREEN}pack-xz${NC}     Packs the unpacked filesystem using XZ compression into ${BLUE}filesystem.squashfs${NC}."
-	echo -e "  ${GREEN}iso${NC}         Builds an ISO image in ${BLUE}${ISO_DIR}${NC} containing the packed filesystem."
-	echo -e "  ${GREEN}rebuild${NC}     Combines ${GREEN}--pack${NC} and ${GREEN}--iso${NC} options."
-	echo -e "  ${GREEN}rebuild-xz${NC}  Combines ${GREEN}--pack-xz${NC} and ${GREEN}--iso${NC} options."
-	echo -e "  ${GREEN}build${NC}       Enter the unpacked filesystem environment to install specified series of packages."
-	echo -e "  ${GREEN}enter${NC}       Enter the unpacked filesystem environment to make changes."
-	echo -e "  ${GREEN}upgrade${NC}     Only upgrades Ubuntu packages with updates available."
-	echo -e "  ${GREEN}unmount${NC}     Safely unmounts all unpacked filesystem mount points."
-	echo -e "  ${GREEN}remove${NC}      Safely removes the unpacked filesystem from the hard drive."
-	echo -e "  ${GREEN}update${NC}      Updates this script with the latest version."
-	echo -e "  ${GREEN}--help${NC}      This message"
+	echo -e "  ${GREEN}unpack${NC}         Unpacks the Ubuntu filesystem from DVD or extracted ISO on hard drive."
+	echo -e "  ${GREEN}unpack-iso${NC}     Unpacks the Ubuntu filesystem from ISO on hard drive."
+	echo -e "  ${GREEN}unpack-full${NC}    Unpacks the Ubuntu filesystem from ISO on hard drive, including ${GREEN}filesystem.squashfs{$NC}!"
+	echo -e "  ${GREEN}pack${NC}           Packs the unpacked filesystem into ${BLUE}filesystem.squashfs${NC}."
+	echo -e "  ${GREEN}pack-xz${NC}        Packs the unpacked filesystem using XZ compression into ${BLUE}filesystem.squashfs${NC}."
+	echo -e "  ${GREEN}iso${NC}            Builds an ISO image in ${BLUE}${ISO_DIR}${NC} containing the packed filesystem."
+	echo -e "  ${GREEN}rebuild${NC}        Combines ${GREEN}--pack${NC} and ${GREEN}--iso${NC} options."
+	echo -e "  ${GREEN}rebuild-xz${NC}     Combines ${GREEN}--pack-xz${NC} and ${GREEN}--iso${NC} options."
+	echo -e "  ${GREEN}build${NC}          Enter the unpacked filesystem environment to install specified series of packages."
+	echo -e "  ${GREEN}enter${NC}          Enter the unpacked filesystem environment to make changes."
+	echo -e "  ${GREEN}upgrade${NC}        Only upgrades Ubuntu packages with updates available."
+	echo -e "  ${GREEN}unmount${NC}        Safely unmounts all unpacked filesystem mount points."
+	echo -e "  ${GREEN}remove${NC}         Safely removes the unpacked filesystem from the hard drive."
+	echo -e "  ${GREEN}update${NC}         Updates this script with the latest version."
+	echo -e "  ${GREEN}--help${NC}         This message"
+	echo -e ""
+	echo "Docker-related commands:"
+	echo -e "  ${GREEN}docker_mount${NC}   Mounts the chroot docker directory to host docker directory."
+	echo -e "  ${GREEN}docker_umount${NC}  Unmounts the chroot docker directory to host docker directory."
 	echo -e ""
 	echo "Red Dragon Distro-related commands:"
-	echo -e "  ${GREEN}rdbuild${NC}     Builds one or all Red Dragon distro builds."
-	echo -e "  ${GREEN}rdcopy${NC}      Copies Red Dragon distros to the Red Dragon USB stick."
+	echo -e "  ${GREEN}rdbuild${NC}        Builds one or all Red Dragon distro builds."
+	echo -e "  ${GREEN}rdcopy${NC}         Copies Red Dragon distros to the Red Dragon USB stick."
 	echo -e ""
 	echo -e "Note that this command ${RED}REQUIRES${NC} root access in order to function it's job!"
 fi

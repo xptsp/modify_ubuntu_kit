@@ -14,7 +14,19 @@ fi
 #==============================================================================
 _title "Installs Home Assistant Supervisor..."
 #==============================================================================
+### First: Install the prerequisites:
+#==============================================================================
+apt install -y bash jq curl avahi-daemon dbus software-properties-common apparmor-utils
+apt purge -y modemmanager
+
+#==============================================================================
+### Second: Install the supervisor:
+#==============================================================================
 wget https://raw.githubusercontent.com/home-assistant/supervised-installer/master/installer.sh -O /tmp/installer.sh
 chmod +x /tmp/installer.sh
-/tmp/installer.sh
+sed -i -n "/^docker/{s| > /dev/null||};p" /tmp/installer.sh
+sed -i -n "/^docker/{s|^docker |add_outside docker |};p" /tmp/installer.sh
+/tmp/installer.sh -m amd64 -h /home/docker/hass
 rm /tmp/installer.sh
+systemctl disable hassio-supervisor
+systemctl disable hassio-apparmor

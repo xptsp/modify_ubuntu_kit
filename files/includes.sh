@@ -76,8 +76,10 @@ function add_outside() {
 	echo $@ >> /usr/local/finisher/outside_chroot.list
 }
 function del_outside() {
-	cat /usr/local/finisher/outside_chroot.list | grep -v "$@" > /tmp/outside_chroot.list
-	mv /tmp/outside_chroot.list /usr/local/finisher/outside_chroot.list
+	if [ -f /usr/local/finisher/outside_chroot.list ]; then
+		cat /usr/local/finisher/outside_chroot.list | grep -v "$@" > /tmp/outside_chroot.list
+		mv /tmp/outside_chroot.list /usr/local/finisher/outside_chroot.list
+	fi
 }
 
 # Functions enabling and disabling sleep/hibernate functions:
@@ -100,11 +102,6 @@ function ord() {
 # Function reporting whether we are in a chroot environment:
 function _chroot() {
 	[[ $(ischroot; echo $?) -ne 1 ]] && return 1
-}
-
-# Function that delays docker command executions until outside of chroot:
-docker() {
-	add_outside $&
 }
 
 # Function that enables specified Kodi addons:
