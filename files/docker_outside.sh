@@ -1,4 +1,3 @@
-@@ -1,37 +0,0 @@
 #!/bin/bash
 [[ -f /usr/local/settings/finisher.conf ]] && . /usr/local/finisher/settings.conf
 MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}

@@ -72,12 +72,14 @@ function relocate_dir() {
 	__insert_into relocate $@
 }
 function add_outside() {
-	del_outside $@
-	echo $@ >> /usr/local/finisher/outside_chroot.list
+	P=$(echo $@ | sed "s|\"||g")
+	del_outside "$P"
+	echo "$P" >> /usr/local/finisher/outside_chroot.list
 }
 function del_outside() {
+	P=$(echo $@ | sed "s|\"||g")
 	if [ -f /usr/local/finisher/outside_chroot.list ]; then
-		cat /usr/local/finisher/outside_chroot.list | grep -v "$@" > /tmp/outside_chroot.list
+		cat /usr/local/finisher/outside_chroot.list | grep -v "$P" > /tmp/outside_chroot.list
 		mv /tmp/outside_chroot.list /usr/local/finisher/outside_chroot.list
 	fi
 }
