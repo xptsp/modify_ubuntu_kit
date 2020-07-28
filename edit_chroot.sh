@@ -105,10 +105,6 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		cp /etc/hosts ${UNPACK_DIR}/edit/etc/
 		mount --bind /run/ ${UNPACK_DIR}/edit/run
 		mount --bind /dev/ ${UNPACK_DIR}/edit/dev
-		if [[ -e /var/run/docker.sock ]]; then
-			touch ${UNPACK_DIR}/edit/var/run/docker.sock
-			mount --bind /var/run/docker.sock ${UNPACK_DIR}/edit/var/run/docker.sock
-		fi
 
 		### Third: Copy MUK into chroot environment:
 		rm -rf ${UNPACK_DIR}/edit${MUK_DIR}
@@ -264,10 +260,7 @@ elif [[ "$1" == "unmount" ]]; then
 	umount ${UNPACK_DIR}/edit/dev/pts >& /dev/null
 	umount ${UNPACK_DIR}/edit/dev >& /dev/null
 	umount ${UNPACK_DIR}/edit/run >& /dev/null
-	if [[ -e ${UNPACK_DIR}/edit/var/run/docker.sock ]]; then
-		umount ${UNPACK_DIR}/edit/var/run/docker.sock >& /dev/null
-		rm ${UNPACK_DIR}/edit/var/run/docker.sock
-	fi
+	$0 docker_umount
 	_title "All filesystem mount points should be unmounted now."
 
 #==============================================================================
@@ -594,6 +587,19 @@ elif [[ "$1" == "docker_mount" ]]; then
 # Did user request to copy RedDragon distros to USB stick?
 #==============================================================================
 elif [[ "$1" == "docker_umount" ]]; then
+	# Generate a random file to check for mounted volume:
+	ID=$(cat /dev/urandom | tr -cd 'a-zA-Z0-9' | head -c 32)
+	touch ${UNPACK_DIR}/edit/var/lib/docker/${ID} >& /dev/null
+
+	# Does our random file exist in both places?  If not, then it's not mounted:
+	MOUNT=$([[ -f /var/lib/docker/${ID} ]] && echo "Y")
+	[[ -f ${UNPACK_DIR}/edit/var/lib/docker/${ID} ]] && rm ${UNPACK_DIR}/edit/var/lib/docker/${ID}
+	if [[ -z "${MOUNT}" ]]; then
+		_error "Docker directory in chroot environment is not mounted on host system!"
+		exit 2
+	fi
+
+	# Unmount the chroot environment docker directory:
 	_title "Unmounting chroot docker directory from live system:"
 	systemctl stop docker
 	umount /var/lib/docker
