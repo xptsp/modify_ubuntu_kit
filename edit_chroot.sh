@@ -260,7 +260,7 @@ elif [[ "$1" == "unmount" ]]; then
 	umount ${UNPACK_DIR}/edit/dev/pts >& /dev/null
 	umount ${UNPACK_DIR}/edit/dev >& /dev/null
 	umount ${UNPACK_DIR}/edit/run >& /dev/null
-	$0 docker_umount
+	$0 docker_umount -q
 	_title "All filesystem mount points should be unmounted now."
 
 #==============================================================================
@@ -595,7 +595,7 @@ elif [[ "$1" == "docker_umount" ]]; then
 	MOUNT=$([[ -f /var/lib/docker/${ID} ]] && echo "Y")
 	rm ${UNPACK_DIR}/edit/home/docker/.sys/${ID}
 	if [[ -z "${MOUNT}" ]]; then
-		_error "Docker directory in chroot environment is not mounted on host system!"
+		[[ ! "$2" == "-q" ]] && _error "Docker directory in chroot environment is not mounted on host system!"
 		exit 2
 	fi
 
