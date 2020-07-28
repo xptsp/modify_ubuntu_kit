@@ -589,11 +589,11 @@ elif [[ "$1" == "docker_mount" ]]; then
 elif [[ "$1" == "docker_umount" ]]; then
 	# Generate a random file to check for mounted volume:
 	ID=$(cat /dev/urandom | tr -cd 'a-zA-Z0-9' | head -c 32)
-	touch ${UNPACK_DIR}/edit/var/lib/docker/${ID} >& /dev/null
+	touch ${UNPACK_DIR}/edit/home/docker/.sys/${ID} >& /dev/null
 
 	# Does our random file exist in both places?  If not, then it's not mounted:
 	MOUNT=$([[ -f /var/lib/docker/${ID} ]] && echo "Y")
-	[[ -f ${UNPACK_DIR}/edit/var/lib/docker/${ID} ]] && rm ${UNPACK_DIR}/edit/var/lib/docker/${ID}
+	[[ -f ${UNPACK_DIR}/edit/home/docker/.sys/${ID} ]] && rm ${UNPACK_DIR}/edit/home/docker/.sys/${ID}
 	if [[ -z "${MOUNT}" ]]; then
 		_error "Docker directory in chroot environment is not mounted on host system!"
 		exit 2
