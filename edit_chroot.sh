@@ -569,7 +569,7 @@ elif [[ "$1" == "rdbuild" ]]; then
 	fi
 
 #==============================================================================
-# Did user request to copy RedDragon distros to USB stick?
+# Did user request to mount chroot environment docker folder to host machine?
 #==============================================================================
 elif [[ "$1" == "docker_mount" ]]; then
 	_title "Mounting chroot docker directory on live system:"
@@ -584,7 +584,7 @@ elif [[ "$1" == "docker_mount" ]]; then
 	systemctl start docker
 
 #==============================================================================
-# Did user request to copy RedDragon distros to USB stick?
+# Did user request to unmount chroot environment docker folder from host machine?
 #==============================================================================
 elif [[ "$1" == "docker_umount" ]]; then
 	# Generate a random file to check for mounted volume:
@@ -593,7 +593,7 @@ elif [[ "$1" == "docker_umount" ]]; then
 
 	# Does our random file exist in both places?  If not, then it's not mounted:
 	MOUNT=$([[ -f /var/lib/docker/${ID} ]] && echo "Y")
-	[[ -f ${UNPACK_DIR}/edit/home/docker/.sys/${ID} ]] && rm ${UNPACK_DIR}/edit/home/docker/.sys/${ID}
+	rm ${UNPACK_DIR}/edit/home/docker/.sys/${ID}
 	if [[ -z "${MOUNT}" ]]; then
 		_error "Docker directory in chroot environment is not mounted on host system!"
 		exit 2
