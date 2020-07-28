@@ -14,23 +14,23 @@ fi
 #==============================================================================
 _title "Installs Home Assistant Supervisor..."
 #==============================================================================
-### First: Install the prerequisites:
+# First: Install the prerequisites:
 #==============================================================================
 apt install -y bash jq curl avahi-daemon dbus software-properties-common apparmor-utils
 apt purge -y modemmanager
 
-#==============================================================================
-### Second: Install the supervisor:
+# Second: Install the supervisor:
 #==============================================================================
 wget https://raw.githubusercontent.com/home-assistant/supervised-installer/master/installer.sh -O /tmp/installer.sh
 chmod +x /tmp/installer.sh
 sed -i "s|^set -e|set -e\n. ${MUK_DIR}/files/includes.sh|g" /tmp/installer.sh
 sed -i -n "/^docker/{s| > /dev/null||};p" /tmp/installer.sh
 sed -i -n "/^docker/{s|\"||g};p" /tmp/installer.sh
-sed -i -n "/^docker/{s|^docker |add_outside docker |};p" /tmp/installer.sh
+sed -i -n "/^docker/{s|^docker |add_outside /usr/bin/docker |};p" /tmp/installer.sh
 /tmp/installer.sh -d /home/docker/hass
 rm /tmp/installer.sh
-sed -i "s|^docker |/usr/bin/docker |g" /usr/local/finisher/outside_chroot.list
+
+# Third: Disable the supervisor for LiveCD:
+#==============================================================================
 systemctl disable hassio-supervisor
 systemctl disable hassio-apparmor
-add_outside /usr/bin/docker pull $(cat /etc/hassio.json | grep "\"homeassistant\":" | cut -d":" -f 2 | sed "s|,||g")
