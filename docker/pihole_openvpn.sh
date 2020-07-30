@@ -6,13 +6,13 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Adds task to pull necessary Docker images for inclusion in Live CD."
+	echo -e "${RED}Purpose:${NC} Installs PiHole and OpenVPN server."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Setting up to pull necessary Docker images for inclusion in Live CD..."
+_title "Installs PiHole and OpenVPN Server..."
 #==============================================================================
 ### First: Create the service file to launch the services upon boot:
 #==============================================================================
@@ -35,25 +35,26 @@ WantedBy=multi-user.target
 EOF
 systemctl disable docker-compose@always
 
-### Second: Link to the docker-compose files for our services:
+### Second: Get everything we need for the services:
 #==============================================================================
+pushd /opt >& /dev/null
+git clone https://github.com/mr-bolle/docker-openvpn-pihole
+popd >& /dev/null
 [[ ! -d /home/docker ]] && mkdir -p /home/docker
-ln -sf ${MUK_DIR}/files/docker-always.yaml /home/docker/always.yaml
-ln -sf ${MUK_DIR}/files/docker-mounts.yaml /home/docker/mounts.yaml
+ln -sf /opt/docker-openvpn-pihole/docker-compose.yml /home/docker/pihole.yaml
 
 ### Third: Add an "outside chroot environment" task for edit_chroot to run:
 #==============================================================================
-add_outside ${MUK_DIR}/files/docker_outside.sh
+if ischroot; then
+	add_outside ${MUK_DIR}/files/docker_outside.sh
+else
+	${MUK_DIR}/files/docker_outside.sh
+fi
 
-### Fourth: Create some helper scripts for docker-compose:
+### Fourth: Create a helper script for docker-compose:
 #==============================================================================
-cat << EOF > /usr/local/bin/docker-always
+cat << EOF > /usr/local/bin/docker-pihole
 #!/bin/bash
-docker-compose -f /home/docker/always.yaml \$@
+docker-compose -f /home/docker/pihole.yaml \$@
 EOF
-chmod +x /usr/local/bin/docker-always
-cat << EOF > /usr/local/bin/docker-mounts
-#!/bin/bash
-docker-compose -f /home/docker/mounts.yaml \$@
-EOF
-chmod +x /usr/local/bin/docker-mounts
+chmod +x /usr/local/bin/docker-pihole

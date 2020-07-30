@@ -1,0 +1,1 @@
+../base/fix_no_ethernet.sh

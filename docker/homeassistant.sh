@@ -32,5 +32,7 @@ rm /tmp/installer.sh
 
 # Third: Disable the supervisor for LiveCD:
 #==============================================================================
-systemctl disable hassio-supervisor
-systemctl disable hassio-apparmor
+if ischroot; then
+	systemctl disable hassio-supervisor
+	systemctl disable hassio-apparmor
+fi
