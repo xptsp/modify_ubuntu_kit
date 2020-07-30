@@ -51,17 +51,17 @@ services:
       timeout: 10s
       retries: 5
 
-  mosquitto:
-    container_name: mosquitto
-    image: eclipse-mosquitto
-    user: "1000:1000"
-    ports:
-      - 1883:1883
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - /home/docker/mosquitto:/mosquitto/config:ro
-      - /home/docker/mosquitto:/mosquitto/data
-    restart: on-failure
+#  mosquitto:
+#    container_name: mosquitto
+#    image: eclipse-mosquitto
+#    user: "1000:1000"
+#    ports:
+#      - 1883:1883
+#    volumes:
+#      - /etc/localtime:/etc/localtime:ro
+#      - /home/docker/mosquitto:/mosquitto/config:ro
+#      - /home/docker/mosquitto:/mosquitto/data
+#    restart: on-failure
 
 #  mqtt-bridge:
 #    container_name: mqtt-bridge
