@@ -27,6 +27,7 @@ sed -i "s|^set -e|set -e\n. ${MUK_DIR}/files/includes.sh|g" /tmp/installer.sh
 sed -i -n "/^docker/{s| > /dev/null||};p" /tmp/installer.sh
 sed -i -n "/^docker/{s|\"||g};p" /tmp/installer.sh
 sed -i -n "/^docker/{s|^docker |add_outside ${MUK_DIR}/files/docker_cmd.sh |};p" /tmp/installer.sh
+sed -i "s|command -v apparmor_parser > /dev/null 2>&1|true|g" /tmp/installer.sh
 /tmp/installer.sh -d /home/docker/hass
 rm /tmp/installer.sh
 
