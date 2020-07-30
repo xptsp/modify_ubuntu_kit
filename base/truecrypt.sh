@@ -38,3 +38,12 @@ ln -sf ${MUK_DIR}/files/truecrypt.xpm /usr/share/icons/
 # Fourth: Create sudoers.d rule to run truecrypt mounter as root:
 #==============================================================================
 echo "ALL ALL=(ALL) NOPASSWD:/usr/bin/truecrypt,/usr/local/bin/tcmount,/usr/local/bin/tcumount" >> /etc/sudoers.d/truecrypt
+
+# Fifth: Add the finisher script:
+#==============================================================================
+if ischroot; then
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+	ln -sf ${MUK_DIR}/files/tasks.d/70_truecrypt.sh /usr/local/finisher/tasks.d/70_truecrypt.sh
+else
+	${MUK_DIR}/files/tasks.d/70_truecrypt.sh
+fi
