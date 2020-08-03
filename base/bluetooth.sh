@@ -19,7 +19,7 @@ _title "Upgrade and configure the Bluetooth software"
 # First: Install the software:
 #==============================================================================
 [[ "$OS_VER" -eq 1804 ]] && add-apt-repository -y ppa:bluetooth/bluez
-apt install -y pulseaudio pulseaudio-utils pavucontrol pulseaudio-module-bluetooth
+apt install -y bluez pulseaudio pulseaudio-utils pavucontrol pulseaudio-module-bluetooth
 
 # Second: Alter the bluetooth service file:
 #==============================================================================
