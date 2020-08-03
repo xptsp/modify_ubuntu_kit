@@ -35,7 +35,7 @@ WantedBy=multi-user.target
 EOF
 systemctl disable docker-compose@always
 
-### Second: Alter docker-compose@always service to abort if volume not mounted:
+### Second: Alter docker-compose@mounts service to abort if volume not mounted:
 #==============================================================================
 mkdir /etc/systemd/system/docker-compose@mounts.service.d
 cat << EOF > /etc/systemd/system/docker-compose@mounts.service.d/requires.conf
@@ -56,6 +56,7 @@ EOF
 chmod +x /usr/local/bin/docker-always
 cat << EOF > /usr/local/bin/docker-mounts
 #!/bin/bash
+touch /mnt/Volume_1/.test > /dev/null || (echo "[ERROR] Volume_1 mount point not writable!  Aborting!"; exit 1)
 docker-compose -f /home/docker/mounts.yaml \$@
 EOF
 chmod +x /usr/local/bin/docker-mounts
@@ -68,4 +69,5 @@ ln -sf ${MUK_DIR}/files/docker-mounts.yaml /home/docker/mounts.yaml
 
 ### Fifth: Add an "outside chroot environment" task for edit_chroot to run:
 #==============================================================================
-add_outside ${MUK_DIR}/files/docker_outside.sh
+AO=$(ischroot && echo "add_outside")
+${AO} ${MUK_DIR}/files/docker_outside.sh

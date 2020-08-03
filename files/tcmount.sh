@@ -102,16 +102,7 @@ fi
 for cmd in "${before[@]}"; do $cmd; done
 
 # Notify user if we need to have any services that we will be stopping:
-systemctl list-unit-files > /tmp/services.list
-for service in "${services[@]}"; do
-	[[ ! -z "$(cat /tmp/services.list | grep "${service}")" ]] && declare -A "stopped[${service}]=${service}"
-done
-rm /tmp/services.list
-if [[ ! -z "${stopped[@]}" ]]; then
-	MSG="Stopping services...  Please wait!"
-	[[ "${KODI}" == "n" ]] && ([[ -z "${DISPLAY}" ]] && _title "${MSG}" || notify-send --icon=info "${TITLE}" "${MSG}")
-	for service in "${stopped[@]}"; do systemctl stop ${service}; done
-fi
+for service in "${services[@]}"; do systemctl stop ${service}; done
 
 # Notify user if we need to rebind directories:
 if [[ ! -z "${rebind[@]}" || ! -z "${bind[@]}" ]]; then
