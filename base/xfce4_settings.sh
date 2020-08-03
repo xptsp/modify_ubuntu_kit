@@ -29,9 +29,5 @@ sed -i "s|enabled=1|enabled=0|g" /etc/default/apport
 #==============================================================================
 _title "Adding finisher task to change default timeout in GRUB to 1 second..."
 #==============================================================================
-if ischroot; then
-	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-	ln -sf ${MUK_DIR}/files/tasks.d/15_grub_timeout.sh /usr/local/finisher/tasks.d/15_grub_timeout.sh
-else
-	${MUK_DIR}/files/tasks.d/15_grub_timeout.sh
-fi
+add_taskd 15_grub_timeout.sh
+

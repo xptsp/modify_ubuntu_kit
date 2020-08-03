@@ -14,5 +14,4 @@ fi
 #==============================================================================
 _title "Setup the computer to always start Kodi on next login..."
 #==============================================================================
-[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-ln -sf ${MUK_DIR}/files/tasks.d/50_lightdm.sh /usr/local/finisher/tasks.d/50_lightdm.sh
+add_taskd 50_lightdm.sh

@@ -41,15 +41,23 @@ pushd /opt >& /dev/null
 git clone https://github.com/mr-bolle/docker-openvpn-pihole
 popd >& /dev/null
 [[ ! -d /home/docker ]] && mkdir -p /home/docker
-ln -sf /opt/docker-openvpn-pihole/docker-compose.yml /home/docker/pihole.yaml
+cp /opt/docker-openvpn-pihole/docker-compose.yml /home/docker/pihole.yaml
 
-### Third: Add an "outside chroot environment" task for edit_chroot to run:
+### Third: Customize the docker-compose.yaml into our "pihole.yaml":
 #==============================================================================
-if ischroot; then
-	add_outside ${MUK_DIR}/files/docker_outside.sh
-else
-	${MUK_DIR}/files/docker_outside.sh
-fi
+# OpenVPN options:
+sed -i "s|--inactive 3600 --ping 10 --ping-exit 60 ||g" /home/docker/pihole.yaml
+sed -i "s|\./openvpn_data|/home/docker/openvpn|g" /home/docker/pihole.yaml
+sed -i "s|\"1194:|\"2194:|g" /home/docker/pihole.yaml
+# Pi-Hole options:
+sed -i "s|\"8081:|\"8181:|g" /home/docker/pihole.yaml
+sed -i "s|WEBPASSWORD: .*|WEBPASSWORD: xubuntu|g" /home/docker/pihole.yaml
+sed -i "s|WEBPASSWORD: .*|WEBPASSWORD: xubuntu|g" /home/docker/pihole.yaml
+sed -i "s|DNS1: .*|DNS1: 1.1.1.1|g" /home/docker/pihole.yaml
+sed -i "s|DNS2: .*|DNS2: 1.0.0.1|g" /home/docker/pihole.yaml
+sed -i "s|\./pihole|/home/docker/pihole|g" /home/docker/pihole.yaml
+# Remove unnecessary comments :p
+sed -i "/#/d" /home/docker/pihole.yaml
 
 ### Fourth: Create a helper script for docker-compose:
 #==============================================================================
@@ -58,3 +66,9 @@ cat << EOF > /usr/local/bin/docker-pihole
 docker-compose -f /home/docker/pihole.yaml \$@
 EOF
 chmod +x /usr/local/bin/docker-pihole
+
+### Fifth: Add an "outside chroot environment" task for edit_chroot to run:
+#==============================================================================
+AO=$(ischroot && echo "add_outside")
+${AO} ${MUK_DIR}/files/docker_outside.sh
+${AO} /usr/bin/docker network create --driver=bridge --subnet=172.110.1.0/24 --gateway=172.110.1.1 vpn-net

@@ -83,6 +83,14 @@ function del_outside() {
 		mv /tmp/outside_chroot.list /usr/local/finisher/outside_chroot.list
 	fi
 }
+function add_taskd() {
+	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
+	if ischroot; then
+		ln -sf ${MUK_DIR}/files/tasks.d/$1 /usr/local/finisher/tasks.d/$1
+	else
+		${MUK_DIR}/files/tasks.d/$1
+	fi
+}
 
 # Functions enabling and disabling sleep/hibernate functions:
 function sleep_allow() {

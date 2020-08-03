@@ -36,9 +36,4 @@ fi
 
 # Third: Add finisher task to configure "LIRC":
 #==============================================================================
-if ischroot; then
-	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-	ln -sf ${MUK_DIR}/files/tasks.d/50_lirc.sh /usr/local/finisher/tasks.d/50_lirc.sh
-else
-	${MUK_DIR}/files/tasks.d/50_lirc.sh
-fi
+add_taskd 50_lirc.sh

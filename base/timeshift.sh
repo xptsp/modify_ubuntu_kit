@@ -21,9 +21,4 @@ apt install -y timeshift
 
 # Second: Add the finisher script:
 #==============================================================================
-if ischroot; then
-	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-	ln -sf ${MUK_DIR}/files/tasks.d/70_timeshift.sh /usr/local/finisher/tasks.d/70_timeshift.sh
-else
-	${MUK_DIR}/files/tasks.d/70_timeshift.sh
-fi
+add_taskd 70_timeshift.sh

@@ -69,8 +69,7 @@ change_password /etc/transmission-daemon/autoremove.sh
 
 # Seventh: Create the finisher task to create the user "htpc": 
 #==============================================================================
-[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-ln -sf ${MUK_DIR}/files/tasks.d/40_transmission.sh /usr/local/finisher/tasks.d/40_transmission.sh
+add_taskd 40_transmission.sh
 
 # Eighth: Create the "transmission_nosleep" service:
 #==============================================================================

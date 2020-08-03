@@ -14,9 +14,4 @@ fi
 #==============================================================================
 _title "Adding script to creates development workspace after boot...."
 #==============================================================================
-if ischroot; then
-	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-	ln -sf ${MUK_DIR}/files/tasks.d/13_workspace.sh /usr/local/finisher/tasks.d/13_workspace.sh
-else
-	${MUK_DIR}/files/tasks.d/13_workspace.sh
-fi
+add_taskd 13_workspace.sh

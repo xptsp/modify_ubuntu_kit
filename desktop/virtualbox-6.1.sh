@@ -29,12 +29,7 @@ fi
 
 # Third: Create finisher task:
 #==============================================================================
-if ischroot; then
-	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-	ln -sf ${MUK_DIR}/files/tasks.d/75_virtualbox.sh /usr/local/finisher/tasks.d/75_virtualbox.sh
-else
-	${MUK_DIR}/files/tasks.d/75_virtualbox.sh
-fi
+add_taskd 75_virtualbox.sh
 
 # Fourth: Add command to load virtualbox kernel modules:
 #==============================================================================

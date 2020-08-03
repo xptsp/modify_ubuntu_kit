@@ -82,7 +82,4 @@ apt update
 
 # Third: Creating finisher task to replace generated repo list with our list:
 #==============================================================================
-if [[ ! -z "${CHROOT}" ]]; then
-	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/{tasks,post}.d
-	ln -sf ${MUK_DIR}/files/tasks.d/10_sources.sh /usr/local/finisher/tasks.d/10_sources.sh
-fi
+add_taskd 10_sources.sh

@@ -48,16 +48,10 @@ change_username /etc/samba/smb.conf
 
 # Fourth: Add Samba finisher task:
 #==============================================================================
-if ischroot; then
-	systemctl disable smbd
-	systemctl disable nmbd
-	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-	ln -sf ${MUK_DIR}/files/tasks.d/50_samba.sh /usr/local/finisher/tasks.d/50_samba.sh
-else
-	${MUK_DIR}/files/tasks.d/50_samba.sh
-	systemctl restart smbd
-	systemctl restart nmbd
-fi
+add_taskd 50_samba.sh
+AO=$(ischroot && echo "disable" || echo "restart")
+systemctl ${AO} smbd
+systemctl ${AO} nmbd
 
 # Fifth: Add "Don't sleep while Samba is serving files" service:
 #==============================================================================

@@ -68,9 +68,5 @@ iptables-save > /etc/iptables/rules.v4
 
 # Seventh: Call/Setup finisher task...
 #==============================================================================
-if ischroot; then
-	[[ -e /usr/local/finisher/tasks.d/30_vpn.sh ]] && rm /usr/local/finisher/tasks.d/30_vpn.sh
-	ln -sf ${MUK_DIR}/files/tasks.d/30_vpn.sh /usr/local/finisher/tasks.d/30_vpn.sh
-else
-	${MUK_DIR}/files/tasks.d/30_vpn.sh
-fi
+add_taskd 30_vpn.sh
+

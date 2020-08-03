@@ -41,9 +41,4 @@ echo "ALL ALL=(ALL) NOPASSWD:/usr/bin/truecrypt,/usr/local/bin/tcmount,/usr/loca
 
 # Fifth: Add the finisher script:
 #==============================================================================
-if ischroot; then
-	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-	ln -sf ${MUK_DIR}/files/tasks.d/70_truecrypt.sh /usr/local/finisher/tasks.d/70_truecrypt.sh
-else
-	${MUK_DIR}/files/tasks.d/70_truecrypt.sh
-fi
+add_taskd 70_truecrypt.sh

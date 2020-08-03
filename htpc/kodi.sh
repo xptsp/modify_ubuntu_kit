@@ -33,12 +33,7 @@ sed -i '/XBMC.ShutDown()/d' ${HOME}/.kodi/userdata/keymaps/harmony_remote.xml
 
 ### Fourth: Create a post-install task to finish configuring Kodi:
 #==============================================================================
-if [[ ! -z "${CHROOT}" ]]; then
-	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-	ln -sf ${MUK_DIR}/files/tasks.d/50_kodi.sh /usr/local/finisher/tasks.d/50_kodi.sh
-else
-	${MUK_DIR}/files/tasks.d/50_kodi.sh
-fi
+add_taskd 50_kodi.sh
 
 #==============================================================================
 _title "Installing a few Kodi addons and activating them..."

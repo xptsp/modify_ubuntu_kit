@@ -23,12 +23,7 @@ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
 apt update
 apt install -y docker-ce
-if ischroot; then
-	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-	ln -sf ${MUK_DIR}/files/tasks.d/80_docker.sh /usr/local/finisher/tasks.d/80_docker.sh
-else
-	${MUK_DIR}/files/tasks.d/80_docker.sh
-fi
+add_taskd 80_docker.sh
 
 #==============================================================================
 _title "Installing Docker Compose..."

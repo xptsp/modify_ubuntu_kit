@@ -20,12 +20,5 @@ apt install -y ssh
 
 # Third: Configure as appropriate:
 #==============================================================================
-if ischroot; then
-	# Disable SSH and remove the generated SSH keys for security reasons...
-	systemctl disable ssh
-	rm -v /etc/ssh/ssh_host_*
-
-	# Add finisher task to regenerate the SSH keys...
-	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-	ln -sf ${MUK_DIR}/files/tasks.d/12_ssh.sh /usr/local/finisher/tasks.d/12_ssh.sh
-fi
+ischroot && (systemctl disable ssh; rm -v /etc/ssh/ssh_host_*)
+add_taskd 12_ssh.sh

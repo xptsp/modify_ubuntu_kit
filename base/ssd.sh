@@ -16,12 +16,7 @@ _title "Configuring your computer for best performance..."
 #==============================================================================
 # First: Add a finisher task to check for SSDs:
 #==============================================================================
-if ischroot; then
-	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-	ln -sf ${MUK_DIR}/files/tasks.d/16_noatime.sh /usr/local/finisher/tasks.d/16_noatime.sh
-else
-	${MUK_DIR}/files/tasks.d/16_noatime.sh
-fi
+add_taskd 16_noatime.sh
 
 # Second: Change the TRIM task to run daily:
 #==============================================================================

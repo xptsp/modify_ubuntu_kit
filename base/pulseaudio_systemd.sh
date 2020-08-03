@@ -49,9 +49,4 @@ systemctl enable pulseaudio
 
 # Fifth: Add finisher task:
 #==============================================================================
-if ischroot; then
-	[[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
-	ln -sf ${MUK_DIR}/files/tasks.d/60_pulseaudio.sh /usr/local/finisher/tasks.d/60_pulseaudio.sh
-else
-	${MUK_DIR}/files/tasks.d/60_pulseaudio.sh
-fi
+add_taskd 60_pulseaudio.sh
