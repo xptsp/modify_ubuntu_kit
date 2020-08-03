@@ -35,17 +35,18 @@ WantedBy=multi-user.target
 EOF
 systemctl disable docker-compose@always
 
-### Second: Link to the docker-compose files for our services:
+### Second: Alter docker-compose@always service to abort if volume not mounted:
 #==============================================================================
-[[ ! -d /home/docker ]] && mkdir -p /home/docker
-ln -sf ${MUK_DIR}/files/docker-always.yaml /home/docker/always.yaml
-ln -sf ${MUK_DIR}/files/docker-mounts.yaml /home/docker/mounts.yaml
+mkdir /etc/systemd/system/docker-compose@mounts.service.d
+cat << EOF > /etc/systemd/system/docker-compose@mounts.service.d/requires.conf
+[Service]
+ExecStartPre=/usr/bin/touch /mnt/Volume_1/.test
+EOF
+[[ ! -d /mnt/Volume_1 ]] && mkdir -p /mnt/Volume_1
+chmod -rwx -R /mnt/Volume_1
+chattr +i -R /mnt/Volume_1
 
-### Third: Add an "outside chroot environment" task for edit_chroot to run:
-#==============================================================================
-add_outside ${MUK_DIR}/files/docker_outside.sh
-
-### Fourth: Create some helper scripts for docker-compose:
+### Third: Create some helper scripts for docker-compose:
 #==============================================================================
 cat << EOF > /usr/local/bin/docker-always
 #!/bin/bash
@@ -57,3 +58,13 @@ cat << EOF > /usr/local/bin/docker-mounts
 docker-compose -f /home/docker/mounts.yaml \$@
 EOF
 chmod +x /usr/local/bin/docker-mounts
+
+### Fourth: Link to the docker-compose files for our services:
+#==============================================================================
+[[ ! -d /home/docker ]] && mkdir -p /home/docker
+ln -sf ${MUK_DIR}/files/docker-always.yaml /home/docker/always.yaml
+ln -sf ${MUK_DIR}/files/docker-mounts.yaml /home/docker/mounts.yaml
+
+### Fifth: Add an "outside chroot environment" task for edit_chroot to run:
+#==============================================================================
+add_outside ${MUK_DIR}/files/docker_outside.sh
