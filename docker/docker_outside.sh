@@ -1,4 +1,4 @@
-#!/bin/bash
+!/bin/bash
 [[ -f /usr/local/finisher/settings.conf ]] && . /usr/local/finisher/settings.conf
 MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 [[ ! -e ${MUK_DIR}/files/includes.sh ]] && (echo Missing includes file!  Aborting!; exit 1)
@@ -42,6 +42,7 @@ cat << EOF > /etc/systemd/system/docker-compose@mounts.service.d/requires.conf
 [Service]
 ExecStartPre=/usr/bin/touch /mnt/Volume_1/.test
 EOF
+chattr +i /etc/systemd/system/docker-compose@mounts.service.d/requires.conf
 [[ ! -d /mnt/Volume_1 ]] && mkdir -p /mnt/Volume_1
 chmod -rwx -R /mnt/Volume_1
 chattr +i -R /mnt/Volume_1
