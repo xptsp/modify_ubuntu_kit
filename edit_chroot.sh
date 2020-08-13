@@ -522,13 +522,16 @@ elif [[ "$1" == "docker_mount" ]]; then
 # Did user request to unmount chroot environment docker folder from host machine?
 #==============================================================================
 elif [[ "$1" == "docker_umount" ]]; then
+	# If the docker folder doesn't exist, exit the script:
+	[[ ! -d ${UNPACK_DIR}/edit/home/docker/.sys ]] && exit
+
 	# Generate a random file to check for mounted volume:
 	ID=$(cat /dev/urandom | tr -cd 'a-zA-Z0-9' | head -c 32)
 	touch ${UNPACK_DIR}/edit/home/docker/.sys/${ID} >& /dev/null
 
 	# Does our random file exist in both places?  If not, then it's not mounted:
 	MOUNT=$([[ -f /var/lib/docker/${ID} ]] && echo "Y")
-	rm ${UNPACK_DIR}/edit/home/docker/.sys/${ID}
+	[[ -f ${UNPACK_DIR}/edit/home/docker/.sys/${ID} ]] && rm ${UNPACK_DIR}/edit/home/docker/.sys/${ID}
 	if [[ -z "${MOUNT}" ]]; then
 		[[ ! "$2" == "-q" ]] && _error "Docker directory in chroot environment is not mounted on host system!"
 		exit 2
