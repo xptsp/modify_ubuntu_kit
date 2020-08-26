@@ -1,1 +1,0 @@
-../base/exfat_support.sh

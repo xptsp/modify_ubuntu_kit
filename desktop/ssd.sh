@@ -1,1 +1,0 @@
-../base/ssd.sh

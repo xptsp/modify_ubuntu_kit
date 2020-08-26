@@ -504,6 +504,71 @@ elif [[ "$1" == "rebuild-xz" ]]; then
 	exit 0
 
 #==============================================================================
+# Did user ask to rebuild part of or all of RedDragon distros?
+#==============================================================================
+elif [[ "$1" == "rdbuild" ]]; then
+	# Unpack the factory XUbuntu 18.04.3 ISO so we can play with it:
+	if [[ ! -d ${ORG} ]]; then
+		# Abort if the RedDragon USB stick isn't found:
+		DEV=$(blkid | grep "RedDragon USB" | cut -d":" -f 1)
+		if [[ -z "${DEV}" ]]; then
+			_error "USB stick with ${BLUE}RedDragon USB${GREEN} label was not detected!  Aborting!"
+			exit 1
+		fi
+
+		# Mount the RedDragon USB stick:
+		while [[ ! -z "$(mount | grep "${DEV}")" ]]; do umount ${DEV}; sleep 1; done
+		[[ ! -d ${USB} ]] && mkdir -p ${USB}
+		mount ${DEV} ${USB}
+
+		# Unpack the factory Xubuntu 18.04 ISO image:
+		[[ ! -d ${MNT} ]] && mkdir -p ${MNT}
+		$0 unpack-full ${USB}/_ISO/MAINMENU/1*.iso
+		mv ${EXT} ${ORG}
+		ln -sf ${ORG} ${EXT}
+
+		# Unmount the factory Xubuntu 18.04 ISO:
+		umount ${USB}
+	else
+		[[ -d ${EXT} ]] && rm -rf ${EXT} || rm ${EXT}
+		UPK=${ORG}
+		[[ "$2" == "desktop" ]] && UPK=${PTN2}
+		[[ "$2" == "htpc" ]] && UPK=${PTN3}
+		ln -sf ${UPK} ${EXT}
+		$0 unpack
+	fi
+
+	# Create our "base" install:
+	if [[ -z "$2" || "$2" == "base" ]]; then
+		[[ -f ${PTN2} ]] && rm -rf ${PTN2}
+		cp -R ${ORG} ${PTN2}
+		rm ${EXT}
+		ln -sf ${PTN2} ${EXT}
+		$0 build base
+		$0 rebuild
+	fi
+
+	# Create our "desktop" install:
+	if [[ -z "$2" || "$2" == "desktop" ]]; then
+		[[ -f ${PTN3} ]] && rm -rf ${PTN3}
+		cp -R ${ORG} ${PTN3}
+		rm ${EXT}
+		ln -sf ${PTN3} ${EXT}
+		$0 build desktop
+		$0 rebuild
+	fi
+
+	# Create our "htpc" install:
+	if [[ -z "$2" || "$2" == "htpc" ]]; then
+		[[ -f ${PTN4} ]] && rm -rf ${PTN4}
+		cp -R ${ORG} ${PTN4}
+		rm ${EXT}
+		ln -sf ${PTN4} ${EXT}
+		$0 build htpc
+		$0 rebuild
+	fi
+
+#==============================================================================
 # Did user request to mount chroot environment docker folder to host machine?
 #==============================================================================
 elif [[ "$1" == "docker_mount" ]]; then
@@ -605,6 +670,7 @@ else
 	echo -e "  ${GREEN}iso${NC}            Builds an ISO image in ${BLUE}${ISO_DIR}${NC} containing the packed filesystem."
 	echo -e "  ${GREEN}rebuild${NC}        Combines ${GREEN}--pack${NC} and ${GREEN}--iso${NC} options."
 	echo -e "  ${GREEN}rebuild-xz${NC}     Combines ${GREEN}--pack-xz${NC} and ${GREEN}--iso${NC} options."
+	echo -e "  ${GREEN}build${NC}          Enter the unpacked filesystem environment to install specified series of packages."
 	echo -e "  ${GREEN}enter${NC}          Enter the unpacked filesystem environment to make changes."
 	echo -e "  ${GREEN}upgrade${NC}        Only upgrades Ubuntu packages with updates available."
 	echo -e "  ${GREEN}unmount${NC}        Safely unmounts all unpacked filesystem mount points."

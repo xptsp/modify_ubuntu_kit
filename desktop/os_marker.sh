@@ -12,6 +12,10 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
+<<<<<<< HEAD
 _title "Marking OS as base..."
+=======
+_title "Marking OS as desktop..."
+>>>>>>> parent of b63ed14... Okay, you got me....
 #==============================================================================
 echo "desktop" > /usr/local/finisher/build.txt

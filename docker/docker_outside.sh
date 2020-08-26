@@ -37,6 +37,7 @@ systemctl disable docker-compose@always
 
 ### Second: Alter docker-compose@mounts service to abort if volume not mounted:
 #==============================================================================
+<<<<<<< HEAD
 mkdir /etc/systemd/system/docker-compose@mounts.service.d
 cat << EOF > /etc/systemd/system/docker-compose@mounts.service.d/requires.conf
 [Service]
@@ -71,3 +72,6 @@ ln -sf ${MUK_DIR}/files/docker-mounts.yaml /home/docker/mounts.yaml
 #==============================================================================
 AO=$(ischroot && echo "add_outside")
 ${AO} ${MUK_DIR}/files/docker_outside.sh
+=======
+add_outside ${MUK_DIR}/files/docker_outside.sh
+>>>>>>> parent of b63ed14... Okay, you got me....

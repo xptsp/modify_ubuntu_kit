@@ -1,1 +1,0 @@
-../base/fix_usb_wakeup.sh

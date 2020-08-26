@@ -1,1 +1,0 @@
-../base/spybot_hosts.sh
