@@ -215,12 +215,6 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		apt-get dist-upgrade -y
 
 		### Ninth: Remove any unnecessary packages:
-		CURRENT=$(ls -l /initrd.img* | cut -d">" -f 2 | cut -d"-" -f2,3 | sort -r | head -1)
-		KERNELS=$(dpkg -l | grep linux-image | grep "ii" | awk '{print$2}' | grep -v "$CURRENT" | grep -v "hwe" | perl -pe '($_)=/([0-9]+([.-][0-9]+)+)/' )
-		if [[ "${OLD_KERNEL:-"0"}" == "1" && ! -z "${KERNELS}" ]]; then
-			_title "Removing old kernels packages and unnecessary packages..."
-			apt-get remove --autoremove --purge -y ${KERNELS}*
-		fi
 		_title "Cleaning up cached packages..."
 		apt-get autoclean -y >& /dev/null
 		apt-get clean -y >& /dev/null
