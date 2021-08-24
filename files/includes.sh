@@ -154,6 +154,7 @@ CROSS="\xE2\x9D\x8C"
 
 # What version of the Ubuntu OS are we running?
 OS_VER=$(cat /etc/os-release | grep "VERSION_ID" | cut -d"\"" -f 2 | sed "s|\.||g")
+OS_NAME=$(cat /etc/os-release  | grep VERSION_CODENAME | cut -d"=" -f 2)
 
 # Store any flags passed to the script for later processing:
 for opt in "$@"; do
