@@ -63,10 +63,10 @@ if [[ ! "${last_update}" == "${this_update}" ]]; then
 	fi
 
 	# Modify the certificate to meet our needs:
-	cat "${file}" | egrep -v "(auth-user-pass|script-security|block-outside-dns)" > /etc/openvpn/freevpn/freevpn.conf
-	sed -i "s|;comp-lzo|comp-lzo|g" /etc/openvpn/freevpn/freevpn.conf
-	sed -i "s|dev tun|dev vpn_out\ndev-type tun|g" /etc/openvpn/freevpn/freevpn.conf
-	cat << EOF >> /etc/openvpn/freevpn/freevpn.conf
+	cat "${file}" | egrep -v "(auth-user-pass|script-security|block-outside-dns)" > /etc/openvpn/vpn.conf
+	sed -i "s|;comp-lzo|comp-lzo|g" /etc/openvpn/vpn.conf
+	sed -i "s|dev tun|dev vpn_out\ndev-type tun|g" /etc/openvpn/vpn.conf
+	cat << EOF >> /etc/openvpn/vpn.conf
 
 #user authorization stuff:
 auth-user-pass /etc/openvpn/.vpn_creds
@@ -75,7 +75,7 @@ route-noexec
 
 #up and down scripts to be executed when VPN starts or stops
 script-security 2
-up /etc/openvpn/freevpn/freevpn_iptables.sh
+up /opt/modify_ubuntu_kit/files/vpn_iptables.sh
 down /etc/openvpn/update-systemd-resolved
 down-pre
 
