@@ -35,16 +35,15 @@ if [[ ${OS_VER} -lt 2004 ]]; then
 	rm -rf scrcpy-1.11
 	rm scrcpy-server-v1.11.jar
 	popd
+	MORE=
 else
-	#==============================================================================
-	_title "Installs ScrCpy for Ubuntu..."
-	#==============================================================================
-	apt install scrcpy
+	MORE=scrcpy
 fi
 
-==============================================
+#==============================================================================
 _title "Install ScrCpy GUI for Ubuntu..."
 #==============================================================================
-wget https://github.com/Tomotoes/scrcpy-gui/releases/download/1.0.0/ScrcpyGui-1.0.0.deb -O /tmp/ScrcpyGui-1.0.0.deb
-apt install -y /tmp/ScrcpyGui-1.0.0.deb
-rm /tmp/ScrcpyGui-1.0.0.deb
+VER=1.5.1
+wget https://github.com/Tomotoes/scrcpy-gui/releases/download/${VER}/ScrcpyGui-${VER}.deb -O /tmp/ScrcpyGui.deb
+apt install -y ${MORE} /tmp/ScrcpyGui.deb
+rm /tmp/ScrcpyGui.deb

@@ -6,20 +6,13 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs YouTube-DL and YouTube-DL GUI on your computer."
+	echo -e "${RED}Purpose:${NC} Installs cross-compilation tools on your computer."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Install YouTube Downloader..."
+_title "Install Cross-Compilation Tools..."
 #==============================================================================
-wget https://yt-dl.org/latest/youtube-dl -O /usr/bin/youtube-dl
-chmod +x /usr/bin/youtube-dl
-
-#==============================================================================
-_title "Install YouTube Downloader GUI..."
-#==============================================================================
-add-apt-repository -y ppa:nilarimogard/webupd8
-apt install -y youtube-dlg
-
+apt install -y gcc-arm-linux-gnueabihf libc6-armhf-cross u-boot-tools bc make gcc libc6-dev libncurses5-dev libssl-dev bison flex swig python-dev
+apt install -y qemu-user-static debootstrap binfmt-support
