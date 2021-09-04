@@ -27,8 +27,8 @@ _title "Setting up VPN service and scripts..."
 #==============================================================================
 # First: Create our VPN service...
 #==============================================================================
-[[ ! -d /lib/systemd/system/openvpn@vpn.service.d ]] && mkdir /lib/systemd/system/openvpn@vpn.service.d
-cat << EOF > /lib/systemd/system/openvpn@vpn.service.d/login.conf
+[[ ! -d /lib/systemd/system/openvpn@freevpn.service.d ]] && mkdir /lib/systemd/system/openvpn@freevpn.service.d
+cat << EOF > /lib/systemd/system/openvpn@freevpn.service.d/login.conf
 [Service]
 ExecStartPre=${MUK_DIR}/files/freevpn_login.sh
 Restart=
