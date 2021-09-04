@@ -7,9 +7,15 @@ export RED='\033[1;31m'
 export BLUE='\033[1;34m'
 export NC='\033[0m'
 
+# If we aren't using this for freevpn.me, exit normally with no error code
+if [[ -f /etc/openvpn/vpn.conf ]]; then
+	host=$(cat /etc/openvpn/vpn.conf | grep "freevpn.me")
+	[[ -z "${host}" ]] && exit 0
+fi
+
 # Get the FreeVPN account page:
 rm /tmp/index.html
-wget https://freevpn.me/accounts/ -O /tmp/index.html
+wget https://freevpn.co.uk/accounts/ -O /tmp/index.html
 if [[ ! -f /tmp/index.html ]]; then
 	echo -e "${RED}ERROR:${NC} Cannot get FreeVPN account page from the internet!"
 	echo "Make sure you are connected to the internet before trying again!"
@@ -18,15 +24,15 @@ fi
 
 # Parse html to get username and password:
 username=$(cat /tmp/index.html | grep -P -o -e '(<b>Username:</b> (.*?)<\/li>)' | head -n 1 | cut -d">" -f 3 | cut -d"<" -f 1 | cut -d" " -f 2)
-echo "\$username = $username"
 password=$(cat /tmp/index.html | grep -P -o -e '(<b>Password:</b> (.*?)<\/li>)' | head -n 1 | cut -d">" -f 3 | cut -d"<" -f 1 | cut -d" " -f 2)
-echo "\$password = $password"
 last_update=$(cat /tmp/index.html | grep -P -o -e 'Updated ([^<\.].)*' | cut -d" " -f2-3 | head -1)
-#rm /tmp/index.html
+rm /tmp/index.html
 if [[ -z ${username} || -z ${password} ]]; then
 	echo -e "${RED}ERROR:${NC} Error getting FreeVPN credentials!  Aborting!"
 	exit 2
 fi
+echo -e "${BLUE}Username:${NC} ${username}"
+echo -e "${BLUE}Password:${NC} ${password}"
 (echo ${username}; echo ${password}) > /etc/openvpn/.vpn_creds
 chmod 600 /etc/openvpn/.vpn_creds
 
@@ -36,7 +42,7 @@ echo -e "${BLUE}Current Certificate:${NC} ${this_update:-"N/A"}"
 echo -e "${BLUE}Certificates Last Updated:${NC} ${last_update}"
 if [[ ! "${last_update}" == "${this_update}" ]]; then
 	# Get the certificates URL from the accounts page.  Abort at any point if expected result isn't there:
-	url=$(cat /tmp/index.html | grep -P -o -e '(http(s|)://.*/FreeVPN.me-OpenVPN-Bundle-.*.zip)')
+	url=$(echo ${html} | grep -P -o -e '(https://freevpn.me/FreeVPN.me-OpenVPN-Bundle-.*.zip)')
 	if [[ -z ${url} ]]; then
 		echo -e "${RED}ERROR:${NC} Error getting FreeVPN certificate URL!  Aborting!"
 		exit 3
@@ -49,7 +55,7 @@ if [[ ! "${last_update}" == "${this_update}" ]]; then
 	fi
 	7z x /tmp/${base} -aoa -o/tmp/freevpn.me >& /dev/null 2>&1
 	rm /tmp/${base}
-	file=$(find /tmp/freevpn.me -name *TCP443*)
+	file=$(find /tmp/freevpn.me | grep -e "uk-TCP443")
 	echo -e "${BLUE}Using OVPN file:${NC} $(basename "${file}")"
 	if [[ ! -f "${file}" ]]; then
 		echo -e "${RED}ERROR:${NC} Cannot find required certificate file inside downloaded certificate pack!  Aborting!"

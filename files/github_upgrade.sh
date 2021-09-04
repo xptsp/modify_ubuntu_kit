@@ -27,6 +27,7 @@ FILE=$(basename $URL)
 VER=${FILE/.deb/}
 VER=${VER//[^0-9\.]}
 echo "Latest version = ${VER}"
+echo "URL used = ${URL}"
 
 # Get the version of Emby Server that is installed:
 CMP=$([[ -f /var/lib/emby/installed.version ]] && cat /var/lib/git/installed.version)
