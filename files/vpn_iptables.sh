@@ -38,7 +38,7 @@ iptables -A INPUT -i $INTERFACE -m conntrack --ctstate RELATED,ESTABLISHED -j AC
 # block everything incoming on $INTERFACE to prevent accidental exposing of ports
 iptables -A INPUT -i $INTERFACE -j REJECT
 
-# let $VPNUSER access lo and $INTERFACE
+# let $VPNUSER access lo and $INTERFACE, but no other interfaces:
 iptables -A OUTPUT -o lo -m owner --uid-owner $VPNUSER -j ACCEPT
 iptables -A OUTPUT -o $INTERFACE -m owner --uid-owner $VPNUSER -j ACCEPT
 iptables -A OUTPUT -m owner --uid-owner $VPNUSER -j REJECT --reject-with icmp-port-unreachable
