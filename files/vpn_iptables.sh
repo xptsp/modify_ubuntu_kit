@@ -33,7 +33,15 @@ iptables -t mangle -A OUTPUT ! --src $LOCALIP -j MARK --set-mark 0x1
 iptables -t mangle -A OUTPUT -j CONNMARK --save-mark
 
 # allow responses
-iptables -A INPUT -i $INTERFACE -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+iptables -A INPUT -i $INTERFACE -m conntrack --ctstate ESTABLISHED -j ACCEPT
+
+# allow incoming mapped port from allowed ports
+if [[ ! -z "${PORTS[@]}" ]]; then
+	for PORT in "${PORTS[@]}"; do
+		iptables -A INPUT -i $INTERFACE -p tcp --dport $PORT -j ACCEPT
+		iptables -A INPUT -i $INTERFACE -p udp --dport $PORT -j ACCEPT
+	done
+fi
 
 # block everything incoming on $INTERFACE to prevent accidental exposing of ports
 iptables -A INPUT -i $INTERFACE -j REJECT
@@ -41,10 +49,27 @@ iptables -A INPUT -i $INTERFACE -j REJECT
 # let $VPNUSER access lo and $INTERFACE, but no other interfaces:
 iptables -A OUTPUT -o lo -m owner --uid-owner $VPNUSER -j ACCEPT
 iptables -A OUTPUT -o $INTERFACE -m owner --uid-owner $VPNUSER -j ACCEPT
-iptables -A OUTPUT -m owner --uid-owner $VPNUSER -j REJECT --reject-with icmp-port-unreachable
 
 # all packets on $INTERFACE needs to be masqueraded
 iptables -t nat -A POSTROUTING -o $INTERFACE -j MASQUERADE
+
+# setup each port in the "port_forward.list":
+if [[ ! -z "${PORTS[@]}" ]]; then
+	for PORT in "${PORTS[@]}"; do
+		# forward mapped ports
+		iptables -t nat -A PREROUTING -p tcp -i $INTERFACE --dport $PORT -j DNAT --to $LOCALIP
+		iptables -t nat -A PREROUTING -p udp -i $INTERFACE --dport $PORT -j DNAT --to $LOCALIP
+		iptables -A FORWARD -p tcp -i $INTERFACE -o $NETIF -d $LOCALIP --dport $PORT -j ACCEPT
+		iptables -A FORWARD -p udp -i $INTERFACE -o $NETIF -d $LOCALIP --dport $PORT -j ACCEPT
+
+		# allow output (to masqueraded address) from mapped port from port
+		iptables -A OUTPUT -o $NETIF -p tcp --sport $PORT -j ACCEPT
+		iptables -A OUTPUT -o $NETIF -p udp --sport $PORT -j ACCEPT
+	done
+fi
+
+# reject connections from predator IP going over $NETIF
+iptables -A OUTPUT ! --src $LOCALIP -o $NETIF -j REJECT
 
 # configure routes for the packets we just marked:
 if [[ `ip rule list | grep -c 0x1` == 0 ]]; then
