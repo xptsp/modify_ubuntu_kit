@@ -6,16 +6,16 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs Steam on your computer."
+	echo -e "${RED}Purpose:${NC} Installs Mozilla Firefox addon for Kodi on your computer."
 	echo ""
 	exit 0
 fi
 
+# First: Install the Kodi addon:
 #==============================================================================
-_title "Installing Steam..."
-#==============================================================================
-### First: Install the software (duh :p)
-#==============================================================================
-dpkg --add-architecture i386
-apt update
-apt install -y steam
+### First: Get the repo:
+git clone --depth=1 https://github.com/xptsp/script.kodi.launches.firefox ${KODI_OPT}/script.kodi.launches.firefox
+### Second: Link the repo:
+ln -sf ${KODI_OPT}/script.kodi.launches.firefox ${KODI_ADD}/script.kodi.launches.firefox
+### Third: Enable addon by default:
+kodi_enable script.kodi.launches.firefox

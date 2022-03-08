@@ -70,31 +70,3 @@ change_password /etc/transmission-daemon/autoremove.sh
 # Seventh: Create the finisher task to create the user "htpc": 
 #==============================================================================
 add_taskd 40_transmission.sh
-
-# Eighth: Create the "transmission_nosleep" service:
-#==============================================================================
-cp ${MUK_DIR}/files/transmission_nosleep.service /etc/systemd/system/transmission_nosleep.service
-systemctl enable transmission_nosleep
-
-#==============================================================================
-_title "Install Transmission addon for Kodi..."
-#==============================================================================
-### First: Get the "script.module.beautifulsoup" addon:
-#==============================================================================
-kodi_repo ${KODI_BASE}/script.module.beautifulsoup ${KODI_ADD}/
-kodi_enable script.module.beautifulsoup
-
-### Second: Pull the "script.module.simplejson" addon:
-#==============================================================================
-kodi_repo ${KODI_BASE}/script.module.simplejson ${KODI_ADD}/
-kodi_enable script.module.simplejson
-
-### Third: Pull the "script.module.six" addon:
-#==============================================================================
-kodi_repo ${KODI_BASE}/script.module.six ${KODI_ADD}/
-kodi_enable script.module.six
-
-### Fourth: Pull the "script.transmission" addon:
-#==============================================================================
-kodi_repo ${KODI_BASE}/script.transmission ${KODI_ADD}/
-kodi_enable script.transmission

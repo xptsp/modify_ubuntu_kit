@@ -12,10 +12,10 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
-_title "Installing Steam..."
+_title "Installing Steam addon for Kodi..."
 #==============================================================================
-### First: Install the software (duh :p)
+### First: Pull the "script.kodi.launches.emulationstation" addon:
 #==============================================================================
-dpkg --add-architecture i386
-apt update
-apt install -y steam
+git clone --depth=1 https://github.com/BrosMakingSoftware/Kodi-Launches-Steam-Addon ${KODI_OPT}/Kodi-Launches-Steam-Addon
+ln -sf ${KODI_OPT}/Kodi-Launches-Steam-Addon/script.kodi.launches.steam ${KODI_ADD}/script.kodi.launches.steam
+kodi_enable script.kodi.launches.steam

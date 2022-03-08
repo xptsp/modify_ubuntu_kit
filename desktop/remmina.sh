@@ -17,12 +17,3 @@ _title "Installing Remmina...."
 # First: Install the software:
 #==============================================================================
 apt-get install -y remmina remmina-plugin-*
-
-# Second: Pull the "script.kodi.launches.emulationstation" addon:
-#==============================================================================
-### First: Get the repo:
-git clone --depth=1 https://github.com/xptsp/script.kodi.launches.remmina ${KODI_OPT}/script.kodi.launches.remmina
-### Second: Link the repo:
-ln -sf ${KODI_OPT}/script.kodi.launches.remmina ${KODI_ADD}/script.kodi.launches.remmina
-### Third: Enable addon by default:
-kodi_enable script.kodi.launches.remmina

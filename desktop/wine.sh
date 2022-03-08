@@ -6,16 +6,14 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs Steam on your computer."
+	echo -e "${RED}Purpose:${NC} Installs WINE on your computer."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Installing Steam..."
-#==============================================================================
-### First: Install the software (duh :p)
+_title "Installing Wine..."
 #==============================================================================
 dpkg --add-architecture i386
 apt update
-apt install -y steam
+apt install -y --install-recommends wine-stable software-properties-common 

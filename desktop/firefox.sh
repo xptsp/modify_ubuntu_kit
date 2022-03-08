@@ -18,16 +18,7 @@ _title "Installing Mozilla Firefox and Thunderbird..."
 #==============================================================================
 apt install -y firefox thunderbird
 
-# Second: Install the Kodi addon:
-#==============================================================================
-### First: Get the repo:
-git clone --depth=1 https://github.com/xptsp/script.kodi.launches.firefox ${KODI_OPT}/script.kodi.launches.firefox
-### Second: Link the repo:
-ln -sf ${KODI_OPT}/script.kodi.launches.firefox ${KODI_ADD}/script.kodi.launches.firefox
-### Third: Enable addon by default:
-kodi_enable script.kodi.launches.firefox
-
-# Third: Copy launcher to the desktop:
+# Second: Copy launcher to the desktop:
 #==============================================================================
 [[ ! -d ~/Desktop ]] && mkdir -p ~/Desktop
 cp /usr/share/applications/firefox.desktop ~/Desktop/
