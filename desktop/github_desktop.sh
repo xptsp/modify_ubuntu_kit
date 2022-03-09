@@ -21,5 +21,4 @@ ${MUK_DIR}/files/github_upgrade.sh
 _title "Installing Atom Editor for GitHub for Linux..."
 #==============================================================================
 wget https://atom.io/download/deb -O /tmp/atom.deb
-apt install -y /tmp/atom.deb
-rm /tmp/atom.deb
+apt install -y /tmp/atom.deb && rm /tmp/atom.deb

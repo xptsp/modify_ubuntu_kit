@@ -43,6 +43,5 @@ else
 		echo "${GREEN}NOTICE${NC}: Upgrading GitHub Desktop to version ${VER}....!"
 	fi
     wget ${URL} -O /tmp/${FILE}
-    apt install -y /tmp/${FILE} && echo ${VER} > /var/lib/git/installed.version
-    rm /tmp/${FILE}
+    apt install -y /tmp/${FILE} && echo ${VER} > /var/lib/git/installed.version && rm /tmp/${FILE}
 fi

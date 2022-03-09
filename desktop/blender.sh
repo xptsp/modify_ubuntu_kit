@@ -12,12 +12,6 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
-_title "Install FFMPEG..."
-#==============================================================================
-add-apt-repository -y ppa:savoury1/ffmpeg4
-apt-get install ffmpeg
-
-#==============================================================================
 _title "Install Blender 3D..."
 #==============================================================================
 wget https://mirror.clarkson.edu/blender/release/Blender3.0/blender-3.0.1-linux-x64.tar.xz -O /tmp/blender-3.0.1-linux-x64.tar.xz
