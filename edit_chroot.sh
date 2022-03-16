@@ -212,7 +212,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		_title "Removing unnecessary packages and fixing any broken packages..."
 		apt-get install -f --autoremove --purge -y
 		_title "Upgrading any packages requiring upgrading..."
-		apt-get dist-upgrade -y
+		apt-get upgrade -y
 
 		### Ninth: Remove any unnecessary packages:
 		_title "Cleaning up cached packages..."
