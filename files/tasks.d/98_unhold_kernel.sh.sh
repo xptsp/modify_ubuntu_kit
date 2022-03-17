@@ -1,7 +1,3 @@
 #!/bin/bash
-apt-mark unhold linux-headers-5.11.0-27-generic
-apt-mark unhold linux-hwe-5.11-headers-5.11.0-27
-apt-mark unhold linux-image-5.11.0-27-generic
-apt-mark unhold linux-modules-5.11.0-27-generic
-apt-mark unhold linux-modules-extra-5.11.0-27-generic
+for PACKAGE in $(apt-mark showhold | egrep "linux-(headers|hwe|image|modules)"); do echo apt-mark unhold $PACKAGE; done
 exit 0

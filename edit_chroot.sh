@@ -375,9 +375,9 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	INITRD=$(ls initrd.img-* 2> /dev/null | sort -r | head -1)
 	[[ -z "${INITRD}" ]] && INITRD_SRC=$(ls boot/initrd.img-* 2> /dev/null | sort -r | head -1)
 	if [[ -z "${INITRD_SRC}" ]]; then
-		_error "No VMLINUZ file detected in chroot environment!  Skipping!"
+		_error "No INITRD.IMG file detected in chroot environment!  Skipping!"
 	else
-		_title "Copying INITRD from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
+		_title "Copying INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
 		cp -p ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
 	fi
 
