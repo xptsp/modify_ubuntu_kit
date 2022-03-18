@@ -15,7 +15,9 @@ fi
 _title "Install VirtualBox..."
 #==============================================================================
 wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | apt-key add -
-echo "deb [arch=amd64] http://download.virtualbox.org/virtualbox/debian ${OS_NAME} contrib" > /etc/apt/sources.list.d/virtualbox.list
+FILE=/etc/apt/sources.list.d/virtualbox.list
+echo "deb [arch=amd64] http://download.virtualbox.org/virtualbox/debian ${OS_NAME} contrib" > $FILE
+test -e $FILE && sed -i "s| impish | focal | g" $FILE
 apt update
 apt install -y virtualbox-6.1
 
