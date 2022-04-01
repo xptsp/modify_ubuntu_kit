@@ -17,6 +17,9 @@ _title "Installing and configuring SSH..."
 # First: Install the software (duh :p)
 #==============================================================================
 apt install -y ssh
+sed -i "s|#ClientAliveInterval .*|ClientAliveInterval 60|g" /etc/ssh/sshd_config
+sed -i "s|#ClientAliveCountMax .*|ClientAliveCountMax 3|g" /etc/ssh/sshd_config
+systemctl restart sshd
 
 # Third: Configure as appropriate:
 #==============================================================================
