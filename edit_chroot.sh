@@ -26,7 +26,7 @@ ISO_LABEL=$([[ -z "${ISO_LABEL}" ]] && echo ${ISO_PREFIX} ${ISO_VERSION} || echo
 # Default sto removing old kernels from chroot environment.  Set to 0 to prevent this.
 OLD_KERNEL=${OLD_KERNEL:-"1"}
 # Determine ISO version number to use:
-[[ -f ${UNPACK_DIR}/edit/etc/os-release ]] && ISO_VERSION=$(cat ${UNPACK_DIR}/edit/etc/os-release | grep "PRETTY" | cut -d "\"" -f 2 | cut -d " " -f 2)
+[[ -f ${UNPACK_DIR}/edit/etc/os-release ]] && ISO_VERSION=$(cat ${UNPACK_DIR}/edit/etc/os-release | grep "VERSION_ID=" | cut -d "\"" -f 2 | cut -d " " -f 2)
 # MUK path:
 MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
@@ -478,6 +478,7 @@ elif [[ "$1" == "iso" ]]; then
 	# Second: Create the ISO
 	_title "Building ${BLUE}${ISO_FILE}.iso${GREEN}...."
 	cd ${UNPACK_DIR}/extract
+	test -d isolinux || cp -aR ${MUK_DIR}/files/isolinux ./
 	if [[ "${FLAG_MKISOFS}" == "0" ]]; then
 		mkisofs -D -r -V "${ISO_LABEL}" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ${ISO_DIR}/${ISO_FILE}.iso .
 	else
