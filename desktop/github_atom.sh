@@ -6,13 +6,13 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs GitHub Desktop for Linux on your computer."
+	echo -e "${RED}Purpose:${NC} Installs Atom Editor on your computer."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Installing GitHub Desktop for Linux..."
+_title "Installing Atom Editor for GitHub for Linux..."
 #==============================================================================
-# First: Install the software:
-${MUK_DIR}/files/github_upgrade.sh
+wget https://atom.io/download/deb -O /tmp/atom.deb
+apt install -y /tmp/atom.deb && rm /tmp/atom.deb

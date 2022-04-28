@@ -23,16 +23,20 @@ apt install -y bluez pulseaudio pulseaudio-utils pavucontrol pulseaudio-module-b
 
 # Second: Alter the bluetooth service file:
 #==============================================================================
-[[ ! -d /etc/systemd/system/dbus-org.bluez.service.d ]] && mkdir -p /etc/systemd/system/dbus-org.bluez.service.d
-cat << EOF > /etc/systemd/system/dbus-org.bluez.service.d/compat.conf
+DIR=/etc/systemd/system/dbus-org.bluez.service.d
+[[ ! -d ${DIR} ]] && mkdir -p ${DIR}
+cat << EOF > ${DIR}/compat.conf
 [Service]
 ExecStart=
 ExecStart=/usr/lib/bluetooth/bluetoothd --compat
 EOF
+systemctl daemon-reload
+systemctl enable bluetooth
+systemctl restart bluetooth
 
 # Third: Create the missing audio.conf file:
 #==============================================================================
-cat << EOF > /etc/bluetooth/audio.conf
+test -f /etc/bluetooth/audio.conf || cat << EOF > /etc/bluetooth/audio.conf
 # This section contains general options
 [General]
 Enable=Source,Sink,Media,Socket

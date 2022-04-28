@@ -14,29 +14,21 @@ fi
 #==============================================================================
 _title "Installing Docker prerequisites..."
 #==============================================================================
-apt install -y apt-transport-https ca-certificates curl software-properties-common
+apt-get install -y ca-certificates curl gnupg lsb-release
 
 #==============================================================================
 _title "Installing Docker..."
 #==============================================================================
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-add-apt-repository -y "deb [arch=amd64] https://download.docker.com/linux/ubuntu ${OS_NAME} stable"
-apt install -y docker-ce
+FILE=/usr/share/keyrings/docker-archive-keyring.gpg
+test -f ${FILE} && rm ${FILE}
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o ${FILE}
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
+apt update
+apt-get install docker-ce docker-ce-cli containerd.io docker-compose-plugin
 add_taskd 80_docker.sh
-
-#==============================================================================
-_title "Installing Docker Compose..."
-#==============================================================================
-VER=1.29.2
-FILE=https://github.com/docker/compose/releases/download/${VER}/docker-compose-Linux-x86_64
-OUT=/usr/local/bin/docker-compose-${VER}
-wget ${FILE} -O ${OUT}
-ln -sf ${OUT} /usr/local/bin/docker-compose
-chmod +x /usr/local/bin/docker-compose
 
 #==============================================================================
 _title "Creating docker user..."
 #==============================================================================
 useradd -M -g docker -r -s /usr/sbin/nologin docker
 [[ ! -d /home/docker ]] && mkdir -p /home/docker
-

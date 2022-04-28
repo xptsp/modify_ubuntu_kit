@@ -57,16 +57,21 @@ sed -i "s|firefox|google-chrome|g" /usr/local/bin/chrome-vpn
 
 # Fourth: Create the launcher to launch Firefox as user htpc:
 #==============================================================================
-cp /usr/share/applications/firefox.desktop /usr/share/applications/firefox-vpn.desktop
-sed -i "s|=firefox|=firefox-vpn|g" /usr/share/applications/firefox-vpn.desktop
-sed -i "s|Icon=firefox-vpn|Icon=firefox|g" /usr/share/applications/firefox-vpn.desktop
-sed -i "s|=Firefox Web|=Firefox VPN Web|g" /usr/share/applications/firefox-vpn.desktop
-sed -i "s|Comment=Browse the World Wide Web|Comment=Browse the World Wide Web using the spiffy VPN\!|g" /usr/share/applications/firefox-vpn.desktop
+FILE=/usr/share/applications/firefox-vpn.desktop
+if test -f /usr/share/applications/firefox.desktop; then
+	cp /usr/share/applications/firefox.desktop ${FILE}
+	sed -i "s|=firefox|=firefox-vpn|g" ${FILE}
+	sed -i "s|Icon=firefox-vpn|Icon=firefox|g" ${FILE}
+	sed -i "s|=Firefox Web|=Firefox VPN Web|g" ${FILE}
+	sed -i "s|Comment=Browse the World Wide Web|Comment=Browse the World Wide Web using the spiffy VPN\!|g" ${FILE}
+fi
 
 # Fifth: Create the launcher to launch Google Chrome as user htpc:
 #==============================================================================
-cp /usr/share/applications/google-chrome.desktop /usr/share/applications/chrome-vpn.desktop
-sed -i "s|=/usr/bin/google-chrome-stable|=/usr/local/bin/chrome-vpn|g" /usr/share/applications/chrome-vpn.desktop
-sed -i "s|Name=Google Chrome|Name=Google Chrome VPN Web|g" /usr/share/applications/chrome-vpn.desktop
-sed -i "s|Comment=Access the Internet|Comment=Access the Internet using the spiffy VPN\!|g" /usr/share/applications/chrome-vpn.desktop
-
+FILE=/usr/share/applications/chrome-vpn.desktop
+if test -f /usr/share/applications/google-chrome.desktop; then
+	cp /usr/share/applications/google-chrome.desktop ${FILE}
+	sed -i "s|=/usr/bin/google-chrome-stable|=/usr/local/bin/chrome-vpn|g" ${FILE}
+	sed -i "s|Name=Google Chrome|Name=Google Chrome VPN Web|g" ${FILE}
+	sed -i "s|Comment=Access the Internet|Comment=Access the Internet using the spiffy VPN\!|g" ${FILE}
+fi

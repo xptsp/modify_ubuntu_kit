@@ -52,8 +52,3 @@ add_taskd 50_samba.sh
 AO=$(ischroot && echo "disable" || echo "restart")
 systemctl ${AO} smbd
 systemctl ${AO} nmbd
-
-# Fifth: Add "Don't sleep while Samba is serving files" service:
-#==============================================================================
-cp ${MUK_DIR}/files/samba_nosleep.service /etc/systemd/system/samba_nosleep.service
-systemctl enable samba_nosleep

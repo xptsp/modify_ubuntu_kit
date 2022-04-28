@@ -14,5 +14,5 @@ fi
 #==============================================================================
 _title "Install Cross-Compilation Tools..."
 #==============================================================================
-apt install -y gcc-arm-linux-gnueabihf libc6-armhf-cross u-boot-tools bc make gcc libc6-dev libncurses5-dev libssl-dev bison flex swig python-dev ccache
+apt install -y gcc-arm-linux-gnueabihf libc6-armhf-cross u-boot-tools bc make gcc libc6-dev libncurses5-dev libssl-dev bison flex swig python3-dev ccache
 apt install -y qemu-user-static debootstrap binfmt-support

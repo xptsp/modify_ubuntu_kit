@@ -25,28 +25,12 @@ ischroot && systemctl disable ${FPM}
 #==============================================================================
 _title "Installing Nginx onto your computer"
 #==============================================================================
+# First: Install the software:
 apt-get -y install nginx
 ufw allow 'Nginx HTTP'
 ischroot && systemctl disable nginx
 
-#==============================================================================
-_title "Installing MariaSQL"
-#==============================================================================
-# First: Install the software:
-apt install -y mariadb-server
-ischroot && systemctl disable mysql
-
-# Second: Secure the MYSQL database software:
-mysql --user=root <<_EOF_
-UPDATE mysql.user SET Password=PASSWORD("${db_root_password:-"xubuntu"}") WHERE User='root';
-DELETE FROM mysql.user WHERE User='';
-DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
-DROP DATABASE IF EXISTS test;
-DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
-FLUSH PRIVILEGES;
-_EOF_
-
-# Third: Configure Nginx to use PHP files:
+# Second: Configure Nginx to use PHP files:
 unlink /etc/nginx/sites-enabled/default
 cat << EOF > /etc/nginx/sites-available/port_80
 server {
@@ -61,7 +45,7 @@ server {
 
         location ~ \.php\$ {
                 include snippets/fastcgi-php.conf;
-                fastcgi_pass unix:/var/run/php/${FPM/.service/.sock};
+                fastcgi_pass unix:/var/run/php/${FPM}/.service/.sock};
         }
 
         location ~ /\.ht {
@@ -70,3 +54,10 @@ server {
 }
 EOF
 ln -s /etc/nginx/sites-available/port_80 /etc/nginx/sites-enabled/
+
+#==============================================================================
+_title "Installing MariaSQL"
+#==============================================================================
+apt install -y mariadb-server
+ischroot && systemctl disable mysql
+

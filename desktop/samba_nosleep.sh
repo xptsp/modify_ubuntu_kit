@@ -6,13 +6,13 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs GitHub Desktop for Linux on your computer."
+	echo -e "${RED}Purpose:${NC} Installs and configures Samba on your computer."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Installing GitHub Desktop for Linux..."
+_title "Adding service to stop sleep while Samba is serving files:"
 #==============================================================================
-# First: Install the software:
-${MUK_DIR}/files/github_upgrade.sh
+cp ${MUK_DIR}/files/samba_nosleep.service /etc/systemd/system/samba_nosleep.service
+systemctl enable samba_nosleep

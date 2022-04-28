@@ -16,7 +16,7 @@ _title "Install XPtsp APT repository..."
 #==============================================================================
 # First: Install the repo...
 apt install -y curl
-curl -SsL https://xptsp.github.io/ppa/KEY.gpg | apt-key add -
+curl -SsL https://xptsp.github.io/ppa/KEY.gpg | gpg --dearmor > /usr/share/keyrings/xptsp.gpg
 curl -SsL -o /etc/apt/sources.list.d/bpiwrt_repo.list https://xptsp.github.io/ppa/ppa.list
 apt update
 apt-get upgrade -y
