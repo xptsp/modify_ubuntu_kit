@@ -14,10 +14,11 @@ fi
 #==============================================================================
 _title "Install required software for Split Tunnel VPN..."
 #==============================================================================
-curl -s https://swupdate.openvpn.net/repos/repo-public.gpg | sudo apt-key add -
+curl -s https://swupdate.openvpn.net/repos/repo-public.gpg | gpg --dearmor > /usr/share/keyrings/openvpn.gpg
 FILE=/etc/apt/sources.list.d/openvpn.list
-echo "deb http://build.openvpn.net/debian/openvpn/stable ${OS_NAME} main" > $FILE
-test -e $FILE && sed -i "s| impish | focal | g" $FILE
+echo "deb [signed-by=/usr/share/keyrings/openvpn.gpg] http://build.openvpn.net/debian/openvpn/stable ${OS_NAME} main" > $FILE
+sed -i "s| impish | focal | g" $FILE
+sed -i "s| jammy | focal | g" $FILE
 apt update
 apt install -y debconf-utils
 echo "iptables-persistent iptables-persistent/autosave_v4 boolean false" | debconf-set-selections
