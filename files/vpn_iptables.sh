@@ -49,6 +49,7 @@ iptables -A INPUT -i $INTERFACE -j REJECT
 # let $VPNUSER access lo and $INTERFACE, but no other interfaces:
 iptables -A OUTPUT -o lo -m owner --uid-owner $VPNUSER -j ACCEPT
 iptables -A OUTPUT -o $INTERFACE -m owner --uid-owner $VPNUSER -j ACCEPT
+iptables -A OUTPUT -m owner --uid-owner $VPNUSER -j REJECT
 
 # all packets on $INTERFACE needs to be masqueraded
 iptables -t nat -A POSTROUTING -o $INTERFACE -j MASQUERADE
