@@ -13,18 +13,19 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
-_title "Update the ${RED}\"/etc/apt/sources.list\"${BLUE} file"
-#==============================================================================
 # First: Decide what OS paths to use:
 #==============================================================================
 CODE=$(cat /etc/os-release | grep "VERSION_CODENAME" | cut -d"=" -f 2)
 VER=$(cat /etc/os-release | grep "VERSION=" | cut -d"\"" -f 2)
 NAME=$(echo $VER | cut -d"(" -f 2 | cut -d")" -f 1)
 VER=$(echo $VER | cut -d" " -f 1)
-[[ "${VER}" == "22.04" ]] && echo "NOTE: This isn't needed for Ubuntu 22.04 variants!" && exit
+[[ "${VER}" =~ 22.04 ]] && echo "NOTE: This isn't needed for Ubuntu 22.04 variants!" && exit
+exit
 
 # Second: Write the replacement "sources.list" file:
 #==============================================================================
+#==============================================================================
+_title "Update the ${RED}\"/etc/apt/sources.list\"${BLUE} file"
 mv /etc/apt/sources.list /etc/apt/sources.list.backup
 cat << EOF > /etc/apt/sources.list
 # deb cdrom:[Xubuntu ${VER} LTS _${NAME}_ - Release amd64 / ${CODE} main multiverse restricted universe

@@ -36,4 +36,4 @@ ln -sf /opt/dropbox ~/.dropbox-dist
 
 # Fourth: Get Dropbox integration with Thunar:
 #==============================================================================
-apt install -y python thunar-dropbox-plugin
+apt install -y python3 thunar-dropbox-plugin
