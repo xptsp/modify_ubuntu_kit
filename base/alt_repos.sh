@@ -20,7 +20,6 @@ VER=$(cat /etc/os-release | grep "VERSION=" | cut -d"\"" -f 2)
 NAME=$(echo $VER | cut -d"(" -f 2 | cut -d")" -f 1)
 VER=$(echo $VER | cut -d" " -f 1)
 [[ "${VER}" =~ 22.04 ]] && echo "NOTE: This isn't needed for Ubuntu 22.04 variants!" && exit
-exit
 
 # Second: Write the replacement "sources.list" file:
 #==============================================================================
