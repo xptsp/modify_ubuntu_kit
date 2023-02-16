@@ -19,7 +19,7 @@ add-apt-repository -y universe && apt update
 #==============================================================================
 # If we are running Ubuntu 22.04 variants, we don't need this:
 #==============================================================================
-if [[ "$(cat /etc/os-release | grep "VERSION=" | cut -d"\"" -f 2 | cut -d" " -f 1)" != "22.04" ]]; then
+if [[ "$(cat /etc/os-release | grep "VERSION_ID=" | cut -d"\"" -f 2 | cut -d" " -f 1)" != "22.04" ]]; then
 	_title "Installing ExFAT support on your computer"
 	apt install -y exfat-fuse exfat-utils
 fi

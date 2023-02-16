@@ -16,6 +16,15 @@ _title "Installing Mozilla Firefox and Thunderbird..."
 #==============================================================================
 # First: Install the software:
 #==============================================================================
+snap remove firefox
+apt remove -y firefox
+add-apt-repository -y ppa:mozillateam/ppa
+cat << EOF > /etc/apt/preferences.d/mozillateamppa
+Package: firefox*
+Pin: release o=LP-PPA-mozillateam
+Pin-Priority: 501
+EOF
+apt update
 apt install -y firefox thunderbird
 
 # Second: Copy launcher to the desktop:

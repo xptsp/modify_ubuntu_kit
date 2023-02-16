@@ -25,7 +25,7 @@ rm /tmp/dropbox-linux-x86_64.tar.gz
 #==============================================================================
 wget https://gist.githubusercontent.com/thisismitch/d0133d91452585ae2adc/raw/699e7909bdae922201b8069fde3011bbf2062048/dropbox -O /etc/init.d/dropbox
 chmod 755 /etc/init.d/dropbox
-echo 'DROPBOX_USERS="kodi"' > /etc/default/dropbox
+echo 'DROPBOX_USERS="$(grep ":1000:" /etc/passwd | cut -d: -f 1)"' > /etc/default/dropbox
 change_username /etc/default/dropbox
 
 # Third: Get the dropbox binary:

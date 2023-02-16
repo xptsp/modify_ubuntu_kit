@@ -6,14 +6,12 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs Atom Editor on your computer."
+	echo -e "${RED}Purpose:${NC} Installs Mousepad on your computer."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Installing Atom Editor for GitHub for Linux..."
+_title "Install Mousepad..."
 #==============================================================================
-wget https://atom.io/download/deb -O /tmp/atom.deb
-apt install -y /tmp/atom.deb
-rm /tmp/atom.deb
+apt install -y mousepad
