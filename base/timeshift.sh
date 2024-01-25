@@ -16,10 +16,7 @@ _title "Installing TimeShift..."
 #==============================================================================
 # First: Install the software :p
 #==============================================================================
-[[ "$OS_VER" -lt 2004 ]] && apt-add-repository -y ppa:teejee2008/ppa
-wget https://github.com/teejee2008/timeshift/releases/download/v20.11.1/timeshift_20.11.1_amd64.deb -O /tmp/timeshift_20.11.1_amd64.deb
-apt install -y /tmp/timeshift_20.11.1_amd64.deb
-rm /tmp/timeshift_20.11.1_amd64.deb
+apt install -y timeshift
 
 # Second: Add the finisher script:
 #==============================================================================

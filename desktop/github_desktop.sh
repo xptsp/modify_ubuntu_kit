@@ -15,4 +15,7 @@ fi
 _title "Installing GitHub Desktop for Linux..."
 #==============================================================================
 # First: Install the software:
-${MUK_DIR}/files/github_upgrade.sh
+wget -qO - https://apt.packages.shiftkey.dev/gpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/shiftkey-packages.gpg > /dev/null
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/shiftkey-packages.gpg] https://apt.packages.shiftkey.dev/ubuntu/ any main" > /etc/apt/sources.list.d/shiftkey-packages.list
+apt update
+apt install -y github-desktop
