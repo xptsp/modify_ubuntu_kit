@@ -19,7 +19,7 @@ _title "Upgrade and configure the Bluetooth software"
 # First: Install the software:
 #==============================================================================
 [[ "$OS_VER" -eq 1804 ]] && add-apt-repository -y ppa:bluetooth/bluez
-apt install -y bluez pulseaudio pulseaudio-utils pavucontrol pulseaudio-module-bluetooth
+apt install -y bluez pulseaudio pulseaudio-utils pavucontrol pulseaudio-module-bluetooth paprefs
 
 # Second: Alter the bluetooth service file:
 #==============================================================================
@@ -41,3 +41,12 @@ test -f /etc/bluetooth/audio.conf || cat << EOF > /etc/bluetooth/audio.conf
 [General]
 Enable=Source,Sink,Media,Socket
 EOF
+
+# Fourth: Add module to load for multiple simultaneous audio outputs:
+#==============================================================================
+echo "load-module module-combine-sink" >> /etc/pulse/system.pa
+
+# Fifth: Restart pulseaudio daemon:
+#==============================================================================
+pulseaudio -k
+pulseaudio -D

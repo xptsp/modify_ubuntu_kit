@@ -14,6 +14,7 @@ fi
 #==============================================================================
 _title "Replacing wallpaper and plymouth background..."
 #==============================================================================
+[[ "$(apt list --installed plymouth-theme-xubuntu* 2> /dev/null | wc -l)" -eq 1 ]] && echo "XFCE4 plymouth theme not installed!  Aborting..." && exit 0
 DIR=/usr/share/plymouth/themes/xubuntu-logo/
 [[ ! -f ${DIR}/wallpaper.png.original ]] && mv ${DIR}/wallpaper.png ${DIR}/wallpaper.png.original
 cp /opt/modify_ubuntu_kit/files/red_dragon.png ${DIR}/wallpaper.png

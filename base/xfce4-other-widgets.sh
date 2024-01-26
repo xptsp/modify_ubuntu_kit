@@ -14,4 +14,5 @@ fi
 #==============================================================================
 _title "Installing all other XFCE widgets..."
 #==============================================================================
+[[ "$(apt list --installed xfce4* 2> /dev/null | wc -l)" -eq 1 ]] && echo "XFCE4 not installed!  Aborting..." && exit 0
 apt install -y xfce4-*plugin*

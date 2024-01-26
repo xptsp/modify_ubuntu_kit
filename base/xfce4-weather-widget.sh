@@ -17,7 +17,7 @@ fi
 #==============================================================================
 _title "Installing updated XFCE Weather widget..."
 #==============================================================================
+[[ "$(apt list --installed xfce4* 2> /dev/null | wc -l)" -eq 1 ]] && echo "XFCE4 not installed!  Aborting..." && exit 0
 wget http://mxrepo.com/mx/repo/pool/main/x/xfce4-weather-plugin/xfce4-weather-plugin_0.10.2-1%7Emx17_amd64.deb -O /tmp/xfce4-weather-plugin.deb
 apt install -y /tmp/xfce4-weather-plugin.deb
 rm /tmp/xfce4-weather-plugin.deb
-
