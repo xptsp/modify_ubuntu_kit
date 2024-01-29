@@ -15,4 +15,5 @@ fi
 _title "Install Gnome browser connector..."
 #==============================================================================
 wget http://archive.ubuntu.com/ubuntu/pool/universe/g/gnome-browser-connector/gnome-browser-connector_42.1-4_all.deb -O /tmp//gnome-browser-connector_42.1-4_all.deb
-apt install /tmp/gnome-browser-connector_42.1-4_all.deb
+apt install -y /tmp/gnome-browser-connector_42.1-4_all.deb
+rm /tmp/gnome-browser-connector_42.1-4_all.deb

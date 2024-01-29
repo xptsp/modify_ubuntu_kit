@@ -6,12 +6,14 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs ethernet suspend/hibernate fix on your computer."
+	echo -e "${RED}Purpose:${NC} Downloads GDM change background script."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Adding script to deal with no ethernet connection after suspend/hibernate..."
+_title "Downloading GDM change background script..."
 #==============================================================================
-ln -sf ${MUK_DIR}/files/restart_audio.sh /etc/pm/sleep.d/99-audio.sh
+apt install -y wget libglib2.0-dev-bin
+wget github.com/thiggy01/change-gdm-background/raw/master/change-gdm-background -O /usr/local/bin/change-gdm-background
+chmod +x /usr/local/bin/change-gdm-background

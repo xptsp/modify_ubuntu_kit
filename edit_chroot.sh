@@ -87,10 +87,18 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		# RESULT: We are outside the chroot environment:
 		#======================================================================
 		### First: Make sure that the CHROOT environment actually exists:
-		if [[ ! -d ${UNPACK_DIR}/edit/etc ]]; then
+		if [[ ! -f ${UNPACK_DIR}/extract/casper/filesystem.squashfs ]]; then
 			_error "No unpacked filesystem!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 			exit 1
-		elif [[ "$1" == "build" ]]; then
+		fi
+		mkdir -p ${UNPACK_DIR}/.{lower,upper,work}
+		if ! mount | grep -q "${UNPACK_DIR}/extract/casper/filesystem.squashfs"; then
+			mount ${UNPACK_DIR}/extract/casper/filesystem.squashfs ${UNPACK_DIR}/.lower
+		fi
+		if ! mount | grep -q " ${UNPACK_DIR}/edit"; then
+			mount -t overlay -o upperdir=${UNPACK_DIR}/.upper,lowerdir=${UNPACK_DIR}/.lower,workdir=${UNPACK_DIR}/.work overlay ${UNPACK_DIR}/edit
+		fi
+		if [[ "$1" == "build" ]]; then
 			if [[ ! "$2" == "base" && ! "$2" == "desktop" && ! "$2" == "htpc" && ! "$2" == "docker" ]]; then
 				_error "Invalid parameter!  Supported values are: ${RED}base${GREEN}, ${RED}desktop${GREEN}, ${RED}htpc${GREEN} and ${RED}docker${GREEN}!"
 				exit 1
@@ -232,10 +240,10 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		rm /var/lib/dbus/machine-id
 		rm /sbin/initctl
 		dpkg-divert --rename --remove /sbin/initctl >& /dev/null
-		[[ "${FLAG_TMP_RAM}" == "1" ]] && umount /tmp
-		umount /proc || umount -lf /proc
-		umount /sys
-		umount /dev/pts
+		[[ "${FLAG_TMP_RAM}" == "1" ]] && umount -q /tmp
+		umount -q /proc || umount -lfq /proc
+		umount -q /sys
+		umount -q /dev/pts
 		exit 0
 	fi
 
@@ -248,12 +256,12 @@ elif [[ "$1" == "unmount" ]]; then
 		exit 1
 	fi
 	_title "Unmounting filesystem mount points...."
-	umount ${UNPACK_DIR}/edit/tmp >& /dev/null
-	(umount ${UNPACK_DIR}/edit/proc || umount -lf ${UNPACK_DIR}/edit/proc) >& /dev/null
-	umount ${UNPACK_DIR}/edit/sys >& /dev/null
-	umount ${UNPACK_DIR}/edit/dev/pts >& /dev/null
-	umount ${UNPACK_DIR}/edit/dev >& /dev/null
-	umount ${UNPACK_DIR}/edit/run >& /dev/null
+	umount -q ${UNPACK_DIR}/edit/tmp
+	umount -q ${UNPACK_DIR}/edit/proc || umount -lfq ${UNPACK_DIR}/edit/proc
+	umount -q ${UNPACK_DIR}/edit/sys
+	umount -q ${UNPACK_DIR}/edit/dev/pts
+	umount -q ${UNPACK_DIR}/edit/dev
+	umount -q ${UNPACK_DIR}/edit/run
 	$0 docker_umount -q
 	_title "All filesystem mount points should be unmounted now."
 
@@ -269,15 +277,10 @@ elif [[ "$1" == "remove" ]]; then
 		exit 1
 	fi
 	$0 unmount
-	_title "Removing folder ${BLUE}${UNPACK_DIR}/edit${GREEN} safely..."
-	EDIT_FS=$(cat /etc/fstab | grep -e "^tmpfs" | grep " /img/edit ")
-	if [[ ! -z "${EDIT_FS}" ]]; then
-		umount ${UNPACK_DIR}/edit
-		mount ${UNPACK_DIR}/edit
-	else
-		rm -rf ${UNPACK_DIR}/edit
-	fi
-	_title "Unpacked filesystem has been removed."
+	_title "Removing modifications to squashfs..."
+	umount -q ${UNPACK_DIR}/edit
+	rm -rf ${UNPACK_DIR}/.upper
+	_title "Modifications to squashfs filesystem has been removed."
 
 #==============================================================================
 # Did user request to unpack the ISO?
@@ -289,7 +292,7 @@ elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" || "$
 		exit 1
 	fi
 	[ ! -d ${UNPACK_DIR}/mnt ] && mkdir -p ${UNPACK_DIR}/mnt
-	umount ${UNPACK_DIR}/mnt >& /dev/null
+	umount -q ${UNPACK_DIR}/mnt
 	if [[ "$1" == "unpack" ]]; then
 		MNT=$((mount /dev/cdrom ${UNPACK_DIR}/mnt >& /dev/null) && echo "mnt" || echo "extract")
 		[ "${MNT}" == "extract" ] && _error "No DVD in the drive!  Trying ${BLUE}extract${GREEN} folder..."
@@ -343,7 +346,7 @@ elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" || "$
 	# Fifth: Unmount the DVD/ISO if necessary:
 	if [[ "${MNT}" == "mnt" || ("$1" != "unpack" && ! "$1" == "unpack-distro") ]]; then
 		_title "Unmounting DVD/ISO from mount point...."
-		umount mnt
+		umount -q mnt
 	fi
 
 	# Sixth: Tell user we done!
@@ -400,7 +403,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	sed -i '/ubiquity/d' extract/casper/filesystem.manifest-desktop
 	sed -i '/casper/d' extract/casper/filesystem.manifest-desktop
 
-	# Fifth: Sset necessary flags for compression:
+	# Fifth: Set necessary flags for compression:
 	[[ ! "$(echo $@ | grep pack-xz)" == "" ]] && FLAG_XZ=1
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 
@@ -422,8 +425,12 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 		echo opt/${SPLIT_OPT}/* > /tmp/exclude
 		XZ="${XZ} -ef /tmp/exclude -wildcards"
 	fi
-	[[ -f extract/casper/filesystem.squashfs ]] && rm extract/casper/filesystem.squashfs
-	mksquashfs edit extract/casper/filesystem.squashfs -b 1048576 ${XZ}
+	[[ -f extract/casper/filesystem-new.squashfs ]] && rm extract/casper/filesystem-new.squashfs
+	mksquashfs edit extract/casper/filesystem-new.squashfs -b 1048576 ${XZ}
+	umount -q ${UNPACK_DIR}/edit
+	umount -q ${UNPACK_DIR}/.lower
+	mv extract/casper/filesystem-new.squashfs extract/casper/filesystem.squashfs
+	rm -rf .upper
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
 
 	# Eighth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
@@ -600,7 +607,7 @@ elif [[ "$1" == "docker_umount" ]]; then
 	# Unmount the chroot environment docker directory:
 	_title "Unmounting chroot docker directory from live system:"
 	systemctl stop docker
-	umount /var/lib/docker
+	umount -q /var/lib/docker
 	systemctl start docker
 
 #==============================================================================
@@ -613,7 +620,7 @@ elif [[ "$1" == "rdcopy" ]]; then
 
 	# Mount the RedDragon USB stick:
 	_title "Mounting the RedDragon USB Stick...."
-	while [[ ! -z "$(mount | grep "${DEV}")" ]]; do umount ${DEV}; sleep 1; done
+	while [[ ! -z "$(mount | grep "${DEV}")" ]]; do umount -q ${DEV}; sleep 1; done
 	[[ ! -d ${USB} ]] && mkdir -p ${USB}
 	mount ${DEV} ${USB}
 
@@ -622,7 +629,7 @@ elif [[ "$1" == "rdcopy" ]]; then
 		mount ${USB}/_ISO/MAINMENU/2* ${MNT}
 		cp ${PTN2}/casper/* ${MNT}/casper/
 		_title "Unmounting Base edition image partition..."
-		umount ${MNT}
+		umount -q ${MNT}
 	fi
 
 	if [[ -z "$2" || "$2" == "desktop" ]]; then
@@ -630,7 +637,7 @@ elif [[ "$1" == "rdcopy" ]]; then
 		mount ${USB}/_ISO/MAINMENU/3* ${MNT}
 		cp ${PTN3}/casper/* ${MNT}/casper/
 		_title "Unmounting Desktop edition image partition..."
-		umount ${MNT}
+		umount -q ${MNT}
 	fi
 
 	if [[ -z "$2" || "$2" == "htpc" ]]; then
@@ -638,11 +645,11 @@ elif [[ "$1" == "rdcopy" ]]; then
 		mount ${USB}/_ISO/MAINMENU/4* ${MNT}
 		cp ${PTN4}/casper/* ${MNT}/casper/
 		_title "Unmounting HTPC  edition image partition..."
-		umount ${MNT}
+		umount -q ${MNT}
 	fi
 
 	_title "Unmounting RedDragon USB stick..."
-	umount ${USB}
+	umount -q ${USB}
 	if [[ ! "$(echo $@ | grep "noeject")" == "" ]]; then
 		_title "Ejecting RedDragon USB stick..."
 		eject ${DEV}

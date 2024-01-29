@@ -19,4 +19,4 @@ add-apt-repository -y universe && apt update
 #==============================================================================
 _title "Installing ExFAT support on your computer"
 #==============================================================================
-apt install -y exfat-fuse exfat-utils
+apt install -y exfat-fuse exfatprogs

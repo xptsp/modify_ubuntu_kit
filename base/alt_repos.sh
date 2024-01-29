@@ -19,7 +19,6 @@ CODE=$(cat /etc/os-release | grep "VERSION_CODENAME" | cut -d"=" -f 2)
 VER=$(cat /etc/os-release | grep "VERSION=" | cut -d"\"" -f 2)
 NAME=$(echo $VER | cut -d"(" -f 2 | cut -d")" -f 1)
 VER=$(echo $VER | cut -d" " -f 1)
-[[ "${VER}" =~ 22.04 ]] && echo "NOTE: This isn't needed for Ubuntu 22.04 variants!" && exit
 
 # Second: Write the replacement "sources.list" file:
 #==============================================================================
@@ -70,7 +69,7 @@ deb http://ubuntu.securedservers.com/ ${CODE}-backports main restricted universe
 
 ## This software is not part of Ubuntu, but is offered by Canonical and the
 ## respective vendors as a service to Ubuntu users.
-deb http://archive.canonical.com/ubuntu ${CODE} partner
+#deb http://archive.canonical.com/ubuntu ${CODE} partner
 # deb-src http://archive.canonical.com/ubuntu ${CODE} partner
 
 deb http://ubuntu.securedservers.com/ ${CODE}-security main restricted
