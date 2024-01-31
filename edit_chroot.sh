@@ -83,6 +83,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		# RESULT: We are outside the chroot environment:
 		#======================================================================
 		### First: Make sure that the CHROOT environment actually exists:
+		mkdir -p ${UNPACK_DIR}/{.lower,.upper,.work,edit}
 		if [[ ! -f ${UNPACK_DIR}/extract/casper/filesystem.squashfs ]]; then
 			_error "No unpacked filesystem!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 			exit 1

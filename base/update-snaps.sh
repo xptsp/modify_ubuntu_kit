@@ -6,12 +6,12 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs Dolphin (GameCube/Wii emulator) on your computer."
+	echo -e "${RED}Purpose:${NC} Updates Snap installs."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Installs Dolphin (GameCube/Wii emulator)..."
+_title "Updating Snap installs..."
 #==============================================================================
-snap install dolphin-emulator
+snap refresh

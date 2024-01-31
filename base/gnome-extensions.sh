@@ -41,8 +41,20 @@ if [ ! -x "\$(command -v jq)" ]; then
 	echo "	* sudo zypper install jq (openSUSE)"
 	exit 1
 fi
+
+# If "-s" or "--system" is specified as 2nd parameter, store in global system extensions:
+if [[ "$2" == "-s" || "$2" == "--system" ]]; then
+	DIR=/usr/share/gnome-shell/extensions
+	# If we are not running as root, then run this script as root:
+	if [[ "$UID" -ne 0 ]]; then
+		sudo $0 $@
+		exit $?
+	fi
+else
+	DIR=~/.local/share/gnome-shell/extensions/
+fi
 # Make sure the directory for storing the user's shell extension exists.
-mkdir -p ~/.local/share/gnome-shell/extensions/
+mkdir -p \${DIR} 
 # Extract JSON "uuid" variable value from "metadata.json" in the ZIP-file.
 MY_EXT_UUID=\$(unzip -p \$1 metadata.json | jq -r '.uuid')
 # Check that variable is set to a non-empty string
@@ -51,11 +63,11 @@ if [ -z "\${MY_EXT_UUID}" ]; then
 	exit 1
 fi
 # Extract the ZIP-file to a subdirectory with the same name as the "uuid".
-unzip -q -o \$1 -d ~/.local/share/gnome-shell/extensions/\$MY_EXT_UUID
+unzip -q -o \$1 -d \${DIR}\$MY_EXT_UUID
 # Restart Gnome Shell to activate the Gnome Shell extension.
 busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null 2>&1
 # All is good.
-echo "Gnome Shell Extension installed in ~/.local/share/gnome-shell/extensions/\$MY_EXT_UUID/"
+echo "Gnome Shell Extension installed in \${DIR}/\$MY_EXT_UUID/"
 exit 0
 EOF
 chmod +x /usr/local/bin/gnome-ext-install
