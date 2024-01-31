@@ -16,4 +16,4 @@ _title "Installing Wine..."
 #==============================================================================
 dpkg --add-architecture i386
 apt update
-apt install -y --install-recommends wine-stable software-properties-common 
+apt install -y --install-recommends wine-stable

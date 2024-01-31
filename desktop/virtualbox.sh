@@ -6,12 +6,12 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs Mousepad on your computer."
+	echo -e "${RED}Purpose:${NC} Installs VirtualBox and extension pack on your computer."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Install Mousepad..."
+_title "Install VirtualBox..."
 #==============================================================================
-apt install -y mousepad
+apt install virtualbox virtualbox-ext-pack

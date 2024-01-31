@@ -22,7 +22,9 @@ _title "Install Transmission (port 9090)..."
 # First: Install the software:
 #==============================================================================
 add-apt-repository -y ppa:transmissionbt/ppa
-test -e $FILE && sed -i "s| impish | focal | g" /etc/apt/sources.list.d/transmissionbt-ubuntu-ppa-impish.list
+FILE=/etc/apt/sources.list.d/transmissionbt-ubuntu-ppa-*.list
+sed -i "s| impish | focal |g" ${FILE}
+sed -i "s| jammy | focal |g" ${FILE}
 apt update
 apt remove -y transmission*
 apt install -y transmission-daemon transmission-cli transgui

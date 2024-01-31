@@ -66,10 +66,6 @@ if [[ "$1" == "update" ]]; then
 	_title "Fetching latest version of this script"
 	if [ ! -d ${MUK_DIR} ]; then
 		git clone --depth=1 https://github.com/xptsp/modify_ubuntu_kit ${MUK_DIR}
-	else
-		cd ${MUK_DIR}
-		git reset --hard
-		git pull
 	fi
 	[[ -f ${MUK_DIR}/install.sh ]] && ${MUK_DIR}/install.sh
 	_title "Script has been updated to latest version."
@@ -115,8 +111,9 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		mount --bind /dev/ ${UNPACK_DIR}/edit/dev
 
 		### Third: Copy MUK into chroot environment:
-		rm -rf ${UNPACK_DIR}/edit${MUK_DIR}
-		cp -aR ${MUK_DIR} ${UNPACK_DIR}/edit/opt/
+		rm -rf ${UNPACK_DIR}/edit/${MUK_DIR}
+		cp -aR ${MUK_DIR} ${UNPACK_DIR}/edit/${MUK_DIR}
+		chown root:root -R ${UNPACK_DIR}/edit/${MUK_DIR}
 
 		### Fourth: Enter the CHROOT environment:
 		_title "Entering CHROOT environment"
@@ -427,23 +424,26 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	fi
 	[[ -f extract/casper/filesystem-new.squashfs ]] && rm extract/casper/filesystem-new.squashfs
 	mksquashfs edit extract/casper/filesystem-new.squashfs -b 1048576 ${XZ}
+	# Eighth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
+	[[ "${KEEP_CIFS:-"0"}" == "1" && -f extract/casper/filesystem.manifest-remove ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
+
+	# Eighth: Create the "filesystem.size" file:
+	_title "Building ${BLUE}filesystem.size${GREEN}}...."
+	printf $(du -sx --block-size=1 edit | cut -f1) | tee extract/casper/filesystem.size >& /dev/null
+
+	# Ninth: remove the overlay filesystem and upper layer of overlay, then create the "md5sum.list" file:
+	_title "Removing the overlay filesystem and upper layer of overlay..."
 	umount -q ${UNPACK_DIR}/edit
 	umount -q ${UNPACK_DIR}/.lower
 	mv extract/casper/filesystem-new.squashfs extract/casper/filesystem.squashfs
 	rm -rf .upper
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
-
-	# Eighth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
-	[[ "${KEEP_CIFS:-"0"}" == "1" && -f extract/casper/filesystem.manifest-remove ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
-
-	# Ninth: Create the "filesystem.size" and "md5sum.list" files:
-	_title "Building ${BLUE}filesystem.size${GREEN} and ${BLUE}md5sum.list${GREEN}...."
-	printf $(du -sx --block-size=1 edit | cut -f1) | tee extract/casper/filesystem.size >& /dev/null
+	_title "Creating the "md5sum.list" file..."
 	cd extract
 	[ -f md5sum.list ] && rm md5sum.list
 	find -type f -print0 | xargs -0 md5sum | grep -v isolinux/boot.cat | tee md5sum.list >& /dev/null
 
-	# Eighth: Tell user we done!
+	# Tenth: Tell user we done!
 	_title "Done packing and preparing extracted filesystem!"
 
 #==============================================================================

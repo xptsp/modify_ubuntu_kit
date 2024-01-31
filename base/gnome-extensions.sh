@@ -14,7 +14,7 @@ fi
 #==============================================================================
 _title "Installing packages for Gnome extensions..."
 #==============================================================================
-apt install -y jq gnome-shell-extensions
+apt install -y jq gnome-shell-extensions gettext make
 
 #==============================================================================
 _title "Adding script to automate installing gnome extensions..."
@@ -59,3 +59,37 @@ echo "Gnome Shell Extension installed in ~/.local/share/gnome-shell/extensions/\
 exit 0
 EOF
 chmod +x /usr/local/bin/gnome-ext-install
+
+#==============================================================================
+_title "Installing some Gnome Extensions..."
+#==============================================================================
+mkdir /tmp/tmp
+cd /tmp/tmp
+
+# First extension: Grand Theft Focus (https://github.com/zalckos/GrandTheftFocus):
+wget https://github.com/zalckos/GrandTheftFocus/releases/download/v3/grand-theft-focuszalckos.github.com.v3.shell-extension.zip
+gnome-ext-install grand-theft-focuszalckos.github.com.v3.shell-extension.zip
+rm grand-theft-focuszalckos.github.com.v3.shell-extension.zip
+
+# Second extension: OpenWeather (https://gitlab.com/skrewball/openweather.git):
+git clone https://gitlab.com/skrewball/openweather.git
+cd openweather
+make && make install
+cd ..
+rm -rf openweather
+
+# Third extension: OSD Volume Number (https://github.com/Deminder/osd-volume-number):
+git clone https://github.com/Deminder/osd-volume-number
+cd osd-volume-number
+git submodule update --init --remote --recursive --checkout sdt
+make install
+cd ..
+rm -rf osd-volume-number
+
+# Forth extension: Prevent Double Empty Window (https://gitlab.com/g3786/prevent-double-empty-window)
+git clone https://gitlab.com/g3786/prevent-double-empty-window.git
+cd prevent-double-empty-window
+zip ../prevent-double-empty-window.zip *
+cd ..
+gnome-ext-install prevent-double-empty-window.zip
+rm -rf prevent-double-empty-window*

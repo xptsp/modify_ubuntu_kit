@@ -6,13 +6,18 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs Dolphin (GameCube/Wii emulator) on your computer."
+	echo -e "${RED}Purpose:${NC} Installs Mousepad on your computer, replacing GEdit (if installed)."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Installs Dolphin (GameCube/Wii emulator)..."
+_title "Removing GEdit..."
 #==============================================================================
-apt-add-repository -y ppa:dolphin-emu/ppa
-apt install -y dolphin-emu
+apt purge -y gedit*
+
+#==============================================================================
+_title "Installing Mousepad..."
+#==============================================================================
+apt install -y mousepad
+sed -i "s|Exec=xfce4-terminal|Exec=xfce4-terminal --maximize|" /usr/share/applications/xfce4-terminal.desktop

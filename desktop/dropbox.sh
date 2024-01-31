@@ -34,6 +34,8 @@ wget https://www.dropbox.com/download?dl=packages/dropbox.py -O /usr/local/bin/d
 chmod 555 /usr/local/bin/dropbox
 ln -sf /opt/dropbox ~/.dropbox-dist
 
-# Fourth: Get Dropbox integration with Thunar:
+# Fourth: Get Dropbox integration with Thunar --ONLY-- if thunar is installed:
 #==============================================================================
-apt install -y python3 thunar-dropbox-plugin
+if apt list thunar 2> /dev/null | grep -q thunar; then
+	apt install -y python3 thunar-dropbox-plugin
+fi
