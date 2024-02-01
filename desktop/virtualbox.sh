@@ -14,4 +14,4 @@ fi
 #==============================================================================
 _title "Install VirtualBox..."
 #==============================================================================
-apt install virtualbox virtualbox-ext-pack
+apt install -y virtualbox virtualbox-ext-pack

@@ -20,4 +20,3 @@ apt purge -y gedit*
 _title "Installing Mousepad..."
 #==============================================================================
 apt install -y mousepad
-sed -i "s|Exec=xfce4-terminal|Exec=xfce4-terminal --maximize|" /usr/share/applications/xfce4-terminal.desktop

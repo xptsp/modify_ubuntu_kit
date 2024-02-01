@@ -283,71 +283,45 @@ elif [[ "$1" == "remove" ]]; then
 #==============================================================================
 # Did user request to unpack the ISO?
 #==============================================================================
-elif [[ "$1" == "unpack" ||  "$1" == "unpack-iso" || "$1" == "unpack-full" || "$1" == "unpack-distro" ]]; then
+elif [[ "$1" == "unpack" ]]; then
 	# First: Make sure everything is okay before proceeding:
 	if [[ $(ischroot; echo $?) -ne 1 ]]; then
 		_error "Cannot use ${BLUE}unpack${GREEN} inside chroot environment!"
 		exit 1
 	fi
-	[ ! -d ${UNPACK_DIR}/mnt ] && mkdir -p ${UNPACK_DIR}/mnt
-	umount -q ${UNPACK_DIR}/mnt
-	if [[ "$1" == "unpack" ]]; then
-		MNT=$((mount /dev/cdrom ${UNPACK_DIR}/mnt >& /dev/null) && echo "mnt" || echo "extract")
-		[ "${MNT}" == "extract" ] && _error "No DVD in the drive!  Trying ${BLUE}extract${GREEN} folder..."
-	elif [[ "$1" == "unpack-distro" ]]; then
-		if [[ ! -f ${UNPACK_DIR}/$2/casper/filesystem.squashfs ]]; then
-			_error "Cannot find a ${BLUE}filesystem.squashfs${GREEN} to extract!!!"
+	cd ${UNPACK_DIR}
+	mkdir -p mnt
+	umount -q mnt
+	ISO=$2
+	if [[ -z "$ISO" ]]; then
+		if mount /dev/cdrom ${UNPACK_DIR}/mnt; then
+			_error "No DVD in the drive!"
 			exit 1
 		fi
-		MNT="$2"
-	elif [[ -z "$2" ]]; then
-		MNT=extract
-		_error "No ISO specified!  Trying ${BLUE}extract${GREEN} folder..."
 	else
-		ISO=$2
-		[[ -f "${ISO}" && "$(basename ${ISO})" == "$ISO" ]] && ISO=$(pwd)/$ISO
-		MNT=$((mount -o loop $ISO ${UNPACK_DIR}/mnt >& /dev/null) && echo "mnt" || echo "extract")
-		[ "${MNT}" == "extract" ] && _error "Specified ISO unable to be mounted!  Trying ${BLUE}extract${GREEN} folder..."
+		if ! mount -o loop $ISO ${UNPACK_DIR}/mnt >& /dev/null; then
+			_error "Specified ISO unable to be mounted!"
+			exit 1
+		fi
 	fi
-	cd ${UNPACK_DIR}
-	if [[ ! -f ${MNT}/casper/filesystem.squashfs ]]; then
+	if [[ ! -f mnt/casper/filesystem.squashfs ]]; then
 		_error "Cannot find a ${BLUE}filesystem.squashfs${GREEN} to extract!!!"
 		exit 1
 	fi
 
 	# Second: Copy the necessary files to the hard drive:
 	_title "Found ${BLUE}filesystem.squashfs${GREEN} in ${BLUE}${UNPACK_DIR}/${MNT}${GREEN}!!!"
-	if [[ ! "$1" == "unpack-distro" && "$MNT" == "mnt" ]] ; then
-		_title "Copying everything$([[ "$1" == "unpack-full" ]] || echo " but ${BLUE}filesystem.squashfs${GREEN}")..."
-		[ ! -d extract ] && mkdir extract
-		rsync $([[ "$1" == "unpack-full" ]] || echo "--exclude=/casper/filesystem.squashfs") -a mnt/ extract
-	fi
-	if [[ -d edit ]]; then
-		_title "Removing folder ${BLUE}edit${GREEN} for clean extraction..."
-		$0 remove
-	fi
+	_title "Removing folder ${BLUE}edit${GREEN} for clean extraction..."
+	$0 remove
+	_title "Copying contents of ISO..."
+	mkdir -p extract
+	rsync -a mnt/ extract
 
-	# Third: Unpack the main squashfs file:
-	_title "Unpacking ${BLUE}filesystem.squashfs${GREEN} to ${BLUE}edit${GREEN}..."
-	unsquashfs -f -d edit ${MNT}/casper/filesystem.squashfs
+	# Third: Unmount the DVD/ISO if necessary:
+	_title "Unmounting DVD/ISO from mount point...."
+	umount -q mnt
 
-	# Fourth: Unpack the split squashfs file into the main unpacked filesystem:
-	if [[ -f ${MNT}/casper/filesystem-opt.squashfs && -f ${MNT}/casper/filesystem-opt.location ]]; then
-		_title "Unpacking ${BLUE}filesystem-opt.squashfs${GREEN} to ${BLUE}${LOC}${GREEN}..."
-		IN2=edit/tmp/$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-		DST=$(cat ${MNT}/casper/filesystem-opt.location)
-		unsquashfs -f -d ${IN2} ${MNT}/casper/filesystem-opt.squashfs
-		mv ${IN2}/${DST}/* edit/${DST}/
-		rm -rf ${IN2}
-	fi
-		
-	# Fifth: Unmount the DVD/ISO if necessary:
-	if [[ "${MNT}" == "mnt" || ("$1" != "unpack" && ! "$1" == "unpack-distro") ]]; then
-		_title "Unmounting DVD/ISO from mount point...."
-		umount -q mnt
-	fi
-
-	# Sixth: Tell user we done!
+	# Fourth: Tell user we done!
 	_title "Ubuntu ISO unpacked!"
 
 #==============================================================================
@@ -429,7 +403,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	[[ "${KEEP_CIFS:-"0"}" == "1" && -f extract/casper/filesystem.manifest-remove ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
 
 	# Eighth: Create the "filesystem.size" file:
-	_title "Building ${BLUE}filesystem.size${GREEN}}...."
+	_title "Updating ${BLUE}filesystem.size${GREEN}...."
 	printf $(du -sx --block-size=1 edit | cut -f1) | tee extract/casper/filesystem.size >& /dev/null
 
 	# Ninth: remove the overlay filesystem and upper layer of overlay, then create the "md5sum.list" file:
@@ -507,71 +481,6 @@ elif [[ "$1" == "rebuild-xz" ]]; then
 	exit 0
 
 #==============================================================================
-# Did user ask to rebuild part of or all of RedDragon distros?
-#==============================================================================
-elif [[ "$1" == "rdbuild" ]]; then
-	# Unpack the factory XUbuntu 18.04.3 ISO so we can play with it:
-	if [[ ! -d ${ORG} ]]; then
-		# Abort if the RedDragon USB stick isn't found:
-		DEV=$(blkid | grep "RedDragon USB" | cut -d":" -f 1)
-		if [[ -z "${DEV}" ]]; then
-			_error "USB stick with ${BLUE}RedDragon USB${GREEN} label was not detected!  Aborting!"
-			exit 1
-		fi
-
-		# Mount the RedDragon USB stick:
-		while [[ ! -z "$(mount | grep "${DEV}")" ]]; do umount ${DEV}; sleep 1; done
-		[[ ! -d ${USB} ]] && mkdir -p ${USB}
-		mount ${DEV} ${USB}
-
-		# Unpack the factory Xubuntu 18.04 ISO image:
-		[[ ! -d ${MNT} ]] && mkdir -p ${MNT}
-		$0 unpack-full ${USB}/_ISO/MAINMENU/1*.iso
-		mv ${EXT} ${ORG}
-		ln -sf ${ORG} ${EXT}
-
-		# Unmount the factory Xubuntu 18.04 ISO:
-		umount ${USB}
-	else
-		[[ -d ${EXT} ]] && rm -rf ${EXT} || rm ${EXT}
-		UPK=${ORG}
-		[[ "$2" == "desktop" ]] && UPK=${PTN2}
-		[[ "$2" == "htpc" ]] && UPK=${PTN3}
-		ln -sf ${UPK} ${EXT}
-		$0 unpack
-	fi
-
-	# Create our "base" install:
-	if [[ -z "$2" || "$2" == "base" ]]; then
-		[[ -f ${PTN2} ]] && rm -rf ${PTN2}
-		cp -R ${ORG} ${PTN2}
-		rm ${EXT}
-		ln -sf ${PTN2} ${EXT}
-		$0 build base
-		$0 rebuild
-	fi
-
-	# Create our "desktop" install:
-	if [[ -z "$2" || "$2" == "desktop" ]]; then
-		[[ -f ${PTN3} ]] && rm -rf ${PTN3}
-		cp -R ${ORG} ${PTN3}
-		rm ${EXT}
-		ln -sf ${PTN3} ${EXT}
-		$0 build desktop
-		$0 rebuild
-	fi
-
-	# Create our "htpc" install:
-	if [[ -z "$2" || "$2" == "htpc" ]]; then
-		[[ -f ${PTN4} ]] && rm -rf ${PTN4}
-		cp -R ${ORG} ${PTN4}
-		rm ${EXT}
-		ln -sf ${PTN4} ${EXT}
-		$0 build htpc
-		$0 rebuild
-	fi
-
-#==============================================================================
 # Did user request to mount chroot environment docker folder to host machine?
 #==============================================================================
 elif [[ "$1" == "docker_mount" ]]; then
@@ -612,52 +521,6 @@ elif [[ "$1" == "docker_umount" ]]; then
 	systemctl start docker
 
 #==============================================================================
-# Did user request to copy RedDragon distros to USB stick?
-#==============================================================================
-elif [[ "$1" == "rdcopy" ]]; then
-	# Abort if the RedDragon USB stick isn't found:
-	${MUK_DIR}/files/RD_Restore.sh || exit 1
-	DEV=$(blkid | grep "RedDragon USB" | cut -d":" -f 1)
-
-	# Mount the RedDragon USB stick:
-	_title "Mounting the RedDragon USB Stick...."
-	while [[ ! -z "$(mount | grep "${DEV}")" ]]; do umount -q ${DEV}; sleep 1; done
-	[[ ! -d ${USB} ]] && mkdir -p ${USB}
-	mount ${DEV} ${USB}
-
-	if [[ -z "$2" || "$2" == "base" ]]; then
-		_title "Copying the Base edition to the USB stick..."
-		mount ${USB}/_ISO/MAINMENU/2* ${MNT}
-		cp ${PTN2}/casper/* ${MNT}/casper/
-		_title "Unmounting Base edition image partition..."
-		umount -q ${MNT}
-	fi
-
-	if [[ -z "$2" || "$2" == "desktop" ]]; then
-		_title "Copying the Desktop edition to the USB stick..."
-		mount ${USB}/_ISO/MAINMENU/3* ${MNT}
-		cp ${PTN3}/casper/* ${MNT}/casper/
-		_title "Unmounting Desktop edition image partition..."
-		umount -q ${MNT}
-	fi
-
-	if [[ -z "$2" || "$2" == "htpc" ]]; then
-		_title "Copying the HTPC edition to the USB stick..."
-		mount ${USB}/_ISO/MAINMENU/4* ${MNT}
-		cp ${PTN4}/casper/* ${MNT}/casper/
-		_title "Unmounting HTPC  edition image partition..."
-		umount -q ${MNT}
-	fi
-
-	_title "Unmounting RedDragon USB stick..."
-	umount -q ${USB}
-	if [[ ! "$(echo $@ | grep "noeject")" == "" ]]; then
-		_title "Ejecting RedDragon USB stick..."
-		eject ${DEV}
-	fi
-	_title "Done!"
-
-#==============================================================================
 # Invalid parameter specified.  List available parameters:
 #==============================================================================
 else
@@ -665,9 +528,7 @@ else
 	echo "Usage: edit_chroot [OPTION]"
 	echo ""
 	echo "Available commands:"
-	echo -e "  ${GREEN}unpack${NC}         Unpacks the Ubuntu filesystem from DVD or extracted ISO on hard drive."
-	echo -e "  ${GREEN}unpack-iso${NC}     Unpacks the Ubuntu filesystem from ISO on hard drive."
-	echo -e "  ${GREEN}unpack-full${NC}    Unpacks the Ubuntu filesystem from ISO on hard drive, including ${GREEN}filesystem.squashfs{$NC}!"
+	echo -e "  ${GREEN}unpack${NC}         Copies the Ubuntu installer files from DVD or ISO on hard drive."
 	echo -e "  ${GREEN}pack${NC}           Packs the unpacked filesystem into ${BLUE}filesystem.squashfs${NC}."
 	echo -e "  ${GREEN}pack-xz${NC}        Packs the unpacked filesystem using XZ compression into ${BLUE}filesystem.squashfs${NC}."
 	echo -e "  ${GREEN}iso${NC}            Builds an ISO image in ${BLUE}${ISO_DIR}${NC} containing the packed filesystem."

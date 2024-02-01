@@ -14,14 +14,14 @@ fi
 #==============================================================================
 _title "Adding GRUB script for Recovery Partition"
 #==============================================================================
-cat << EONF > /etc/grub.d/50_recovery
+cat << GFIN > /etc/grub.d/50_recovery
 #!/bin/sh
-DEV=$(blkid | grep "Recovery" | cut -d: -f 1)
+DEV=\$(blkid | grep "Recovery" | cut -d: -f 1)
 if [ -z "\$DEV" ]; then
 	echo "\$(gettext_printf "No GRUB entry added for recovery partition because no recovery partition found.")" >&2
 	exit 0
 fi
-UUID=$(blkid -o export $DEV | grep "^UUID=" | cut -d= -f 2)
+UUID=\$(blkid -o export \$DEV | grep "^UUID=" | cut -d= -f 2)
 if [ -z "\$UUID" ]; then
 	echo "\$(gettext_printf "No GRUB entry added for recovery partition because no recovery partition found.")" >&2
 	exit 0
@@ -43,5 +43,5 @@ menuentry "Recovery Partition Boot Menu" {
 	initrd  /casper/initrd
 }
 EOF
-EONF
+GFIN
 chmod +x /etc/grub.d/50_recovery

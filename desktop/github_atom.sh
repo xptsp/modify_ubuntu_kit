@@ -14,6 +14,6 @@ fi
 #==============================================================================
 _title "Installing Atom Editor for GitHub for Linux..."
 #==============================================================================
-wget https://atom.io/download/deb -O /tmp/atom.deb
+wget https://github.com/atom/atom/releases/download/v1.60.0/atom-amd64.deb -O /tmp/atom.deb
 apt install -y /tmp/atom.deb
 rm /tmp/atom.deb
