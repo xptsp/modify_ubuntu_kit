@@ -14,4 +14,8 @@ fi
 #==============================================================================
 _title "Install VirtualBox..."
 #==============================================================================
-apt install -y virtualbox virtualbox-ext-pack
+apt-get install -y debconf-utils
+
+# Set the debconf selection
+echo virtualbox-ext-pack virtualbox-ext-pack/license select true | debconf-set-selections
+apt install -y virtualbox virtualbox-ext-pack virtualbox-guest-additions-iso
