@@ -6,8 +6,7 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs Transmission and TransGUI on your computer."
-	echo -e "${RED}Dependency:${NC} VPN browser launchers requires FreeVPN to be established."
+	echo -e "${RED}Purpose:${NC} Installs Transmission and Transmission Remote GTK on your computer."
 	echo ""
 	exit 0
 fi
@@ -17,9 +16,14 @@ fi
 [[ ! -e /etc/openvpn ]] && ${MUK_DIR}/desktop/vpn_establish.sh
 
 #==============================================================================
-_title "Install Transmission (port 9090)..."
+_title "Install Transmission (port 9090) and Transmission Remote GTK..."
 #==============================================================================
-# First: Install the software:
+# First: Install Transmission Remote GTK:
+#==============================================================================
+wget http://ftp.de.debian.org/debian/pool/main/t/transmission-remote-gtk/transmission-remote-gtk_1.5.1-1_amd64.deb -O /tmp/transmission-remote-gtk_1.5.1-1_amd64.deb
+apt install -y /tmp/transmission-remote-gtk_1.5.1-1_amd64.deb
+
+# Second: Install the software:
 #==============================================================================
 add-apt-repository -y ppa:transmissionbt/ppa
 FILE=/etc/apt/sources.list.d/transmissionbt-ubuntu-ppa-*.list
@@ -27,9 +31,9 @@ sed -i "s| impish | focal |g" ${FILE}
 sed -i "s| jammy | focal |g" ${FILE}
 apt update
 apt remove -y transmission*
-apt install -y transmission-daemon transmission-cli transgui
+apt install -y transmission-daemon transmission-cli transmission-remote-gtk
 
-# Second: Configure the daemon:
+# Third: Configure the daemon:
 #==============================================================================
 ischroot && systemctl disable transmission-daemon
 ischroot || systemctl stop transmission-daemon
@@ -42,7 +46,7 @@ Group=
 Group=htpc
 EOF
 
-# Third: Create the "no sleep if transmission-daemon is downloading" service:
+# Fourth: Create the "no sleep if transmission-daemon is downloading" service:
 #==============================================================================
 ln -sf ${MUK_DIR}/files/transmission_nosleep.sh /usr/local/bin/transmission_nosleep.sh
 ln -sf ${MUK_DIR}/files/transmission_nosleep.service /etc/systemd/system/transmission_nosleep.service
@@ -51,26 +55,24 @@ systemctl enable transmission_nosleep
 change_username ${MUK_DIR}/files/transmission_nosleep.sh
 change_password ${MUK_DIR}/files/transmission_nosleep.sh
 
-# Fourth: Configure the settings for Transmission and TransGUI:
+# Fifth: Configure the settings for Transmission:
 #==============================================================================
 # Transmission settings:
 [[ ! -d ~/.config/transmission-daemon ]] && mkdir -p ~/.config/transmission-daemon
 cp ${MUK_DIR}/files/transmission_settings.json ~/.config/transmission-daemon/settings.json
 change_username ~/.config/transmission-daemon/settings.json
 change_password ~/.config/transmission-daemon/settings.json
-# TransGUI settings:
-unzip -o ${MUK_DIR}/files/transgui.zip -d ~/.config/
 
-# Fifth: Reenable the service if NOT running in CHROOT environment:
+# Sixth: Reenable the service if NOT running in CHROOT environment:
 #==============================================================================
 ischroot && systemctl start transmission-daemon
 
-# Sixth: Create the autoremove.sh script:
+# Seventh: Create the autoremove.sh script:
 #==============================================================================
 ln -sf ${MUK_DIR}/files/transmission_autoremove.sh /etc/transmission-daemon/autoremove.sh
 change_username /etc/transmission-daemon/autoremove.sh
 change_password /etc/transmission-daemon/autoremove.sh
 
-# Seventh: Create the finisher task to create the user "htpc": 
+# Eighth: Create the finisher task to create the user "htpc": 
 #==============================================================================
 add_taskd 40_transmission.sh
