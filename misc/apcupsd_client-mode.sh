@@ -71,3 +71,24 @@ echo "---"
 apcaccess | while read LINE; do echo "<small>\$LINE</small> | font=monospace"; done
 EOF
 chmod +x ${FILE}
+
+#==============================================================================
+_title "Adding hibernation script to APCUPS script directory..."
+#==============================================================================
+FILE=/usr/local/bin/hibernate
+cat << EOF > ${FILE}
+#!/bin/bash
+# Hibernate the system - designed to be called via symlink from /etc/apcupsd
+# directory in case of apcupsd initiating a shutdown/reboot.  Can also be used
+# interactively or from any script to cause a hibernate.
+
+# Do the hibernate
+/usr/bin/systemctl hibernate
+
+# At this point system should be hibernated - when it comes back, we resume this script here
+
+# On resume, tell controlling script (/etc/apcupsd/apccontrol) NOT to continue with default action (i.e. shutdown).
+exit 99
+EOF
+chmod +x ${FILE}
+ln -s ${FILE} /etc/apcupsd/doshutdown
