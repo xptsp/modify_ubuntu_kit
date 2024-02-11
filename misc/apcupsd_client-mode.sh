@@ -82,13 +82,12 @@ cat << EOF > ${FILE}
 # directory in case of apcupsd initiating a shutdown/reboot.  Can also be used
 # interactively or from any script to cause a hibernate.
 
-# Do the hibernate
-/usr/bin/systemctl hibernate
+# Do the hibernate.  Assuming successful hibernation: On resume, tell controlling script 
+# (/etc/apcupsd/apccontrol) NOT to continue with default action (i.e. shutdown).
+/usr/bin/systemctl hibernate && exit 99
 
-# At this point system should be hibernated - when it comes back, we resume this script here
-
-# On resume, tell controlling script (/etc/apcupsd/apccontrol) NOT to continue with default action (i.e. shutdown).
-exit 99
+# At this point, it is assumed that hibernation failed.  Resume the apccontrol script:
+exit 0
 EOF
 chmod +x ${FILE}
 ln -s ${FILE} /etc/apcupsd/doshutdown
