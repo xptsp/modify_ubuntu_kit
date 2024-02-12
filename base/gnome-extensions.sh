@@ -14,63 +14,7 @@ fi
 #==============================================================================
 _title "Installing packages for Gnome extensions..."
 #==============================================================================
-apt install -y jq gnome-shell-extensions gettext make
-
-#==============================================================================
-_title "Adding script to automate installing gnome extensions..."
-# Src: https://www.pragmaticlinux.com/2021/06/manually-install-a-gnome-shell-extension-from-a-zip-file/
-#==============================================================================
-cat << EOF > /usr/local/bin/gnome-ext-install
-#!/bin/bash
-# Function to display usage information
-display_usage() { 
-	echo "Install a Gnome Shell Extension from a ZIP-file." 
-	echo "Usage: gnome-ext-install <zip-file>" 
-} 
-# Verify that the first parameter is an existing file with the ".zip" extension
-if [ ! -f \$1 ] || [ "\${1: -4}" != ".zip" ]; then
-	display_usage
-	echo "[ERROR] No existing ZIP-file specified as a parameter."
-	exit 1
-fi
-# Make sure the "jq" tool is installed on the system.
-if [ ! -x "\$(command -v jq)" ]; then
-	echo "[ERROR] jq is not installed on your system. Install with:"
-	echo "	* sudo apt install jq (Ubuntu/Debian)"
-	echo "	* sudo dnf install jq (Fedora)"
-	echo "	* sudo zypper install jq (openSUSE)"
-	exit 1
-fi
-
-# If "-s" or "--system" is specified as 2nd parameter, store in global system extensions:
-if [[ "$2" == "-s" || "$2" == "--system" ]]; then
-	DIR=/usr/share/gnome-shell/extensions
-	# If we are not running as root, then run this script as root:
-	if [[ "$UID" -ne 0 ]]; then
-		sudo $0 $@
-		exit $?
-	fi
-else
-	DIR=~/.local/share/gnome-shell/extensions/
-fi
-# Make sure the directory for storing the user's shell extension exists.
-mkdir -p \${DIR} 
-# Extract JSON "uuid" variable value from "metadata.json" in the ZIP-file.
-MY_EXT_UUID=\$(unzip -p \$1 metadata.json | jq -r '.uuid')
-# Check that variable is set to a non-empty string
-if [ -z "\${MY_EXT_UUID}" ]; then
-	echo "[ERROR] Could not extract the UUID from metadata.json in the ZIP-file."
-	exit 1
-fi
-# Extract the ZIP-file to a subdirectory with the same name as the "uuid".
-unzip -q -o \$1 -d \${DIR}\$MY_EXT_UUID
-# Restart Gnome Shell to activate the Gnome Shell extension.
-busctl --user call org.gnome.Shell /org/gnome/Shell org.gnome.Shell Eval s 'Meta.restart("Restarting…")' > /dev/null 2>&1
-# All is good.
-echo "Gnome Shell Extension installed in \${DIR}/\$MY_EXT_UUID/"
-exit 0
-EOF
-chmod +x /usr/local/bin/gnome-ext-install
+apt install -y gnome-shell-extensions chrome-gnome-shell 
 
 #==============================================================================
 _title "Adding polkit for Hibernation option..."
@@ -90,34 +34,65 @@ EOF
 #==============================================================================
 _title "Installing some Gnome Extensions..."
 #==============================================================================
-apt install -y chrome-gnome-shell
 mkdir /tmp/tmp
 cd /tmp/tmp
 
-# First extension: Grand Theft Focus (https://github.com/zalckos/GrandTheftFocus):
-wget https://github.com/zalckos/GrandTheftFocus/releases/download/v3/grand-theft-focuszalckos.github.com.v3.shell-extension.zip
-gnome-ext-install grand-theft-focuszalckos.github.com.v3.shell-extension.zip
+# First extension: Grand Theft Focus >> https://extensions.gnome.org/extension/5410/grand-theft-focus/
+wget https://extensions.gnome.org/extension-data/grand-theft-focuszalckos.github.com.v3.shell-extension.zip
+gnome-extensions install grand-theft-focuszalckos.github.com.v3.shell-extension.zip
+gnome-extensions enable grand-theft-focus@zalckos.github.com
 rm grand-theft-focuszalckos.github.com.v3.shell-extension.zip
 
-# Second extension: OpenWeather (https://gitlab.com/skrewball/openweather.git):
-git clone https://gitlab.com/skrewball/openweather.git
-cd openweather
-make && make install
-cd ..
-rm -rf openweather
+# Second extension: Burn My Windows >> https://extensions.gnome.org/extension/4679/burn-my-windows/
+wget https://github.com/Schneegans/Burn-My-Windows/releases/latest/download/burn-my-windows@schneegans.github.com.zip
+gnome-extensions install burn-my-windows@schneegans.github.com.zip
+gnome-extensions enable burn-my-windows@schneegans.github.com
+rm burn-my-windows@schneegans.github.com
 
-# Third extension: OSD Volume Number (https://github.com/Deminder/osd-volume-number):
-git clone https://github.com/Deminder/osd-volume-number
-cd osd-volume-number
-git submodule update --init --remote --recursive --checkout sdt
-make install
-cd ..
-rm -rf osd-volume-number
+# Third extension: Hibernate Status Button >> https://extensions.gnome.org/extension/755/hibernate-status-button/
+wget https://extensions.gnome.org/extension-data/hibernate-statusdromi.v33.shell-extension.zip
+gnome-extensions install hibernate-statusdromi.v33.shell-extension.zip
+gnome-extensions enable hibernate-status@dromi
+rm hibernate-statusdromi.v33.shell-extension.zip
 
-# Forth extension: Prevent Double Empty Window (https://gitlab.com/g3786/prevent-double-empty-window)
-git clone https://gitlab.com/g3786/prevent-double-empty-window.git
-cd prevent-double-empty-window
-zip ../prevent-double-empty-window.zip *
-cd ..
-gnome-ext-install prevent-double-empty-window.zip
-rm -rf prevent-double-empty-window*
+# Fourth extension: Prevent Double Empty Window >> https://extensions.gnome.org/extension/4711/prevent-double-empty-window/
+wget https://extensions.gnome.org/extension-data/prevent-double-empty-windowsilliewous.nl.v4.shell-extension.zip
+gnome-extensions install prevent-double-empty-windowsilliewous.nl.v4.shell-extension.zip
+gnome-extensions enable prevent-double-empty-window@silliewous.nl
+rm prevent-double-empty-windowsilliewous.nl.v4.shell-extension.zip
+
+# Fifth extension: Gnome Shell Volume Scroller >> https://github.com/francislavoie/gnome-shell-volume-scroller
+wget https://extensions.gnome.org/extension-data/volume_scrollertrflynn89.pm.me.v7.shell-extension.zip
+gnome-extensions install volume_scrollertrflynn89.pm.me.v7.shell-extension.zip
+gnome-extensions enable volume_scroller@trflynn89.pm.me
+rm volume_scrollertrflynn89.pm.me.v7.shell-extension.zip
+
+# Fifth extension: OSD Volume Number >> https://extensions.gnome.org/extension/5461/osd-volume-number/
+wget https://extensions.gnome.org/extension-data/osd-volume-numberdeminder.v6.shell-extension.zip
+gnome-extensions install osd-volume-numberdeminder.v6.shell-extension.zip
+gnome-extensions enable osd-volume-number@deminder
+rm osd-volume-numberdeminder.v6.shell-extension.zip
+
+# Sixth extension: OpenWeather >> https://extensions.gnome.org/extension/750/openweather/
+wget https://extensions.gnome.org/extension-data/openweather-extensionjenslody.de.v107.shell-extension.zip
+gnome-extensions install openweather-extensionjenslody.de.v107.shell-extension.zip
+gnome-extensions enable openweather-extension@jenslody.de
+rm openweather-extensionjenslody.de.v107.shell-extension.zip
+
+# Seventh: Alphabetical Grid Extension >> https://extensions.gnome.org/extension/4269/alphabetical-app-grid/
+wget https://extensions.gnome.org/extension-data/AlphabeticalAppGridstuarthayhurst.v32.shell-extension.zip
+gnome-extensions install AlphabeticalAppGridstuarthayhurst.v32.shell-extension.zip
+gnome-extensions enable AlphabeticalAppGrid@stuarthayhurst
+rm AlphabeticalAppGridstuarthayhurst.v32.shell-extension.zip
+
+# Eighth: No Activities Button >> https://extensions.gnome.org/extension/3184/no-activities-button/
+wget https://extensions.gnome.org/extension-data/no_activitiesyaya.cout.v2.shell-extension.zip
+gnome-extensions install no_activitiesyaya.cout.v2.shell-extension.zip
+gnome-extensions enable no_activities@yaya.cout
+rm no_activitiesyaya.cout.v2.shell-extension.zip
+
+# Ninth: Applications Menu >> https://extensions.gnome.org/extension/6/applications-menu/
+wget https://extensions.gnome.org/extension-data/apps-menugnome-shell-extensions.gcampax.github.com.v51.shell-extension.zip
+gnome-extensions install apps-menugnome-shell-extensions.gcampax.github.com.v51.shell-extension.zip
+gnome-extensions enable apps-menu@gnome-shell-extensions.gcampax.github.com
+rm apps-menugnome-shell-extensions.gcampax.github.com.v51.shell-extension.zip
