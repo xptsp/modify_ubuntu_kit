@@ -3,9 +3,12 @@ F=/etc/fstab
 
 # Create ramdisk storage on "/tmp":
 sed -i "/^tmpfs/d" $F
-cat << DONE >> $F
-tmpfs /tmp tmpfs defaults 0 0
-DONE
+echo "tmpfs /tmp tmpfs defaults 0 0" >> $F
+
+# Bind "/home/img" to "/img":
+mkdir -p /home/img
+sed -i "/^\/home\/img/d" $F
+echo "/home/img /img none bind 0 0" >> $F
 
 # If my Windows partition is present, add it to "/etc/fstab":
 DEV=$(grep "Windows Boot Manager" /boot/grub/grub.cfg | awk '{print $6}' | cut -d\) -f 1)
@@ -20,22 +23,27 @@ fi
 USER=$(grep ":1000:" /etc/passwd | cut -d: -f 1)
 DEV=$(blkid | grep -i "\"${USER}_Public\"" | cut -d: -f 1)
 UUID=$(blkid -o export $DEV | grep "^UUID=" | cut -d= -f 2)
-if [[ -z "$UUID" ]]; then
-	sed -i "/\/home\/doug\/Public/d" $F
-	echo "UUID=${UUID} /home/doug/Public ntfs noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022 0 0" >> $F
-	sed -i "/\/home\/doug\/Public\/Downloads/d" $F
-	echo "/home/doug/Public/Downloads /home/doug/Downloads none bind 0 0" >> $F
+if [[ ! -z "$UUID" ]]; then
+	sed -i "/\/home\/${USER}\/Public/d" $F
+	echo "UUID=${UUID} /home/${USER}/Public ntfs noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022 0 0" >> $F
+	mount /home/${USER}/Public
+	mkdir -p /home/${USER}/Public/Downloads
+	sed -i "/\/home\/${USER}\/Public\/Downloads/d" $F
+	echo "/home/${USER}/Public/Downloads /home/${USER}/Downloads none bind 0 0" >> $F
 fi
 
 # If a partition with the username of user 1000 plus "_Documents", mount it to "/home/{USER}/Documents" in "/etc/fstab":
 DEV=$(blkid | grep -i "\"${USER}_Documents\"" | cut -d: -f 1)
 UUID=$(blkid -o export $DEV | grep "^UUID=" | cut -d= -f 2)
-if [[ -z "$UUID" ]]; then
-	sed -i "/\/home\/doug\/Documents/d" $F
-	echo "UUID=${UUID} /home/doug/Documents ext4 defaults,noatime 0 0" >> $F
-	sed -i "/\/home\/doug\/Documents\/GitHub/d" $F
-	echo "/home/doug/Documents/GitHub /home/doug/GitHub none bind 0 0" >> $F
-	echo "/home/doug/GitHub/modify_ubuntu_kit  /opt/modify_ubuntu_kit  none bind 0 0" >> $F
+if [[ ! -z "$UUID" ]]; then
+	sed -i "/\/home\/${USER}\/Documents/d" $F
+	echo "UUID=${UUID} /home/${USER}/Documents ext4 defaults,noatime 0 0" >> $F
+	mount /home/${USER}/Documents
+	mkdir -p /home/${USER}/Documents/GitHub
+	sed -i "/\/home\/${USER}\/Documents\/GitHub/d" $F
+	echo "/home/${USER}/Documents/GitHub /home/${USER}/GitHub none bind 0 0" >> $F
+	sed -i "/\/opt\/modify_ubuntu_kit/d" $F
+	echo "/home/${USER}/GitHub/modify_ubuntu_kit  /opt/modify_ubuntu_kit  none bind 0 0" >> $F
 fi
 
 # If my Ubuntu USB installation stick is present, add it to "/etc/fstab":
