@@ -16,5 +16,5 @@ _title "Installing some extra packages on your machine..."
 #==============================================================================
 [[ "$(cat /etc/os-release | grep "VERSION_ID=" | cut -d"\"" -f 2 | cut -d" " -f 1)" != "22.04" ]] && apt install -y ttf-ubuntu-font-family
 apt install -y dh-modaliases build-essential dkms dpkg-dev debhelper checkinstall
-apt install -y p7zip-full p7zip-rar rar unrar net-tools rename tree squashfs-tools git genisoimage dialog
+apt install -y p7zip-full p7zip-rar rar unrar net-tools rename tree squashfs-tools git genisoimage dialog unionfs-fuse
 cc ${MUK_DIR}/files/usbreset.c -o /usr/local/bin/usbreset
