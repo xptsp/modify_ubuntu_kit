@@ -74,6 +74,32 @@ if [[ "$1" == "update" ]]; then
 #==============================================================================
 # Are we changing the unpacked CHROOT environment?
 #==============================================================================
+elif [[ "$1" == "mount" ]]; then
+	mkdir -p ${UNPACK_DIR}/{.lower,.upper,.work,edit}
+	if [[ ! -f ${UNPACK_DIR}/extract/casper/filesystem.squashfs ]]; then
+		_error "No unpacked filesystem!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
+		exit 1
+	fi
+	if ! mount | grep -q "${UNPACK_DIR}/extract/casper/filesystem.squashfs"; then
+		mount ${UNPACK_DIR}/extract/casper/filesystem.squashfs ${UNPACK_DIR}/.lower
+	fi
+	LOWER=${UNPACK_DIR}/.lower
+	COUNT=1
+	ls ${UNPACK_DIR}/extract/casper/*.squashfs | grep -v "/filesystem.squashfs" | while read FILE; do
+		if ! mount | grep -q "${UNPACK_DIR}/extract/casper/filesystem.squashfs"; then
+			mkdir -p ${UNPACK_DIR}/.lower${COUNT}
+			mount ${FILE} ${UNPACK_DIR}/.lower${COUNT}
+			LOWER=${UNPACK_DIR}/.lower${COUNT}:${LOWER}
+			COUNT=$((COUNT + 1))
+		fi
+	done
+	if ! mount | grep -q " ${UNPACK_DIR}/edit"; then
+		mount -t overlay -o upperdir=${UNPACK_DIR}/.upper,lowerdir=${UNPACK_DIR}/.lower,workdir=${UNPACK_DIR}/.work overlay ${UNPACK_DIR}/edit
+	fi
+
+#==============================================================================
+# Are we changing the unpacked CHROOT environment?
+#==============================================================================
 elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 	#==========================================================================
 	# Determine if we are working inside or outside the CHROOT environment
@@ -83,18 +109,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		# RESULT: We are outside the chroot environment:
 		#======================================================================
 		### First: Make sure that the CHROOT environment actually exists:
-		mkdir -p ${UNPACK_DIR}/{.lower,.upper,.work,edit}
-		if [[ ! -f ${UNPACK_DIR}/extract/casper/filesystem.squashfs ]]; then
-			_error "No unpacked filesystem!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
-			exit 1
-		fi
-		mkdir -p ${UNPACK_DIR}/.{lower,upper,work}
-		if ! mount | grep -q "${UNPACK_DIR}/extract/casper/filesystem.squashfs"; then
-			mount ${UNPACK_DIR}/extract/casper/filesystem.squashfs ${UNPACK_DIR}/.lower
-		fi
-		if ! mount | grep -q " ${UNPACK_DIR}/edit"; then
-			mount -t overlay -o upperdir=${UNPACK_DIR}/.upper,lowerdir=${UNPACK_DIR}/.lower,workdir=${UNPACK_DIR}/.work overlay ${UNPACK_DIR}/edit
-		fi
+		$0 mount
 		if [[ "$1" == "build" ]]; then
 			if [[ ! "$2" == "base" && ! "$2" == "desktop" && ! "$2" == "htpc" && ! "$2" == "docker" ]]; then
 				_error "Invalid parameter!  Supported values are: ${RED}base${GREEN}, ${RED}desktop${GREEN}, ${RED}htpc${GREEN} and ${RED}docker${GREEN}!"
