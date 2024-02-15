@@ -21,9 +21,9 @@ if blkid | grep -q "\"b72b7891-f821-42bb-b457-8a3878e8a46a\""; then
 	echo "UUID=b72b7891-f821-42bb-b457-8a3878e8a46a /img/usb_casper ext4 noatime,defaults,noatime 0 0" >> $F
 	sed -i "/UUID=C198-307D/d" $F
 	echo "UUID=C198-307D /img/usb_live vfat noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022 0 0" >> $F
-	mkdir -p /img/usb_live
+	mkdir -p /img/mnt
 	sed -i "/^unionfs\#/d" $F
-	echo "unionfs#/img/usb_casper=rw:/img/usb_live=rw /img/live_usb fuse default_permissions,allow_other,use_ino,nonempty,suid,cow 0 0" >> $F
+	echo "unionfs#/img/usb_casper=rw:/img/usb_live=rw /img/mnt fuse default_permissions,allow_other,use_ino,nonempty,suid,cow 0 0" >> $F
 fi
 
 # If my external hard drive is present, add it to "/etc/fstab":
