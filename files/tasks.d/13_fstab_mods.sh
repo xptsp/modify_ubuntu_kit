@@ -38,6 +38,7 @@ if blkid | grep -q "\"076ae757-89b6-4f2c-ae64-391069c9d942\""; then
 	echo "UUID=076ae757-89b6-4f2c-ae64-391069c9d942 /home/doug/Documents ext4 defaults,noatime 0 0" >> $F
 	sed -i "/\/home\/doug\/Documents\/GitHub/d" $F
 	echo "/home/doug/Documents/GitHub /home/doug/GitHub none bind 0 0" >> $F
+	echo "/home/doug/GitHub/modify_ubuntu_kit  /opt/modify_ubuntu_kit  none bind 0 0" >> $F
 fi
 
 # Pretify the "/etc/fstab" file, then mount everything:
