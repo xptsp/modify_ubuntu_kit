@@ -269,12 +269,7 @@ elif [[ "$1" == "unmount" ]]; then
 		exit 1
 	fi
 	_title "Unmounting filesystem mount points...."
-	umount -q ${UNPACK_DIR}/edit/tmp
-	umount -q ${UNPACK_DIR}/edit/proc || umount -lfq ${UNPACK_DIR}/edit/proc
-	umount -q ${UNPACK_DIR}/edit/sys
-	umount -q ${UNPACK_DIR}/edit/dev/pts
-	umount -q ${UNPACK_DIR}/edit/dev
-	umount -q ${UNPACK_DIR}/edit/run
+	mount | grep "${UNPACK_DIR}/edit" | awk '{print $3}' | while read DIR; do umount -qlf ${DIR}; done
 	$0 docker_umount -q
 	_title "All filesystem mount points should be unmounted now."
 
@@ -369,6 +364,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	else
 		_title "Copying INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
 		cp -p ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
+		sed -i "s|initrd.gz|initrd|g" ${UNPACK_DIR}/extract/boot/grub/grub.cfg
 	fi
 
 	# Third: Copy the new VMLINUZ from the unpacked filesystem:	
@@ -395,18 +391,6 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 
 	# Sixth: Pack the filesystem-opt.squashfs if required:
-	[[ "$(echo $@ | grep skip-opt)" == "" && -f extract/casper/filesystem-opt.squashfs ]] && rm extract/casper/filesystem-opt.*
-	if [[ "$(echo $@ | grep skip-opt)" == "" && ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
-		_title "Building ${BLUE}filesystem-opt.squashfs${GREEN}...."
-		(ls edit | grep -v "^opt$"; for file in $(ls edit/opt | grep -v "^${SPLIT_OPT}$"); do echo opt/${file}; done) > /tmp/exclude
-		FILE=.$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
-		touch edit/${FILE}
-		mksquashfs edit extract/casper/filesystem-opt.squashfs -b 1048576 -ef /tmp/exclude ${XZ}
-		rm edit/${FILE}
-		echo opt/${SPLIT_OPT} > extract/casper/filesystem-opt.location
-	fi
-
-	# Seventh: Pack the filesystem-opt.squashfs if required:
 	_title "Building ${BLUE}filesystem.squashfs${GREEN}...."
 	if [[ ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
 		echo opt/${SPLIT_OPT}/* > /tmp/exclude
@@ -414,24 +398,25 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	fi
 	[[ -f extract/casper/filesystem-new.squashfs ]] && rm extract/casper/filesystem-new.squashfs
 	mksquashfs edit extract/casper/filesystem-new.squashfs -b 1048576 ${XZ}
-	# Eighth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
+
+	# Seventh: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
 	[[ "${KEEP_CIFS:-"0"}" == "1" && -f extract/casper/filesystem.manifest-remove ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
 
 	# Eighth: Create the "filesystem.size" file:
 	_title "Updating ${BLUE}filesystem.size${GREEN}...."
 	printf $(du -sx --block-size=1 edit | cut -f1) | tee extract/casper/filesystem.size >& /dev/null
 
-	# Ninth: remove the overlay filesystem and upper layer of overlay, then create the "md5sum.list" file:
+	# Ninth: remove the overlay filesystem and upper layer of overlay, then create the "md5sum.txt" file:
 	_title "Removing the overlay filesystem and upper layer of overlay..."
 	umount -q ${UNPACK_DIR}/edit
 	umount -q ${UNPACK_DIR}/.lower
 	mv extract/casper/filesystem-new.squashfs extract/casper/filesystem.squashfs
 	rm -rf .upper
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
-	_title "Creating the "md5sum.list" file..."
+	_title "Creating the "md5sum.txt" file..."
 	cd extract
-	[ -f md5sum.list ] && rm md5sum.list
-	find -type f -print0 | xargs -0 md5sum | grep -v isolinux/boot.cat | tee md5sum.list >& /dev/null
+	[ -f md5sum.txt ] && rm md5sum.txt
+	find -type f -print0 | xargs -0 md5sum | grep -v isolinux/boot.cat | tee md5sum.txt >& /dev/null
 
 	# Tenth: Tell user we done!
 	_title "Done packing and preparing extracted filesystem!"

@@ -75,3 +75,7 @@ wget https://extensions.gnome.org/extension-data/apps-menugnome-shell-extensions
 gnome-extensions install apps-menugnome-shell-extensions.gcampax.github.com.v51.shell-extension.zip
 dbus-launch --exit-with-session gnome-extensions enable apps-menu@gnome-shell-extensions.gcampax.github.com
 rm apps-menugnome-shell-extensions.gcampax.github.com.v51.shell-extension.zip
+
+# Ninth: Places Menu >> https://extensions.gnome.org/extension/8/places-status-indicator/
+# >>> NOTE: Already integrated into the Ubuntu 22.04 ISO!  We are just enabling it... <<<
+dbus-launch --exit-with-session gnome-extensions enable places-menu@gnome-shell-extensions.gcampax.github.com
