@@ -14,4 +14,4 @@ fi
 #==============================================================================
 _title "Adding script to creates development workspace after boot...."
 #==============================================================================
-add_taskd 13_tmp_in_ram.sh
+add_taskd 13_fstab_mods.sh

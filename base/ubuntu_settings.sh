@@ -32,7 +32,7 @@ _title "Adding finisher task to change default timeout in GRUB to 1 second..."
 add_taskd 15_grub_timeout.sh
 
 #==============================================================================
-_title "Copying \".bashrc\" and \".profile\" from \"/etc/skel\" to \"\root\"..."
+_title "Copying \".bashrc\" and \".profile\" from \"/etc/skel\" to \"root\"..."
 #==============================================================================
 cp /etc/skel/.{bashrc,profile} /root
 sed -i "s|32m|31m|" /root/.bashrc
