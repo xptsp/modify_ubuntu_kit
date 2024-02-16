@@ -75,26 +75,26 @@ if [[ "$1" == "update" ]]; then
 # Are we changing the unpacked CHROOT environment?
 #==============================================================================
 elif [[ "$1" == "mount" ]]; then
-	mkdir -p ${UNPACK_DIR}/{.lower,.upper,.work,edit}
 	if [[ ! -f ${UNPACK_DIR}/extract/casper/filesystem.squashfs ]]; then
 		_error "No unpacked filesystem!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 		exit 1
 	fi
+	mkdir -p ${UNPACK_DIR}/{.lower,.upper,.work,edit}
 	if ! mount | grep -q "${UNPACK_DIR}/extract/casper/filesystem.squashfs"; then
-		mount ${UNPACK_DIR}/extract/casper/filesystem.squashfs ${UNPACK_DIR}/.lower
+		mount ${UNPACK_DIR}/extract/casper/filesystem.squashfs ${UNPACK_DIR}/.lower || exit 1
 	fi
 	LOWER=${UNPACK_DIR}/.lower
 	COUNT=1
 	ls ${UNPACK_DIR}/extract/casper/*.squashfs | grep -v "/filesystem.squashfs" | while read FILE; do
 		if ! mount | grep -q "${UNPACK_DIR}/extract/casper/filesystem.squashfs"; then
 			mkdir -p ${UNPACK_DIR}/.lower${COUNT}
-			mount ${FILE} ${UNPACK_DIR}/.lower${COUNT}
+			mount ${FILE} ${UNPACK_DIR}/.lower${COUNT} || exit 1
 			LOWER=${UNPACK_DIR}/.lower${COUNT}:${LOWER}
 			COUNT=$((COUNT + 1))
 		fi
 	done
-	if ! mount | grep -q " ${UNPACK_DIR}/edit"; then
-		mount -t overlay -o upperdir=${UNPACK_DIR}/.upper,lowerdir=${UNPACK_DIR}/.lower,workdir=${UNPACK_DIR}/.work overlay ${UNPACK_DIR}/edit
+	if ! mount | grep -q " ${UNPACK_DIR}/edit "; then
+		mount -t overlay -o lowerdir=${LOWER},upperdir=${UNPACK_DIR}/.upper,workdir=${UNPACK_DIR}/.work overlay ${UNPACK_DIR}/edit || exit 1
 	fi
 
 #==============================================================================
@@ -109,7 +109,6 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		# RESULT: We are outside the chroot environment:
 		#======================================================================
 		### First: Make sure that the CHROOT environment actually exists:
-		$0 mount
 		if [[ "$1" == "build" ]]; then
 			if [[ ! "$2" == "base" && ! "$2" == "desktop" && ! "$2" == "htpc" && ! "$2" == "docker" ]]; then
 				_error "Invalid parameter!  Supported values are: ${RED}base${GREEN}, ${RED}desktop${GREEN}, ${RED}htpc${GREEN} and ${RED}docker${GREEN}!"
@@ -121,6 +120,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		$0 update
 		cd ${UNPACK_DIR}
 		$0 unmount
+		$0 mount || exit 1
 		cp /etc/resolv.conf ${UNPACK_DIR}/edit/etc/
 		cp /etc/hosts ${UNPACK_DIR}/edit/etc/
 		mount --bind /run/ ${UNPACK_DIR}/edit/run
@@ -269,7 +269,7 @@ elif [[ "$1" == "unmount" ]]; then
 		exit 1
 	fi
 	_title "Unmounting filesystem mount points...."
-	mount | grep "${UNPACK_DIR}/edit" | awk '{print $3}' | while read DIR; do umount -qlf ${DIR}; done
+	mount | grep "${UNPACK_DIR}/edit/" | awk '{print $3}' | while read DIR; do umount -qlf ${DIR}; done
 	$0 docker_umount -q
 	_title "All filesystem mount points should be unmounted now."
 
@@ -351,6 +351,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	# First: Prep the unpacked filesystem to be packaged:
 	cd ${UNPACK_DIR}
 	$0 unmount
+	$0 mount || exit 1
 	[ -f ${UNPACK_DIR}/edit/etc/debian_chroot ] && rm ${UNPACK_DIR}/edit/etc/debian_chroot
 	rm -rf ${UNPACK_DIR}/edit${MUK_DIR}
 	cp -R ${MUK_DIR} ${UNPACK_DIR}/edit/opt/
@@ -519,6 +520,15 @@ elif [[ "$1" == "docker_umount" ]]; then
 	systemctl stop docker
 	umount -q /var/lib/docker
 	systemctl start docker
+
+#==============================================================================
+# Mount my Ubuntu split-partition USB stick properly:
+#==============================================================================
+elif [[ "$1" == "usb_mount" ]]; then
+	mkdir -p /img/usb_{casper,live}
+	mount -q UUID=C198-307D /img/usb_live -t vfat -o noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022
+	mount -q UUID=b72b7891-f821-42bb-b457-8a3878e8a46a /img/usb_casper -t ext4 -o defaults,noatime,nofail
+	mount | grep -q /img/mnt || unionfs /img/usb_live:/img/usb_casper /img/mnt -o default_permissions -o allow_other -o use_ino -o nonempty -o suid
 
 #==============================================================================
 # Invalid parameter specified.  List available parameters:

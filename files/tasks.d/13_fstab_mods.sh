@@ -43,20 +43,6 @@ if [[ ! -z "$DEV" ]]; then
 	echo "/home/${USER}/GitHub/modify_ubuntu_kit  /opt/modify_ubuntu_kit  none bind 0 0" >> $F
 fi
 
-# If my Ubuntu USB installation stick is present, add it to "/etc/fstab":
-if blkid | grep -q "\"b72b7891-f821-42bb-b457-8a3878e8a46a\""; then
-	mkdir -p /img
-	echo "/home/img /img none bind 0 0" >> $F
-	mkdir -p /home/img/usb_{casper,live}
-	sed -i "/UUID=b72b7891-f821-42bb-b457-8a3878e8a46a/d" $F
-	echo "UUID=b72b7891-f821-42bb-b457-8a3878e8a46a /home/img/usb_casper ext4 defaults,noatime 0 0" >> $F
-	sed -i "/UUID=C198-307D/d" $F
-	echo "UUID=C198-307D /home/img/usb_live vfat ${FS[vfat] 0 0" >> $F
-	mkdir -p /img/mnt
-	sed -i "/^unionfs\#/d" $F
-	echo "unionfs#/home/img/usb_casper=rw:/home/img/usb_live=rw /home/img/mnt fuse default_permissions,allow_other,use_ino,nonempty,suid,cow 0 0" >> $F
-fi
-
 # Pretify the "/etc/fstab" file, then mount everything:
 cat $F | grep -v "^#" | column -t | tee $F >& /dev/null
 mount -a
