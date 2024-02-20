@@ -233,23 +233,32 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		### Eighth: Update packages:
 		_title "Updating repository lists...."
 		apt-get update >& /dev/null
-		_title "Removing unnecessary packages and fixing any broken packages..."
-		apt-get install -f --autoremove --purge -y
 		_title "Upgrading any packages requiring upgrading..."
 		apt-get upgrade -y
 
-		### Ninth: Remove any unnecessary packages:
+		# Ninth: Purge older kernels from the image:
+		_title "Removing any older kernels from the image..."
+		CUR=$(ls -l /boot/initrd.img | awk '{print $NF}' | sed "s|initrd.img-||" | sed "s|-generic||")
+		for VER in $(apt list linux-image-* --installed 2> /dev/null | grep -v "Listing" | grep -v "generic-hwe" | cut -d/ -f 1 | sed "s|linux-image-||" | sed "s|-generic||"); do
+			[[ "$VER" != "${CUR}" ]] && apt purge -y linux-*${VER}*
+		done
+
+		# Tenth: Remove any unnecessary packages and fix any broken packages:
+		_title "Removing unnecessary packages and fixing any broken packages..."
+		apt-get install -f --autoremove --purge -y
+
+		### Eleventh: Remove any unnecessary packages:
 		_title "Cleaning up cached packages..."
 		apt-get autoclean -y >& /dev/null
 		apt-get clean -y >& /dev/null
 
-		### Tenth: Disable services not required during Live ISO:
+		### Twelveth: Disable services not required during Live ISO:
 		if [[ -f /usr/local/finisher/disabled.list ]]; then
 			_title "Disabling unnecessary services for Live CD..."
 			(while read p r; do systemctl disable $p; done) < /usr/local/finisher/disabled.list >& /dev/null
 		fi
 
-		### Eleventh: Clean up everything done to "chroot" into this ISO image:
+		### Thirteenth: Clean up everything done to "chroot" into this ISO image:
 		_title "Undoing CHROOT environment modifications..."
 		chmod 440 /etc/sudoers.d/*
 		umount -lf /tmp/host
@@ -367,8 +376,8 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	if [[ -z "${INITRD_SRC}" ]]; then
 		_error "No INITRD.IMG file detected in chroot environment!  Skipping!"
 	else
-		_title "Copying INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
-		cp -p ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
+		_title "Moving INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
+		mv ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
 		sed -i "s|initrd.gz|initrd|g" ${UNPACK_DIR}/extract/boot/grub/grub.cfg
 	fi
 
@@ -378,8 +387,8 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	if [[ -z "${VMLINUZ}" ]]; then
 		_error "No VMLINUZ file detected in chroot environment!  Skipping!"
 	else
-		_title "Copying VMLINUZ from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
-		cp -p ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
+		_title "Moving VMLINUZ from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
+		mv ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
 	fi
 
 	# Fourth: Build the list of installed packages in unpacked filesystem:
