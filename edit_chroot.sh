@@ -11,8 +11,6 @@ export FLAG_ADD_DATE=${FLAG_ADD_DATE:-"1"}
 export FLAG_XZ=${FLAG_XZ:-"0"}
 # Flag: Use MKIFOFS (value: 1) instead of GENISOIMAGE (value: 0).  Defaults to 0.
 export FLAG_MKISOFS=${FLAG_MKISOFS:-"0"}
-# Flag: Set to 1 to use RAM for temp folder.  Defaults to 0.
-export FLAG_TMP_RAM=${FLAG_TMP_RAM:-"0"}
 # Where to place extracted and chroot environment directories.  Defaults to "/img".
 export UNPACK_DIR=${UNPACK_DIR:-"/img"}
 # Where to place the generated ISO file.  Defaults to current directory.
@@ -22,13 +20,16 @@ export ISO_PREFIX=${ISO_PREFIX:-"Ubuntu"}
 # ISO postfix string.  Defaults to "desktop".  (format: prefix-version-postfix)
 export ISO_POSTFIX=${ISO_POSTFIX:-"desktop"}
 # Label to use for ISO.  Defaults to "${ISO_PREFIX} ${ISO_VERSION}"
-ISO_LABEL=$([[ -z "${ISO_LABEL}" ]] && echo ${ISO_PREFIX} ${ISO_VERSION} || echo ${ISO_LABEL})
+export ISO_LABEL=$([[ -z "${ISO_LABEL}" ]] && echo ${ISO_PREFIX} ${ISO_VERSION} || echo ${ISO_LABEL})
 # Default sto removing old kernels from chroot environment.  Set to 0 to prevent this.
-OLD_KERNEL=${OLD_KERNEL:-"1"}
+export OLD_KERNEL=${OLD_KERNEL:-"1"}
 # Determine ISO version number to use:
-[[ -f ${UNPACK_DIR}/edit/etc/os-release ]] && ISO_VERSION=$(cat ${UNPACK_DIR}/edit/etc/os-release | grep "VERSION_ID=" | cut -d "\"" -f 2 | cut -d " " -f 2)
+[[ -f ${UNPACK_DIR}/edit/etc/os-release ]] && export ISO_VERSION=$(cat ${UNPACK_DIR}/edit/etc/os-release | grep "VERSION_ID=" | cut -d "\"" -f 2 | cut -d " " -f 2)
 # MUK path:
-MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
+export MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
+# My USB Stick partition :
+export USB_LIVE=LABEL=UBUNTU_LIVE
+export USB_CASPER=LABEL=UBUNTU_CASPER
 
 #==============================================================================
 # Get the necessary functions in order to function correctly:
@@ -76,7 +77,7 @@ if [[ "$1" == "update" ]]; then
 #==============================================================================
 elif [[ "$1" == "mount" ]]; then
 	if [[ ! -f ${UNPACK_DIR}/extract/casper/filesystem.squashfs ]]; then
-		_error "No unpacked filesystem!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
+		_error "No \"filesystem.squashfs\" found!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 		exit 1
 	fi
 	mkdir -p ${UNPACK_DIR}/{.lower,.upper,.work,edit}
@@ -125,6 +126,9 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		cp /etc/hosts ${UNPACK_DIR}/edit/etc/
 		mount --bind /run/ ${UNPACK_DIR}/edit/run
 		mount --bind /dev/ ${UNPACK_DIR}/edit/dev
+		mount -t tmpfs tmpfs ${UNPACK_DIR}/edit/tmp
+		mkdir -p ${UNPACK_DIR}/edit/tmp/host
+		mount --bind / ${UNPACK_DIR}/edit/tmp/host
 
 		### Third: Copy MUK into chroot environment:
 		rm -rf ${UNPACK_DIR}/edit/${MUK_DIR}
@@ -155,7 +159,6 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		mount -t proc none /proc
 		mount -t sysfs none /sys
 		mount -t devpts none /dev/pts
-		[[ "${FLAG_TMP_RAM}" == "1" ]] && mount -t tmpfs tmpfs /tmp
 		export HOME=/etc/skel
 		export LC_ALL=C
 		dbus-uuidgen > /var/lib/dbus/machine-id
@@ -249,6 +252,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		### Eleventh: Clean up everything done to "chroot" into this ISO image:
 		_title "Undoing CHROOT environment modifications..."
 		chmod 440 /etc/sudoers.d/*
+		umount -lf /tmp/host
 		rm -rf /tmp/* ~/.bash_history
 		rm /var/lib/dbus/machine-id
 		rm /sbin/initctl
@@ -525,10 +529,34 @@ elif [[ "$1" == "docker_umount" ]]; then
 # Mount my Ubuntu split-partition USB stick properly:
 #==============================================================================
 elif [[ "$1" == "usb_mount" ]]; then
-	mkdir -p /img/usb_{casper,live}
-	mount -q UUID=C198-307D /img/usb_live -t vfat -o noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022
-	mount -q UUID=b72b7891-f821-42bb-b457-8a3878e8a46a /img/usb_casper -t ext4 -o defaults,noatime,nofail
-	mount | grep -q /img/mnt || unionfs /img/usb_live:/img/usb_casper /img/mnt -o default_permissions -o allow_other -o use_ino -o nonempty -o suid
+	mkdir -p ${UNPACK_DIR}/usb_{casper,live}
+	umount -q ${USB_LIVE}
+	mount ${USB_LIVE} ${UNPACK_DIR}/usb_live -t vfat -o noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022
+	umount -q ${USB_CASPER}
+	mount ${USB_CASPER} ${UNPACK_DIR}/usb_casper -t ext4 -o defaults,noatime,nofail
+	mount | grep -q ${UNPACK_DIR}/mnt || unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_live=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid
+
+#==============================================================================
+# Unmount my Ubuntu split-partition USB stick properly:
+#==============================================================================
+elif [[ "$1" == "usb_unmount" ]]; then
+	umount ${UNPACK_DIR}/mnt
+	umount ${UNPACK_DIR}/usb_casper
+	umount ${UNPACK_DIR}/usb_live
+
+#==============================================================================
+# Sync contents of "extract" folder with my Ubuntu split-partition USB stick: 
+#==============================================================================
+elif [[ "$1" == "usb_sync" ]]; then
+	mount | grep -q ${UNPACK_DIR}/usb_casper || $0 usb_mount
+	rsync -av ${UNPACK_DIR}/extract/* ${UNPACK_DIR}/mnt 
+
+#==============================================================================
+# Sync contents of "extract" folder with my Ubuntu split-partition USB stick: 
+#==============================================================================
+elif [[ "$1" == "usb_copy" ]]; then
+	mount | grep -q ${UNPACK_DIR}/usb_casper || $0 usb_mount
+	rsync -av ${UNPACK_DIR}/mnt ${UNPACK_DIR}/extract/* 
 
 #==============================================================================
 # Invalid parameter specified.  List available parameters:
@@ -556,9 +584,11 @@ else
 	echo -e "  ${GREEN}docker_mount${NC}   Mounts the chroot docker directory to host docker directory."
 	echo -e "  ${GREEN}docker_umount${NC}  Unmounts the chroot docker directory to host docker directory."
 	echo -e ""
-	echo "Red Dragon Distro-related commands:"
-	echo -e "  ${GREEN}rdbuild${NC}        Builds one or all Red Dragon distro builds."
-	echo -e "  ${GREEN}rdcopy${NC}         Copies Red Dragon distros to the Red Dragon USB stick."
+	echo "Custom split-partition USB drive related commands:"
+	echo -e "  ${GREEN}usb_mount${NC}      Mount my custom split-partition USB drive." 
+	echo -e "  ${GREEN}usb_unmount${NC}    Properly unmount my custom split-partition USB drive."
+	echo -e "  ${GREEN}usb_sync${NC}       Copy hard drive edition to my custom split-partition USB drive."
+	echo -e "  ${GREEN}usb_copy${NC}       Copy custom split-partition USB drive to hard drive edition."
 	echo -e ""
 	echo -e "Note that this command ${RED}REQUIRES${NC} root access in order to function it's job!"
 fi
