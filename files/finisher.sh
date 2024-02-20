@@ -72,7 +72,7 @@ if [[ -d /usr/local/finisher/tasks.d ]]; then
 	for file in /usr/local/finisher/tasks.d/*; do
 		if [[ -f "${file}" && -x "${file}" ]]; then
 			_title "Executing task in \"${file}\"..."
-			. ${file}
+			${file}
 		fi
 	done
 fi
@@ -154,7 +154,7 @@ if [[ -d /usr/local/finisher/post.d ]]; then
 	for file in /usr/local/finisher/post.d/*; do
 		if [[ -f "${file}" && -x "${file}" ]]; then
 			_title "Executing task in \"${file}\"..."
-			. ${file}
+			${file}
 		fi
 	done
 fi
