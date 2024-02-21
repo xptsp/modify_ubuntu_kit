@@ -18,6 +18,16 @@ _title "Installing TimeShift..."
 #==============================================================================
 apt install -y timeshift
 
-# Second: Add the finisher script:
+# Second: Add cron task:
+cat << EOF > /etc/cron.d/timeshift-hourly
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+MAILTO=""
+
+0 * * * * root timeshift --check --scripted
+EOF
+
+# Third: Add the finisher script:
 #==============================================================================
 add_taskd 70_timeshift.sh
+
