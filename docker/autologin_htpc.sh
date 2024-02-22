@@ -1,1 +1,0 @@
-../htpc/autologin_htpc.sh

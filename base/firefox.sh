@@ -14,8 +14,6 @@ fi
 #==============================================================================
 _title "Installing Mozilla Firefox and Thunderbird..."
 #==============================================================================
-# First: Install the software:
-#==============================================================================
 snap remove firefox
 apt remove -y firefox
 add-apt-repository -y ppa:mozillateam/ppa
@@ -27,10 +25,13 @@ EOF
 apt update
 apt install -y firefox thunderbird
 
-# Second: Copy launcher to the desktop:
+#==============================================================================
+_title "Copy launchers to the desktop and trust them..."
 #==============================================================================
 [[ ! -d ~/Desktop ]] && mkdir -p ~/Desktop
 cp /usr/share/applications/firefox.desktop ~/Desktop/
-chmod +x ~/Desktop/firefox.desktop
+dbus-launch --exit-with-session gio set ~/Desktop/firefox.desktop metadata::trusted true
+chmod a+x ~/Desktop/firefox.desktop
 cp /usr/share/applications/thunderbird.desktop ~/Desktop/
-chmod +x ~/Desktop/thunderbird.desktop
+dbus-launch --exit-with-session gio set ~/Desktop/thunderbird.desktop metadata::trusted true
+chmod a+x ~/Desktop/thunderbird.desktop

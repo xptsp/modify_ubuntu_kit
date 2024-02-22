@@ -1,0 +1,1 @@
+../base/xfce4-appearance.sh

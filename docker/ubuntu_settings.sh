@@ -1,1 +1,0 @@
-../base/ubuntu_settings.sh

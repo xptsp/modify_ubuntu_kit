@@ -1,1 +1,0 @@
-../htpc/trim_os.sh
