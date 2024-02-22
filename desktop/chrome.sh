@@ -12,6 +12,11 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
+# Make sure gnome-browser-connector is installed!
+#==============================================================================
+apt list --installed gnome-browser-connector 2>&1 | grep -q gnome-browser-connector || ../base/gnome-connector.sh
+
+#==============================================================================
 _title "Installing Google Chrome..."
 #==============================================================================
 wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -O /tmp/google-chrome-stable_current_amd64.deb

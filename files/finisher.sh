@@ -11,61 +11,6 @@ export PASSWORD=xubuntu
 alias exit=return
 
 ###############################################################################
-# Copy the sources.list.new (if available) to sources.list:
-################################################################################
-[[ -f /etc/apt/sources.list.new ]] && cp /etc/apt/sources.list.new /etc/apt/sources.list
-
-###############################################################################
-# Retrieve the runonce custom script for this machine (if available)
-################################################################################
-### First: Get the non-USB ethernet adapter's MAC address:
-ETHERNET=$(lshw -c network -disable usb -short | grep -i "ethernet")
-IFS=" " read -ra ETH_ARR <<< $ETHERNET
-unset IFS
-export ETH_NAME=${ETH_ARR[1]}
-_title "Using ethernet adapter name: ${ETH_NAME}"
-MAC_ADDR=$(ip address show $ETH_NAME | grep "ether" | cut -d" " -f 6)
-OUT_FILE=${ETH_NAME}_${MAC_ADDR//:}
-_title "Using ethernet MAC address:  ${MAC_ADDR}"
-MAC_ADDR=$(echo $MAC_ADDR | md5sum)
-
-### Second: Attempt to get machine-specific task from DropBox:
-### NOTE: 62^15 = 7.689097049487666e+26 possible matches.  Collision damn near improbable.....
-if [[ ! -z "$MAC_ADDR" && -f /usr/local/finisher/phrase.list ]]; then
-	(while read LINE; do
-		IFS=" " read -ra PHRASE <<< "$LINE"
-		VALID=Y
-		j=0
-		URL=
-		### Combine MAC address with this array to get the DropBox referrer:
-		for i in "${PHRASE[@]}"; do
-			ORD=$(ord ${MAC_ADDR:$j:1})
-			i2=$i
-			  let "i2=i2-$ORD"
-			c=$(chr $i2) >& /dev/null
-			if [[ ! "$c"  =~ [a-zA-Z0-9] ]]; then
- 				VALID=N
-				break
-			fi
-			URL=${URL}${c}
-			let "j=j+1"
-		done
-		### Attempt to get the file specified from Dropbox:
-		if [[ "${VALID}" == "Y" ]]; then
-			URL=https://www.dropbox.com/s/${URL}/${OUT_FILE}.sh?dl=0
-			_title "Trying Dropbox URL: ${URL}..."
-			if [[ "$(wget -q -O /tmp/${OUT_FILE} ${URL} && echo "Y")" == "Y" ]]; then
-				_title "Executing \"${OUT_FILE}\"..."
-				chmod +x /tmp/${OUT_FILE}
-				. /tmp/${OUT_FILE}
-			else
-				_error "Failed to pull file from DropBox!"
-			fi
-		fi
-	done) < /usr/local/finisher/phrase.list
-fi
-
-###############################################################################
 # Execute any scripts under "/usr/local/finisher/tasks.d":
 ################################################################################
 if [[ -d /usr/local/finisher/tasks.d ]]; then
@@ -140,10 +85,6 @@ if [ -f /usr/local/finisher/disabled.list ]; then
 	while read p; do
 		_title "Enabling service \"${p}\"..."
 		systemctl enable $p
-		if [[ -z "${CHROOT}" || "$1" == "--start" ]]; then
-			_title "Starting service \"${p}\"..."
-			systemctl start $p
-		fi
 	done < /usr/local/finisher/disabled.list
 fi
 

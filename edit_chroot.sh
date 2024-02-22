@@ -285,6 +285,7 @@ elif [[ "$1" == "unmount" ]]; then
 		exit 1
 	fi
 	_title "Unmounting filesystem mount points...."
+	umount -qlf ${UNPACK_DIR}/edit/tmp/host >& /dev/null
 	mount | grep "${UNPACK_DIR}/edit/" | awk '{print $3}' | while read DIR; do umount -qlf ${DIR}; done
 	$0 docker_umount -q
 	_title "All filesystem mount points should be unmounted now."
@@ -364,6 +365,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 		_error "No unpacked filesystem!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 		exit 1
 	fi
+
 	# First: Prep the unpacked filesystem to be packaged:
 	cd ${UNPACK_DIR}
 	$0 unmount

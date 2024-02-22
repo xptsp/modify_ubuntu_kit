@@ -38,7 +38,6 @@ chown root:root /etc/systemd/system/x11vnc.service
 
 # Third: Adding X11VNC finisher task:
 #==============================================================================
-AO=$(ischroot && echo "disable" || echo "enable")
-systemctl ${AO} x11vnc
+systemctl $(_ischroot && echo "disable" || echo "enable") x11vnc
 add_taskd 20_x11vnc.sh
 ! ischroot && systemctl start x11vnc

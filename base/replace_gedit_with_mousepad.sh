@@ -20,3 +20,18 @@ apt purge -y gedit
 _title "Installing Mousepad..."
 #==============================================================================
 apt install -y mousepad
+
+#==============================================================================
+_title "Configuring Mousepad..."
+#==============================================================================
+dbus-launch --exit-with-session gsettings set org.xfce.mousepad.preferences.view color-scheme 'cobalt'
+dbus-launch --exit-with-session gsettings set org.xfce.mousepad.preferences.view show-line-numbers true
+dbus-launch --exit-with-session gsettings set org.xfce.mousepad.preferences.view highlight-current-line true
+dbus-launch --exit-with-session gsettings set org.xfce.mousepad.preferences.view match-braces true
+dbus-launch --exit-with-session gsettings set org.xfce.mousepad.preferences.view auto-indent true
+dbus-launch --exit-with-session gsettings set org.xfce.mousepad.preferences.view smart-backspace true
+dbus-launch --exit-with-session gsettings set org.xfce.mousepad.preferences.file add-last-end-of-line true
+dbus-launch --exit-with-session gsettings set org.xfce.mousepad.preferences.view smart-backspace true
+dbus-launch --exit-with-session gsettings set org.xfce.mousepad.preferences.view smart-home-end 'before'
+dbus-launch --exit-with-session gsettings set org.xfce.mousepad.preferences.window opening-mode 'window'
+dbus-launch --exit-with-session gsettings set org.xfce.mousepad.preferences.view tab-width 4

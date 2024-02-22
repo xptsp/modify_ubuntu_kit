@@ -17,7 +17,7 @@ FS[vfat]=${ntfs}
 
 # Identify first user and their home directory:
 USER=$(grep ":1000:" /etc/passwd | cut -d: -f 1)
-HOME=$(cat /etc/passwd | grep -m 1 "^doug" | cut -d: -f 6)
+HOME=$(grep -m 1 "^${USER}:" /etc/passwd | cut -d: -f 6)
 
 # If a partition with the username of user 1000 plus "_Public", mount it to "/home/{USER}/Public" in "/etc/fstab":
 DEV=$(blkid | grep -i "\"${USER}_Public\"" | cut -d: -f 1)
