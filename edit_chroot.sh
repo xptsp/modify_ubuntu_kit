@@ -27,9 +27,10 @@ export OLD_KERNEL=${OLD_KERNEL:-"1"}
 [[ -f ${UNPACK_DIR}/edit/etc/os-release ]] && export ISO_VERSION=$(cat ${UNPACK_DIR}/edit/etc/os-release | grep "VERSION_ID=" | cut -d "\"" -f 2 | cut -d " " -f 2)
 # MUK path:
 export MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
-# My USB Stick partition :
-export USB_LIVE=LABEL=UBUNTU_LIVE
-export USB_CASPER=LABEL=UBUNTU_CASPER
+# Custom USB Stick partition #1 identification:
+export USB_LIVE=${USB_LIVE:-"LABEL=\"UBUNTU_LIVE\""}
+# Custom USB Stick partition #2 identification:
+export USB_CASPER=${USB_CASPER:-"LABEL=\"UBUNTU_CASPER\""}
 
 #==============================================================================
 # Get the necessary functions in order to function correctly:
@@ -236,14 +237,16 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		_title "Upgrading any packages requiring upgrading..."
 		apt-get upgrade -y
 
-		# Ninth: Purge older kernels from the image:
-		_title "Removing any older kernels from the image..."
-		CUR=$(ls -l /boot/initrd.img | awk '{print $NF}' | sed "s|initrd.img-||" | sed "s|-generic||")
-		for VER in $(apt list linux-image-* --installed 2> /dev/null | grep -v "Listing" | grep -v "generic-hwe" | cut -d/ -f 1 | sed "s|linux-image-||" | sed "s|-generic||"); do
-			[[ "$VER" != "${CUR}" ]] && apt purge -y linux-*${VER}*
-		done
+		### Ninth: Purge older kernels from the image:
+		if [[ "${OLD_KERNEL}" -eq 1 ]]; then
+			_title "Removing any older kernels from the image..."
+			CUR=$(ls -l /boot/initrd.img | awk '{print $NF}' | sed "s|initrd.img-||" | sed "s|-generic||")
+			for VER in $(apt list linux-image-* --installed 2> /dev/null | grep -v "Listing" | grep -v "generic-hwe" | cut -d/ -f 1 | sed "s|linux-image-||" | sed "s|-generic||"); do
+				[[ "$VER" != "${CUR}" ]] && apt purge -y linux-*${VER}*
+			done
+		fi
 
-		# Tenth: Remove any unnecessary packages and fix any broken packages:
+		### Tenth: Remove any unnecessary packages and fix any broken packages:
 		_title "Removing unnecessary packages and fixing any broken packages..."
 		apt-get install -f --autoremove --purge -y
 
@@ -476,9 +479,9 @@ elif [[ "$1" == "iso" ]]; then
 	cd ${UNPACK_DIR}/extract
 	test -d isolinux || cp -aR ${MUK_DIR}/files/isolinux ./
 	if [[ "${FLAG_MKISOFS}" == "0" ]]; then
-		mkisofs -D -r -V "${ISO_LABEL}" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ${ISO_DIR}/${ISO_FILE}.iso .
-	else
 		genisoimage -allow-limited-size -D -r -V "${ISO_LABEL}" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ${ISO_DIR}/${ISO_FILE}.iso .
+	else
+		mkisofs -allow-limited-size -D -r -V "${ISO_LABEL}" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ${ISO_DIR}/${ISO_FILE}.iso .
 	fi
 
 	# Third: Tell user we done!
@@ -538,12 +541,14 @@ elif [[ "$1" == "docker_umount" ]]; then
 # Mount my Ubuntu split-partition USB stick properly:
 #==============================================================================
 elif [[ "$1" == "usb_mount" ]]; then
+	if ! blkid | grep -q "${USB_LIVE}"; then _error "No USB Live partition found!"; exit 1; fi
+	if ! blkid | grep -q "${USB_CASPER}"; then _error "No USB Casper partition found!"; exit 1; fi
 	mkdir -p ${UNPACK_DIR}/usb_{casper,live}
 	umount -q ${USB_LIVE}
 	mount ${USB_LIVE} ${UNPACK_DIR}/usb_live -t vfat -o noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022
 	umount -q ${USB_CASPER}
 	mount ${USB_CASPER} ${UNPACK_DIR}/usb_casper -t ext4 -o defaults,noatime,nofail
-	mount | grep -q ${UNPACK_DIR}/mnt || unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_live=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid
+	mount | grep -q ${UNPACK_DIR}/mnt || unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_live=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid || exit 1
 
 #==============================================================================
 # Unmount my Ubuntu split-partition USB stick properly:
@@ -554,18 +559,28 @@ elif [[ "$1" == "usb_unmount" ]]; then
 	umount ${UNPACK_DIR}/usb_live
 
 #==============================================================================
-# Sync contents of "extract" folder with my Ubuntu split-partition USB stick: 
+# Copy "extract" folder <<TO>> my Ubuntu split-partition USB stick: 
 #==============================================================================
-elif [[ "$1" == "usb_sync" ]]; then
-	mount | grep -q ${UNPACK_DIR}/usb_casper || $0 usb_mount
-	rsync -av ${UNPACK_DIR}/extract/* ${UNPACK_DIR}/mnt 
+elif [[ "$1" == "usb_load" ]]; then
+	DEV=$(mount | grep " ${UNPACK_DIR}/usb_casper" | cut -d" " -f 1)
+	if [[ -z "${DEV}" ]]; then $0 usb_mount || exit 1; fi
+	rsync --info=progress ${UNPACK_DIR}/extract/* ${UNPACK_DIR}/mnt
+	eval `blkid -o export ${DEV}`
+	FILE=${UNPACK_DIR}/mnt/boot/grub/grub.cfg
+	sed -i "s| boot=casper||" ${FILE}
+	sed -i "s| live-media=/dev/disk/by-uuid/[0-9a-z\-]*||" ${FILE}
+	sed -i "s|vmlinuz |vmlinuz boot=casper live-media=/dev/disk/by-uuid/${UUID} |" ${FILE}
 
 #==============================================================================
-# Sync contents of "extract" folder with my Ubuntu split-partition USB stick: 
+# Copy "extract" folder <<FROM>> my Ubuntu split-partition USB stick: 
 #==============================================================================
 elif [[ "$1" == "usb_copy" ]]; then
-	mount | grep -q ${UNPACK_DIR}/usb_casper || $0 usb_mount
-	rsync -av ${UNPACK_DIR}/mnt ${UNPACK_DIR}/extract/* 
+	DEV=$(mount | grep " ${UNPACK_DIR}/usb_casper" | cut -d" " -f 1)
+	if [[ -z "${DEV}" ]]; then $0 usb_mount || exit 1; fi
+	rsync --info=progress ${UNPACK_DIR}/mnt ${UNPACK_DIR}/extract/*
+	FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
+	sed -i "s| boot=casper||" ${FILE}
+	sed -i "s| live-media=/dev/disk/by-uuid/[0-9a-z\-]*||" ${FILE}
 
 #==============================================================================
 # Invalid parameter specified.  List available parameters:
@@ -596,9 +611,9 @@ else
 	echo "Custom split-partition USB drive related commands:"
 	echo -e "  ${GREEN}usb_mount${NC}      Mount my custom split-partition USB drive." 
 	echo -e "  ${GREEN}usb_unmount${NC}    Properly unmount my custom split-partition USB drive."
-	echo -e "  ${GREEN}usb_sync${NC}       Copy hard drive edition to my custom split-partition USB drive."
+	echo -e "  ${GREEN}usb_load${NC}       Copy hard drive edition to my custom split-partition USB drive."
 	echo -e "  ${GREEN}usb_copy${NC}       Copy custom split-partition USB drive to hard drive edition."
 	echo -e ""
 	echo -e "Note that this command ${RED}REQUIRES${NC} root access in order to function it's job!"
 fi
-echo -e ""
+[[ "$1" =~ (usb_|)(un|)mount ]] || echo -e ""

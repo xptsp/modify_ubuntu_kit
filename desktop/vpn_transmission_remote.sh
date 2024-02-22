@@ -6,19 +6,17 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs XFCE4 Terminal, replacing GNome Terminal (if installed)."
+	echo -e "${RED}Purpose:${NC} Installs Transmission and Transmission Remote GTK on your computer."
 	echo ""
 	exit 0
 fi
 
+# Seventh: Make sure our VPN is created on the system:
 #==============================================================================
-_title "Removing Gnome Terminal..."
-#==============================================================================
-apt purge -y gnome-terminal
+[[ ! -e /etc/openvpn ]] && ${MUK_DIR}/desktop/vpn_establish.sh
 
 #==============================================================================
-_title "Installing XFCE4 Terminal..."
+_title "Installing Transmission Remote GTK..."
 #==============================================================================
-apt install -y xfce4-terminal
-sed -i "s|Exec=xfce4-terminal|Exec=xfce4-terminal --maximize|" /usr/share/applications/xfce4-terminal.desktop
-unzip -o ${MUK_DIR}/files/red_dragon.zip xfce4/terminal/terminalrc -d ~/.config
+wget http://ftp.de.debian.org/debian/pool/main/t/transmission-remote-gtk/transmission-remote-gtk_1.5.1-1_amd64.deb -O /tmp/transmission-remote-gtk_1.5.1-1_amd64.deb
+apt install -y /tmp/transmission-remote-gtk_1.5.1-1_amd64.deb

@@ -1,1 +1,1 @@
-../desktop/ssh.sh
+../base/ssh.sh

@@ -16,14 +16,9 @@ fi
 [[ ! -e /etc/openvpn ]] && ${MUK_DIR}/desktop/vpn_establish.sh
 
 #==============================================================================
-_title "Install Transmission (port 9090) and Transmission Remote GTK..."
+_title "Installing Transmission (port 9090)..."
 #==============================================================================
-# First: Install Transmission Remote GTK:
-#==============================================================================
-wget http://ftp.de.debian.org/debian/pool/main/t/transmission-remote-gtk/transmission-remote-gtk_1.5.1-1_amd64.deb -O /tmp/transmission-remote-gtk_1.5.1-1_amd64.deb
-apt install -y /tmp/transmission-remote-gtk_1.5.1-1_amd64.deb
-
-# Second: Install the software:
+# First: Install the software:
 #==============================================================================
 add-apt-repository -y ppa:transmissionbt/ppa
 FILE=/etc/apt/sources.list.d/transmissionbt-ubuntu-ppa-*.list
@@ -31,9 +26,9 @@ sed -i "s| impish | focal |g" ${FILE}
 sed -i "s| jammy | focal |g" ${FILE}
 apt update
 apt remove -y transmission*
-apt install -y transmission-daemon transmission-cli transmission-remote-gtk
+apt install -y transmission-daemon transmission-cli
 
-# Third: Configure the daemon:
+# Second: Configure the daemon:
 #==============================================================================
 ischroot && systemctl disable transmission-daemon
 ischroot || systemctl stop transmission-daemon
@@ -46,7 +41,7 @@ Group=
 Group=htpc
 EOF
 
-# Fourth: Create the "no sleep if transmission-daemon is downloading" service:
+# Third: Create the "no sleep if transmission-daemon is downloading" service:
 #==============================================================================
 ln -sf ${MUK_DIR}/files/transmission_nosleep.sh /usr/local/bin/transmission_nosleep.sh
 ln -sf ${MUK_DIR}/files/transmission_nosleep.service /etc/systemd/system/transmission_nosleep.service
@@ -55,7 +50,7 @@ systemctl enable transmission_nosleep
 change_username ${MUK_DIR}/files/transmission_nosleep.sh
 change_password ${MUK_DIR}/files/transmission_nosleep.sh
 
-# Fifth: Configure the settings for Transmission:
+# Fourth: Configure the settings for Transmission:
 #==============================================================================
 # Transmission settings:
 [[ ! -d ~/.config/transmission-daemon ]] && mkdir -p ~/.config/transmission-daemon
@@ -63,16 +58,16 @@ cp ${MUK_DIR}/files/transmission_settings.json ~/.config/transmission-daemon/set
 change_username ~/.config/transmission-daemon/settings.json
 change_password ~/.config/transmission-daemon/settings.json
 
-# Sixth: Reenable the service if NOT running in CHROOT environment:
+# Fifth: Reenable the service if NOT running in CHROOT environment:
 #==============================================================================
 ischroot && systemctl start transmission-daemon
 
-# Seventh: Create the autoremove.sh script:
+# Sixth: Create the autoremove.sh script:
 #==============================================================================
 ln -sf ${MUK_DIR}/files/transmission_autoremove.sh /etc/transmission-daemon/autoremove.sh
 change_username /etc/transmission-daemon/autoremove.sh
 change_password /etc/transmission-daemon/autoremove.sh
 
-# Eighth: Create the finisher task to create the user "htpc": 
+# Seventh: Create the finisher task to create the user "htpc": 
 #==============================================================================
 add_taskd 40_transmission.sh

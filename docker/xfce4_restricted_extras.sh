@@ -1,1 +1,0 @@
-../base/xfce4_restricted_extras.sh

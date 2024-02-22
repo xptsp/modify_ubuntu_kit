@@ -1,1 +1,1 @@
-../desktop/samba.sh
+../base/samba.sh

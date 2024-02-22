@@ -26,32 +26,38 @@ if [[ ! -z "$DEV" ]]; then
 	sed -i "/\/home\/${USER}\/Public/d" $F
 	echo "UUID=${UUID} ${HOME}/Public ${TYPE} ${FS[$TYPE]:-"defaults,noatime"} 0 0" >> $F
 	mount ${HOME}/Public
-	mkdir -p ${HOME}/Public/Downloads
-	sed -i "/\/home\/${USER}\/Public\/Downloads/d" $F
-	echo "${HOME}/Public/Downloads ${HOME}/Downloads none bind 0 0" >> $F
 fi
 
 # If a partition with the username of user 1000 plus "_Documents", mount it to "/home/{USER}/Documents" in "/etc/fstab":
 DEV=$(blkid | grep -i "\"${USER}_Documents\"" | cut -d: -f 1)
-UUID=$(blkid -o export $DEV | grep "^UUID=" | cut -d= -f 2)
 if [[ ! -z "$DEV" ]]; then
 	eval `blkid -o export ${DEV}`
 	sed -i "/\/home\/${USER}\/Documents/d" $F
 	echo "UUID=${UUID} ${HOME}/Documents ${TYPE} ${FS[$TYPE]:-"defaults,noatime"} 0 0" >> $F
 	mount ${HOME}/Documents
-	mkdir -p ${HOME}/Documents/GitHub
-	sed -i "/\/home\/${USER}\/Documents\/GitHub/d" $F
-	echo "${HOME}/Documents/GitHub ${HOME}/GitHub none bind 0 0" >> $F
-	sed -i "/\/opt\/modify_ubuntu_kit/d" $F
-	echo "${HOME}/GitHub/modify_ubuntu_kit  /opt/modify_ubuntu_kit  none bind 0 0" >> $F
 fi
-
-# Pretify the "/etc/fstab" file, then mount everything:
-cat $F | grep -v "^#" | column -t | tee $F >& /dev/null
-mount -a
 
 # Symbolic link to Mozilla Firefox, Thunderbird, and GitHub Desktop folders in Documents if they exist:
 mkdir -p ${HOME}/.config
 test -d "${HOME}/Documents/.mozilla" && ln -sf "${HOME}/Documents/.mozilla" "${HOME}/.mozilla"
 test -d "${HOME}/Documents/.thunderbird" && ln -sf "${HOME}/Documents/.thunderbird" "${HOME}/.thunderbird"
 test -d "${HOME}/Documents/.GitHub_Desktop" && ln -sf "${HOME}/Documents/.GitHub_Desktop" "${HOME}/.config/GitHub Desktop"
+if [[ -d ${HOME}/Documents/GitHub ]]; then	
+	mkdir -p ${HOME}/GitHub
+	sed -i "/\/home\/${USER}\/Documents\/GitHub/d" $F
+	echo "${HOME}/Documents/GitHub ${HOME}/GitHub none bind 0 0" >> $F
+	mount ${HOME}/GitHub
+fi
+if [[ -d "${HOME}/GitHub/modify_ubuntu_kit" ]]; then
+	sed -i "/\/opt\/modify_ubuntu_kit/d" $F
+	echo "${HOME}/GitHub/modify_ubuntu_kit  /opt/modify_ubuntu_kit  none bind 0 0" >> $F
+fi
+if [[ -d ${HOME}/Public/Downloads ]]; then
+	sed -i "/\/home\/${USER}\/Public\/Downloads/d" $F
+	echo "${HOME}/Public/Downloads ${HOME}/Downloads none bind 0 0" >> $F
+	
+fi
+
+# Pretify the "/etc/fstab" file, then mount everything:
+cat $F | grep -v "^#" | column -t | tee $F >& /dev/null
+mount -a
