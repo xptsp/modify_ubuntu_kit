@@ -79,6 +79,7 @@ wget https://extensions.gnome.org/extension-data/openweather-extensionjenslody.d
 gnome-extensions install openweather-extensionjenslody.de.v118.shell-extension.zip
 dbus-launch --exit-with-session gnome-extensions enable openweather-extension@jenslody.de
 rm openweather-extensionjenslody.de.v118.shell-extension.zip
+unzip -o ${MUK_DIR}/files/openweather_schemas.zip -d ~/.local/share/gnome-shell/extensions/openweather-extension@jenslody.de
 
 # Eleventh: GSConnect >> https://extensions.gnome.org/extension/1319/gsconnect/ 
 wget https://extensions.gnome.org/extension-data/gsconnectandyholmes.github.io.v50.shell-extension.zip
