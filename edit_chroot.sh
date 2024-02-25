@@ -173,8 +173,9 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		export KODI_ADD=/etc/skel/.kodi/addons
 		export KODI_BASE=http://mirrors.kodi.tv/addons/leia/
 
-		### Second: Install the chroot tools if required:
+		### Second: Install the chroot tools if required, then put firefox on hold if it is still snap version:
 		${MUK_DIR}/install.sh
+		if ! apt-mark showhold | grep -q firefox; then apt list firefox 2> /dev/null | grep -q 1snap1 && apt-mark hold firefox > /dev/null; fi
 
 		### Third: Next action depends on parameter passed....
 		if [[ "$1" == "enter" ]]; then
@@ -286,7 +287,8 @@ elif [[ "$1" == "unmount" ]]; then
 	fi
 	_title "Unmounting filesystem mount points...."
 	umount -qlf ${UNPACK_DIR}/edit/tmp/host >& /dev/null
-	mount | grep "${UNPACK_DIR}/edit/" | awk '{print $3}' | while read DIR; do umount -qlf ${DIR}; done
+	mount | grep "${UNPACK_DIR}/edit" | awk '{print $3}' | tac | while read DIR; do umount -qlf ${DIR}; done
+	umount -qlf ${UNPACK_DIR}/.lower
 	$0 docker_umount -q
 	_title "All filesystem mount points should be unmounted now."
 
@@ -401,9 +403,8 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	_title "Building list of installed packages...."
 	chmod +w extract/casper/filesystem.manifest >& /dev/null
 	chroot edit dpkg-query -W --showformat='${Package} ${Version}\n' | tee extract/casper/filesystem.manifest >& /dev/null
-	cp extract/casper/filesystem.manifest extract/casper/filesystem.manifest-desktop
-	sed -i '/ubiquity/d' extract/casper/filesystem.manifest-desktop
-	sed -i '/casper/d' extract/casper/filesystem.manifest-desktop
+	sed -i '/ubiquity/d' extract/casper/filesystem.manifest
+	sed -i '/casper/d' extract/casper/filesystem.manifest
 
 	# Fifth: Set necessary flags for compression:
 	[[ ! "$(echo $@ | grep pack-xz)" == "" ]] && FLAG_XZ=1
