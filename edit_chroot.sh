@@ -12,7 +12,7 @@ export FLAG_XZ=${FLAG_XZ:-"0"}
 # Flag: Use MKIFOFS (value: 1) instead of GENISOIMAGE (value: 0).  Defaults to 0.
 export FLAG_MKISOFS=${FLAG_MKISOFS:-"0"}
 # Where to place extracted and chroot environment directories.  Defaults to "/img".
-export UNPACK_DIR=${UNPACK_DIR:-"/img"}
+export UNPACK_DIR=${UNPACK_DIR:-"/home/img"}
 # Where to place the generated ISO file.  Defaults to current directory.
 export ISO_DIR=${ISO_DIR:-"${UNPACK_DIR}"}
 # ISO name prefix string.  Defaults to "ubuntu".  (format: prefix-version-postfix)
@@ -29,8 +29,10 @@ export OLD_KERNEL=${OLD_KERNEL:-"1"}
 export MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 # Custom USB Stick partition #1 identification:
 export USB_LIVE=${USB_LIVE:-"LABEL=\"UBUNTU_LIVE\""}
+export USB_LIVE=$(echo ${USB_LIVE} | cut -d= -f 1)=\"$(echo ${USB_LIVE} | cut -d= -f 2 | sed "s|\"||g")\"
 # Custom USB Stick partition #2 identification:
 export USB_CASPER=${USB_CASPER:-"LABEL=\"UBUNTU_CASPER\""}
+export USB_CASPER=$(echo ${USB_CASPER} | cut -d= -f 1)=\"$(echo ${USB_CASPER} | cut -d= -f 2 | sed "s|\"||g")\"
 
 #==============================================================================
 # Get the necessary functions in order to function correctly:
@@ -95,7 +97,7 @@ elif [[ "$1" == "mount" ]]; then
 			COUNT=$((COUNT + 1))
 		fi
 	done
-	if ! mount | grep -q " ${UNPACK_DIR}/edit "; then
+	if ! mount | grep -q "${UNPACK_DIR}/edit "; then
 		mount -t overlay -o lowerdir=${LOWER},upperdir=${UNPACK_DIR}/.upper,workdir=${UNPACK_DIR}/.work overlay ${UNPACK_DIR}/edit || exit 1
 	fi
 
@@ -544,12 +546,13 @@ elif [[ "$1" == "docker_umount" ]]; then
 # Mount my Ubuntu split-partition USB stick properly:
 #==============================================================================
 elif [[ "$1" == "usb_mount" ]]; then
-	if ! blkid | grep -q "${USB_LIVE}"; then _error "No USB Live partition found!"; exit 1; fi
-	if ! blkid | grep -q "${USB_CASPER}"; then _error "No USB Casper partition found!"; exit 1; fi
+	if ! blkid | grep -q "${USB_LIVE}"; then _error "No USB Live partition 1 found! (Ref: \"$USB_LIVE\")"; exit 1; fi
+	if ! blkid | grep -q "${USB_CASPER}"; then _error "No USB Casper partition 2 found! (Ref: \"$USB_CASPER\")"; exit 1; fi
+	mount | grep -q ${UNPACK_DIR}/mnt && umount -lfq ${UNPACK_DIR}/mnt 
 	mkdir -p ${UNPACK_DIR}/usb_{casper,live}
-	umount -q ${USB_LIVE}
+	umount -q $(blkid | grep ${USB_LIVE} | cut -d: -f 1)
 	mount ${USB_LIVE} ${UNPACK_DIR}/usb_live -t vfat -o noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022
-	umount -q ${USB_CASPER}
+	umount -q $(blkid | grep ${USB_CASPER} | cut -d: -f 1)
 	mount ${USB_CASPER} ${UNPACK_DIR}/usb_casper -t ext4 -o defaults,noatime,nofail
 	mount | grep -q ${UNPACK_DIR}/mnt || unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_live=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid || exit 1
 
@@ -557,9 +560,9 @@ elif [[ "$1" == "usb_mount" ]]; then
 # Unmount my Ubuntu split-partition USB stick properly:
 #==============================================================================
 elif [[ "$1" == "usb_unmount" ]]; then
-	umount ${UNPACK_DIR}/mnt
-	umount ${UNPACK_DIR}/usb_casper
-	umount ${UNPACK_DIR}/usb_live
+	umount -q ${UNPACK_DIR}/mnt
+	umount -q ${UNPACK_DIR}/usb_casper
+	umount -q ${UNPACK_DIR}/usb_live
 
 #==============================================================================
 # Copy "extract" folder <<TO>> my Ubuntu split-partition USB stick: 
