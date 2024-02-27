@@ -38,4 +38,4 @@ rm hibernate-statusdromi.v33.shell-extension.zip
 #==============================================================================
 _title "Adding script to add hibernation support...."
 #==============================================================================
-add_taskd 65_hibernation.sh
+add_bootd 65_hibernation.sh

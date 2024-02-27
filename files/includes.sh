@@ -91,6 +91,22 @@ function add_taskd() {
 		${MUK_DIR}/files/tasks.d/$1
 	fi
 }
+function add_bootd() {
+	[[ ! -d /usr/local/finisher/boot.d ]] && mkdir -p /usr/local/finisher/boot.d
+	if ischroot; then
+		ln -sf ${MUK_DIR}/files/boot.d/$1 /usr/local/finisher/boot.d/$1
+	else
+		${MUK_DIR}/files/boot.d/$1
+	fi
+}
+function add_postd() {
+	[[ ! -d /usr/local/finisher/post.d ]] && mkdir -p /usr/local/finisher/post.d
+	if ischroot; then
+		ln -sf ${MUK_DIR}/files/post.d/$1 /usr/local/finisher/post.d/$1
+	else
+		${MUK_DIR}/files/post.d/$1
+	fi
+}
 
 # Functions enabling and disabling sleep/hibernate functions:
 function sleep_allow() {

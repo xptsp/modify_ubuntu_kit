@@ -10,20 +10,25 @@ fi
 [[ ! -d /usr/local/finisher/tasks.d ]] && mkdir -p /usr/local/finisher/tasks.d
 
 # Determine the toolkit's directory name and save it to the configuration file:
-MUK=$(cd $(dirname $0); pwd)
-. ${MUK}/files/includes.sh
-sed -i "s|MUK_DIR=.*|MUK_DIR="${MUK}"|g" /usr/local/finisher/settings.conf
+MUK_DIR=$(cd $(dirname $0); pwd)
+. ${MUK_DIR}/files/includes.sh
+sed -i "s|MUK_DIR=.*|MUK_DIR="${MUK_DIR}"|g" /usr/local/finisher/settings.conf
 
 # Copy the default settings file to the finisher directory:
-[[ ! -z "${options[f]}" || ! -f /usr/local/finisher/settings.conf ]] && cp ${MUK}/files/settings.conf /usr/local/finisher/settings.conf
+[[ ! -z "${options[f]}" || ! -f /usr/local/finisher/settings.conf ]] && cp ${MUK_DIR}/files/settings.conf /usr/local/finisher/settings.conf
 
 # Copy the default tcmount config file to the finisher directory:
-[[ ! -z "${options[f]}" || ! -f /usr/local/finisher/tcmount.ini ]] && cp ${MUK}/files/tcmount.ini /usr/local/finisher/tcmount.ini
+[[ ! -z "${options[f]}" || ! -f /usr/local/finisher/tcmount.ini ]] && cp ${MUK_DIR}/files/tcmount.ini /usr/local/finisher/tcmount.ini
 
 # Link the "edit_chroot" tool to the destination folder:
 [[ -e /usr/local/bin/edit_chroot ]] && rm /usr/local/bin/edit_chroot
-ln -sf ${MUK}/edit_chroot.sh /usr/local/bin/edit_chroot
+ln -sf ${MUK_DIR}/edit_chroot.sh /usr/local/bin/edit_chroot
 
 # Create target-config task in order to run "finisher.sh" ONLY if ubiquity is installed:
-[[ -e /usr/lib/ubiquity/target-config/99_finisher ]] && rm /usr/lib/ubiquity/target-config/99_finisher
-[[ -d /usr/lib/ubiquity/target-config ]] && ln -sf ${MUK}/files/tasks.d/99_finisher.sh /usr/lib/ubiquity/target-config/99_finisher
+if [[ -d /usr/lib/ubiquity/target-config ]]; then 
+	test -e /usr/lib/ubiquity/target-config/99_finisher && rm /usr/lib/ubiquity/target-config/99_finisher
+ 	ln -sf ${MUK_DIR}/files/tasks.d/99_finisher.sh /usr/lib/ubiquity/target-config/99_finisher
+ 	test -e /etc/rc.local || cp ${MUK_DIR}/files/rc.local /etc/
+ 	sed -i "s|^exit 0|${MUK_DIR}/files/firstboot.sh\n&|" /etc/rc.local
+ 	mkdir -p /usr/local/finisher/{boot,tasks,post}.d
+fi
