@@ -245,8 +245,8 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		if [[ "${OLD_KERNEL}" -eq 1 ]]; then
 			_title "Removing any older kernels from the image..."
 			CUR=$(ls -l /boot/initrd.img | awk '{print $NF}' | sed "s|initrd.img-||" | sed "s|-generic||")
-			for VER in $(apt list linux-image-* --installed 2> /dev/null | grep -v "Listing" | grep -v "generic-hwe" | cut -d/ -f 1 | sed "s|linux-image-||" | sed "s|-generic||"); do
-				[[ "$VER" != "${CUR}" ]] && apt purge -y linux-*${VER}*
+			for VER in $(apt list linux-image-* --installed 2> /dev/null | grep linux-image | cut -d/ -f 1 | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*"); do
+				[[ "$VER" != "${CUR}" ]] && apt purge -y $(apt list --installed linux-*${VER}* 2> /dev/null | grep linux- | cut -d\/ -f 1)
 			done
 		fi
 
