@@ -428,7 +428,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 
 	# Eighth: Create the "filesystem.size" file:
 	_title "Updating ${BLUE}filesystem.size${GREEN}...."
-	printf $(du -sx --block-size=1 edit | cut -f1) | tee extract/casper/filesystem.size >& /dev/null
+	du -s --block-size=1 edit | cut -f1 > extract/casper/filesystem.size
 
 	# Ninth: remove the overlay filesystem and upper layer of overlay, then create the "md5sum.txt" file:
 	_title "Removing the overlay filesystem and upper layer of overlay..."
