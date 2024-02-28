@@ -10,6 +10,10 @@ export USERNAME=$(id -un 1000)
 export PASSWORD=$(grep grep "^ID=" /etc/os-release | cut -d= -f 2)
 alias exit=return
 
+# Create the development directories:
+mkdir -p /home/img
+ln -sf /home/img /img
+
 ###############################################################################
 # Execute any scripts under "/usr/local/finisher/tasks.d":
 ################################################################################
