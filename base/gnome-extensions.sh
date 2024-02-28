@@ -93,15 +93,7 @@ gnome-extensions install refresh-wifikgshank.net.v16.shell-extension.zip
 dbus-launch --exit-with-session gnome-extensions enable refresh-wifi@kgshank.net
 rm refresh-wifikgshank.net.v16.shell-extension.zip
 
-#==============================================================================
-_title "Moving Gnome Extensions to global extension directory..."
-#==============================================================================
-mv ~/.local/share/gnome-shell/extensions/* /usr/share/gnome-shell/extensions/
-
-#==============================================================================
-_title "Installing GSConnect Gnome Extensions to per-user storage..."
-# Src: https://extensions.gnome.org/extension/1319/gsconnect/
-#==============================================================================
+# Thirtennth: GSConnect >> https://extensions.gnome.org/extension/1319/gsconnect/
 wget https://extensions.gnome.org/extension-data/gsconnectandyholmes.github.io.v50.shell-extension.zip
 gnome-extensions install gsconnectandyholmes.github.io.v50.shell-extension.zip
 dbus-launch --exit-with-session gnome-extensions enable gsconnect@andyholmes.github.io

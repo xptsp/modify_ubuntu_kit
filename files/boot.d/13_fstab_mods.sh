@@ -5,11 +5,6 @@ F=/etc/fstab
 sed -i "/^tmpfs/d" $F
 echo "tmpfs /tmp tmpfs defaults 0 0" >> $F
 
-# Bind "/home/img" to "/img":
-mkdir -p /home/img
-sed -i "/\/home\/img/d" $F
-echo "/home/img /img none bind 0 0" >> $F
-
 # Default options per filesystem type:
 declare -A FS=()
 FS[ntfs]=noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022
@@ -25,6 +20,7 @@ if [[ ! -z "$DEV" ]]; then
 	eval `blkid -o export ${DEV}`
 	sed -i "/\/home\/${USER}\/Public/d" $F
 	echo "UUID=${UUID} ${HOME}/Public ${TYPE} ${FS[$TYPE]:-"defaults,noatime"} 0 0" >> $F
+	mkdir -p ${HOME}/Public
 	mount ${HOME}/Public
 fi
 
@@ -34,6 +30,7 @@ if [[ ! -z "$DEV" ]]; then
 	eval `blkid -o export ${DEV}`
 	sed -i "/\/home\/${USER}\/Documents/d" $F
 	echo "UUID=${UUID} ${HOME}/Documents ${TYPE} ${FS[$TYPE]:-"defaults,noatime"} 0 0" >> $F
+	mkdir -p ${HOME}/Documents
 	mount ${HOME}/Documents
 fi
 
@@ -44,6 +41,7 @@ test -d "${HOME}/Documents/.thunderbird" && ln -sf "${HOME}/Documents/.thunderbi
 test -d "${HOME}/Documents/.GitHub_Desktop" && ln -sf "${HOME}/Documents/.GitHub_Desktop" "${HOME}/.config/GitHub Desktop"
 if [[ -d ${HOME}/Documents/GitHub ]]; then	
 	mkdir -p ${HOME}/GitHub
+	chown ${USER}:${USER} ${HOME}/GitHub
 	sed -i "/\/home\/${USER}\/Documents\/GitHub/d" $F
 	echo "${HOME}/Documents/GitHub ${HOME}/GitHub none bind 0 0" >> $F
 	mount ${HOME}/GitHub
@@ -60,4 +58,5 @@ fi
 
 # Pretify the "/etc/fstab" file, then mount everything:
 cat $F | grep -v "^#" | column -t | tee $F >& /dev/null
+chown ${USER}:${USER} -R ${HOME}/*  
 mount -a

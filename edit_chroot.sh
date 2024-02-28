@@ -267,16 +267,17 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 
 		### Thirteenth: Clean up everything done to "chroot" into this ISO image:
 		_title "Undoing CHROOT environment modifications..."
+		if apt-mark showhold | grep -q firefox; then apt list firefox 2> /dev/null | grep -q 1snap1 && apt-mark unhold firefox > /dev/null; fi
 		chmod 440 /etc/sudoers.d/*
 		umount -lf /tmp/host
 		rm -rf /tmp/* ~/.bash_history
 		rm /var/lib/dbus/machine-id
 		rm /sbin/initctl
 		dpkg-divert --rename --remove /sbin/initctl >& /dev/null
-		[[ "${FLAG_TMP_RAM}" == "1" ]] && umount -q /tmp
-		umount -q /proc || umount -lfq /proc
-		umount -q /sys
-		umount -q /dev/pts
+		umount -lfq /tmp
+		umount -lfq /proc
+		umount -lfq /sys
+		umount -lfq /dev/pts
 		exit 0
 	fi
 
@@ -291,7 +292,7 @@ elif [[ "$1" == "unmount" ]]; then
 	_title "Unmounting filesystem mount points...."
 	umount -qlf ${UNPACK_DIR}/edit/tmp/host >& /dev/null
 	mount | grep "${UNPACK_DIR}/edit" | awk '{print $3}' | tac | while read DIR; do umount -qlf ${DIR}; done
-	umount -qlf ${UNPACK_DIR}/.lower*
+	mount | grep "${UNPACK_DIR}/.lower" | awk '{print $3}' | while read DIR; do umount -qlf ${DIR}; done
 	$0 docker_umount -q
 	_title "All filesystem mount points should be unmounted now."
 
@@ -550,7 +551,7 @@ elif [[ "$1" == "usb_mount" ]]; then
 	if ! blkid | grep -q "${USB_LIVE}"; then _error "No USB Live partition 1 found! (Ref: \"$USB_LIVE\")"; exit 1; fi
 	if ! blkid | grep -q "${USB_CASPER}"; then _error "No USB Casper partition 2 found! (Ref: \"$USB_CASPER\")"; exit 1; fi
 	mount | grep -q ${UNPACK_DIR}/mnt && umount -lfq ${UNPACK_DIR}/mnt 
-	mkdir -p ${UNPACK_DIR}/usb_{casper,live}
+	mkdir -p ${UNPACK_DIR}/usb_{casper,live} ${UNPACK_DIR}/mnt
 	umount -q $(blkid | grep ${USB_LIVE} | cut -d: -f 1)
 	mount ${USB_LIVE} ${UNPACK_DIR}/usb_live -t vfat -o noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022
 	umount -q $(blkid | grep ${USB_CASPER} | cut -d: -f 1)

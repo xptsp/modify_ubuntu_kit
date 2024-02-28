@@ -75,4 +75,4 @@ dbus-launch --exit-with-session gsettings set org.gnome.shell.extensions.dash-to
 dbus-launch --exit-with-session gsettings set org.gnome.system.proxy mode 'auto'
 
 # Set my "Favorite Applications" listed in the dock:
-dbus-launch --exit-with-session gsettings set org.gnome.shell favorite-apps "['firefox.desktop', 'thunderbird.desktop', 'org.gnome.Nautilus.desktop', 'rhythmbox.desktop', 'xfce4-terminal.desktop', 'gnome-control-center.desktop']"
+dbus-launch --exit-with-session gsettings set org.gnome.shell favorite-apps "['firefox_firefox.desktop', 'thunderbird.desktop', 'org.gnome.Nautilus.desktop', 'rhythmbox.desktop', 'xfce4-terminal.desktop', 'gnome-control-center.desktop']"

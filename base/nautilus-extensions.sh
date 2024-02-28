@@ -12,6 +12,12 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
+_title "Installs Nautilus options..."
+#==============================================================================
+# First: Set standard size instead of small icon size  
+dbus-launch --exit-with-session gsettings set org.gnome.nautilus.icon-view default-zoom-level 'standard'
+
+#==============================================================================
 _title "Installs Nautilus extensions available in Ubuntu repo..."
 #==============================================================================
 apt install -y nautilus-admin nautilus-dropbox nautilus-extension-brasero nautilus-filename-repairer nautilus-gtkhash nautilus-image-converter nautilus-hide nautilus-wipe folder-color  
