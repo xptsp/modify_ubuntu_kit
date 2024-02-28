@@ -12,12 +12,12 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
-_title "Installing packages for Gnome extensions..."
+_title "Installing Gnome Extensions manager GUI..."
 #==============================================================================
 apt install -y gnome-shell-extensions 
 
 #==============================================================================
-_title "Installing some Gnome Extensions..."
+_title "Installing some Gnome Extensions globally..."
 #==============================================================================
 mkdir /tmp/tmp
 cd /tmp/tmp
@@ -81,20 +81,28 @@ dbus-launch --exit-with-session gnome-extensions enable openweather-extension@je
 rm openweather-extensionjenslody.de.v118.shell-extension.zip
 unzip -o ${MUK_DIR}/files/openweather_schemas.zip -d ~/.local/share/gnome-shell/extensions/openweather-extension@jenslody.de
 
-# Eleventh: GSConnect >> https://extensions.gnome.org/extension/1319/gsconnect/ 
-wget https://extensions.gnome.org/extension-data/gsconnectandyholmes.github.io.v50.shell-extension.zip
-gnome-extensions install gsconnectandyholmes.github.io.v50.shell-extension.zip
-dbus-launch --exit-with-session gnome-extensions enable gsconnect@andyholmes.github.io
-rm gsconnectandyholmes.github.io.v50.shell-extension.zip
-
-# Twelveth: Show Desktop Applet >> https://extensions.gnome.org/extension/4267/show-desktop-applet/ 
+# Eleventh: Show Desktop Applet >> https://extensions.gnome.org/extension/4267/show-desktop-applet/ 
 wget https://extensions.gnome.org/extension-data/show-desktop-appletvalent-in.v5.shell-extension.zip
 gnome-extensions install show-desktop-appletvalent-in.v5.shell-extension.zip
 dbus-launch --exit-with-session gnome-extensions enable show-desktop-applet@valent-in
 rm show-desktop-appletvalent-in.v5.shell-extension.zip
 
-# Thirteenth: Refresh Wifi >> https://extensions.gnome.org/extension/905/refresh-wifi-connections/ 
+# Twelveth: Refresh Wifi >> https://extensions.gnome.org/extension/905/refresh-wifi-connections/ 
 wget https://extensions.gnome.org/extension-data/refresh-wifikgshank.net.v16.shell-extension.zip
 gnome-extensions install refresh-wifikgshank.net.v16.shell-extension.zip
 dbus-launch --exit-with-session gnome-extensions enable refresh-wifi@kgshank.net
 rm refresh-wifikgshank.net.v16.shell-extension.zip
+
+#==============================================================================
+_title "Moving Gnome Extensions to global extension directory..."
+#==============================================================================
+mv ~/.local/share/gnome-shell/extensions/* /usr/share/gnome-shell/extensions/
+
+#==============================================================================
+_title "Installing GSConnect Gnome Extensions to per-user storage..."
+# Src: https://extensions.gnome.org/extension/1319/gsconnect/
+#==============================================================================
+wget https://extensions.gnome.org/extension-data/gsconnectandyholmes.github.io.v50.shell-extension.zip
+gnome-extensions install gsconnectandyholmes.github.io.v50.shell-extension.zip
+dbus-launch --exit-with-session gnome-extensions enable gsconnect@andyholmes.github.io
+rm gsconnectandyholmes.github.io.v50.shell-extension.zip

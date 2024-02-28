@@ -7,7 +7,7 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # Determine which user is user ID 1000:
 export USERNAME=$(id -un 1000)
-export PASSWORD=xubuntu
+export PASSWORD=$(grep grep "^ID=" /etc/os-release | cut -d= -f 2)
 alias exit=return
 
 ###############################################################################

@@ -7,7 +7,6 @@ echo "Root Partition UUID = ${ROOT_UUID}"
 ROOT_TYPE=$(blkid ${ROOT_SYS} --output export | sed -n 's/^TYPE=//p')
 echo "Root Partition Type = ${ROOT_TYPE}"
 [[ -z "${USERNAME}" ]] && USERNAME=$(id -un 1000)
-[[ -z "${PASSWORD}" ]] && PASSWORD=xubuntu
 
 # If root filesystem is a btrfs, then set up automatic backups:
 if [[ "${ROOT_TYPE}" == "btrfs" ]]; then

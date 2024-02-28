@@ -571,7 +571,7 @@ elif [[ "$1" == "usb_unmount" ]]; then
 elif [[ "$1" == "usb_load" ]]; then
 	DEV=$(mount | grep " ${UNPACK_DIR}/usb_casper" | cut -d" " -f 1)
 	if [[ -z "${DEV}" ]]; then $0 usb_mount || exit 1; fi
-	rsync --info=progress ${UNPACK_DIR}/extract/* ${UNPACK_DIR}/mnt
+	copy -R --verbose --update ${UNPACK_DIR}/extract/* ${UNPACK_DIR}/mnt
 	eval `blkid -o export ${DEV}`
 	FILE=${UNPACK_DIR}/mnt/boot/grub/grub.cfg
 	sed -i "s| boot=casper||" ${FILE}
@@ -584,7 +584,7 @@ elif [[ "$1" == "usb_load" ]]; then
 elif [[ "$1" == "usb_copy" ]]; then
 	DEV=$(mount | grep " ${UNPACK_DIR}/usb_casper" | cut -d" " -f 1)
 	if [[ -z "${DEV}" ]]; then $0 usb_mount || exit 1; fi
-	rsync --info=progress ${UNPACK_DIR}/mnt ${UNPACK_DIR}/extract/*
+	copy -R --verbose --update ${UNPACK_DIR}/mnt/* ${UNPACK_DIR}/extract/
 	FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
 	sed -i "s| boot=casper||" ${FILE}
 	sed -i "s| live-media=/dev/disk/by-uuid/[0-9a-z\-]*||" ${FILE}

@@ -1,5 +1,5 @@
 #!/bin/bash
 [[ -z "${USERNAME}" ]] && USERNAME=$(id -un 1000)
-[[ -z "${PASSWORD}" ]] && PASSWORD=xubuntu
+[[ -z "${PASSWORD}" ]] && PASSWORD=$(grep grep "^ID=" /etc/os-release | cut -d= -f 2)
 
-(echo ${PASSWORD:-"xubuntu"}; echo ${PASSWORD:-"xubuntu"}) | smbpasswd -a ${USERNAME}
+(echo ${PASSWORD:-"xubuntu"}; echo ${PASSWORD}) | smbpasswd -a ${USERNAME}

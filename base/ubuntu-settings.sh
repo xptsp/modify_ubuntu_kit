@@ -29,7 +29,7 @@ sed -i "s|enabled=1|enabled=0|g" /etc/default/apport
 #==============================================================================
 _title "Adding finisher task to change default timeout in GRUB to 1 second..."
 #==============================================================================
-add_taskd 15_grub_timeout.sh
+add_bootd 15_grub_timeout.sh
 
 #==============================================================================
 _title "Copying \".bashrc\" and \".profile\" from \"/etc/skel\" to \"root\"..."

@@ -19,6 +19,6 @@ apt install -y clamav clamtk clamav-daemon
 #==============================================================================
 _title "Updating ClamAV virus definitions..."
 #==============================================================================
-ischroot || systemctl stop clamav-freshclam
+systemctl stop clamav-freshclam
 freshclam
-ischroot || systemctl start clamav-freshclam
+systemctl start clamav-freshclam

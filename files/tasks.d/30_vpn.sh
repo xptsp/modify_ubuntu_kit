@@ -1,6 +1,6 @@
 #!/bin/bash
 [[ -z "${USERNAME}" ]] && USERNAME=$(id -un 1000)
-[[ -z "${PASSWORD}" ]] && PASSWORD=xubuntu
+[[ -z "${PASSWORD}" ]] && PASSWORD=$(grep grep "^ID=" /etc/os-release | cut -d= -f 2)
 
 # Create the "htpc" user:
 adduser --disabled-password htpc < /dev/null
@@ -33,7 +33,7 @@ public=no
 DONE
 
 # Create Samba password for user "htpc"
-(echo ${PASSWORD:-"xubuntu"}; echo ${PASSWORD:-"xubuntu"}) | smbpasswd -a htpc
+(echo ${PASSWORD}; echo ${PASSWORD}) | smbpasswd -a htpc
 
 # Create default setting for session to use:
 cat << EOF > ~htpc/.dmrc
