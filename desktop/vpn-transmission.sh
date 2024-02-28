@@ -33,12 +33,12 @@ apt install -y transmission-daemon transmission-cli
 ischroot && systemctl disable transmission-daemon
 ischroot || systemctl stop transmission-daemon
 [[ ! -d /lib/systemd/system/transmission-daemon.service.d ]] && mkdir /lib/systemd/system/transmission-daemon.service.d
-cat << EOF > /lib/systemd/system/transmission-daemon.service.d/htpc.conf
+cat << EOF > /lib/systemd/system/transmission-daemon.service.d/user_vpn.conf
 [Service]
 User=
-User=htpc
+User=vpn
 Group=
-Group=htpc
+Group=vpn
 EOF
 
 # Third: Create the "no sleep if transmission-daemon is downloading" service:
@@ -68,6 +68,6 @@ ln -sf ${MUK_DIR}/files/transmission_autoremove.sh /etc/transmission-daemon/auto
 change_username /etc/transmission-daemon/autoremove.sh
 change_password /etc/transmission-daemon/autoremove.sh
 
-# Seventh: Create the finisher task to create the user "htpc": 
+# Seventh: Create the finisher task to create the user "vpn": 
 #==============================================================================
 add_taskd 40_transmission.sh

@@ -274,10 +274,10 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		rm /var/lib/dbus/machine-id
 		rm /sbin/initctl
 		dpkg-divert --rename --remove /sbin/initctl >& /dev/null
-		umount -lfq /tmp
-		umount -lfq /proc
-		umount -lfq /sys
-		umount -lfq /dev/pts
+		umount -lfq /tmp 2> /dev/null
+		umount -lfq /proc 2> /dev/null
+		umount -lfq /sys 2> /dev/null
+		umount -lfq /dev/pts 2> /dev/null
 		exit 0
 	fi
 
