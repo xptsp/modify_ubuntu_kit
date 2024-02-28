@@ -1,29 +1,23 @@
 #!/bin/bash
-[[ -z "${USERNAME}" ]] && USERNAME=$(id -un 1000)
-[[ -z "${PASSWORD}" ]] && PASSWORD=$(grep grep "^ID=" /etc/os-release | cut -d= -f 2)
 
-# Create the "htpc" user:
-adduser --disabled-password htpc < /dev/null
-passwd -d htpc
-usermod -aG htpc ${USERNAME}
-usermod -aG ${USERNAME},adm,cdrom,dip,lpadmin,plugdev,sambashare,pulse,pulse-access,dialout htpc
-sed -i "s|9999|$(id -u htpc)|g" /etc/iptables/rules.v4
+# Add user "vpn" to user 1000 group, and user 1000 to "vpn" group:
+usermod -aG vpn ${USERNAME}
+usermod -aG ${USERNAME} vpn
+
+# Edit the defauilt rules to restrict user "vpn" from all internet access:
+# NOTE: Rule is removed once a VPN tunnel with appropriate scripts is connected.
+sed -i "s|9999|$(id -u vpn)|g" /etc/iptables/rules.v4
 
 # Change the ethernet adapter name in our Split Tunnel VPN routing:
-if [[ -z "${ETH_NAME}" ]]; then
-    ETHERNET=$(lshw -c network -disable usb -short | grep -i "ethernet")
-    IFS=" " read -ra ETH_ARR <<< $ETHERNET
-    unset IFS
-    export ETH_NAME=${ETH_ARR[1]}
-fi
-[[ ! -z "${ETH_NAME}" ]] && sed -i "s|enp0s3|${ETH_NAME}|g" /etc/sysctl.d/9999-vpn.conf
+[[ -z "${ETH_NAME}" ]] && ETH_NAME=($(lshw -c network -disable usb -short | grep -i "ethernet" | awk '{print $2}'))
+[[ ! -z "${ETH_NAME[0]}" ]] && sed -i "s|enp0s3|${ETH_NAME[0]}|g" /etc/sysctl.d/9999-vpn.conf
 
 # Create Samba entries:
-cat << DONE >> /etc/samba/smb.conf
+test -f /etc/samba/smb.conf && cat << DONE >> /etc/samba/smb.conf
 
-[htpc]
-comment=HTPC home folder
-path=/home/htpc
+[vpn]
+comment=VPN home folder
+path=/home/vpn
 browseable=Yes
 writeable=Yes
 only guest=no
@@ -32,13 +26,6 @@ directory mask=0777
 public=no
 DONE
 
-# Create Samba password for user "htpc"
-(echo ${PASSWORD}; echo ${PASSWORD}) | smbpasswd -a htpc
-
-# Create default setting for session to use:
-cat << EOF > ~htpc/.dmrc
-[[Desktop]
-Session=kodi-openbox
-EOF
-chown htpc:htpc ~htpc/.dmrc
-chattr +i ~htpc/.dmrc
+# Create Samba password for user "vpn"
+[[ -z "${PASSWORD}" ]] && PASSWORD=$(grep grep "^ID=" /etc/os-release | cut -d= -f 2)
+(echo ${PASSWORD}; echo ${PASSWORD}) | smbpasswd -a vpn

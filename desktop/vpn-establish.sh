@@ -70,7 +70,10 @@ iptables -F
 iptables -A OUTPUT ! -o lo -m owner --uid-owner 9999 -j DROP
 iptables-save > /etc/iptables/rules.v4
 
+# Seventh: Add the "vpn" system user account:
+#==============================================================================
+useradd -M -r -d /home/vpn -s /usr/sbin/nologin vpn
+
 # Seventh: Call/Setup finisher task...
 #==============================================================================
 add_taskd 30_vpn.sh
-

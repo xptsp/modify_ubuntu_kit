@@ -291,7 +291,7 @@ elif [[ "$1" == "unmount" ]]; then
 	_title "Unmounting filesystem mount points...."
 	umount -qlf ${UNPACK_DIR}/edit/tmp/host >& /dev/null
 	mount | grep "${UNPACK_DIR}/edit" | awk '{print $3}' | tac | while read DIR; do umount -qlf ${DIR}; done
-	umount -qlf ${UNPACK_DIR}/.lower
+	umount -qlf ${UNPACK_DIR}/.lower*
 	$0 docker_umount -q
 	_title "All filesystem mount points should be unmounted now."
 
