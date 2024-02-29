@@ -19,7 +19,7 @@ function _title() {
 	echo -e "${GREEN}[${BLUE}${CHECK}${GREEN}] $@${NC}"
 }
 function _error() {
-	echo -e "${GREEN}[${RED}${CROSS}${GREEN}] $@${NC}"
+	echo -e "${GREEN}[${RED}x${GREEN}] $@${NC}"
 }
 
 # Function modified to not update when new repositories are added:
@@ -166,7 +166,6 @@ GREEN='\033[1;32m'
 BLUE='\033[1;34m'
 NC='\033[0m'
 CHECK="\xE2\x9C\x94"
-CROSS="\xE2\x9D\x8C"
 
 # What version of the Ubuntu OS are we running?
 OS_VER=$(cat /etc/os-release | grep "VERSION_ID" | cut -d"\"" -f 2 | sed "s|\.||g")
