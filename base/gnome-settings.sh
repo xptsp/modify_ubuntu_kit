@@ -76,3 +76,7 @@ dbus-launch --exit-with-session gsettings set org.gnome.system.proxy mode 'auto'
 
 # Set my "Favorite Applications" listed in the dock:
 dbus-launch --exit-with-session gsettings set org.gnome.shell favorite-apps "['firefox_firefox.desktop', 'thunderbird.desktop', 'org.gnome.Nautilus.desktop', 'rhythmbox.desktop', 'xfce4-terminal.desktop', 'gnome-control-center.desktop']"
+
+# Enable simultaneous output on all local sound cards:
+dbus-launch --exit-with-session gsettings set org.freedesktop.pulseaudio.module-group enabled true
+dbus-launch --exit-with-session gsettings set org.freedesktop.pulseaudio.module-group name0 'module-combine-sink'

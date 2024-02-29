@@ -177,7 +177,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 
 		### Second: Install the chroot tools if required, then put firefox on hold if it is still snap version:
 		${MUK_DIR}/install.sh
-		if ! apt-mark showhold | grep -q firefox; then apt list firefox 2> /dev/null | grep -q 1snap1 && apt-mark hold firefox > /dev/null; fi
+		if ! apt-mark showhold | grep -q firefox; then apt list --installed firefox 2> /dev/null | grep -q 1snap1 && apt-mark hold firefox > /dev/null; fi
 		test -e /usr/local/bin/cls || ln -sf /usr/bin/clear /usr/local/bin/cls
 
 		### Third: Next action depends on parameter passed....
