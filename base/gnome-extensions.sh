@@ -72,7 +72,19 @@ dbus-launch --exit-with-session gnome-extensions enable dash-to-panel@jderose9.g
 rm dash-to-paneljderose9.github.com.v56.shell-extension.zip
 
 # Ninth: ArcMenu >> https://extensions.gnome.org/extension/3628/arcmenu/ 
-wget https://extensions.gnome.org/extension-data/arcmenuarcmenu.com.v48.shell-extension.zip
+wget https://extensions.gnome.org/extension-data/arcmenuarcmenu.com.v48.shell-extension.zip1
 gnome-extensions install arcmenuarcmenu.com.v48.shell-extension.zip
 dbus-launch --exit-with-session gnome-extensions enable arcmenu@arcmenu.com
 rm arcmenuarcmenu.com.v48.shell-extension.zip
+
+# Tenth: Reboot to UEFI >> https://extensions.gnome.org/extension/5105/reboottouefi/ 
+wget https://extensions.gnome.org/extension-data/reboottouefiubaygd.com.v14.shell-extension.zip
+gnome-extensions install reboottouefiubaygd.com.v14.shell-extension.zip
+dbus-launch --exit-with-session gnome-extensions enable reboottouefi@ubaygd.com
+rm reboottouefiubaygd.com.v14.shell-extension.zip
+
+# Eleventh: GameMode >> https://extensions.gnome.org/extension/1852/gamemode/ 
+wget https://extensions.gnome.org/extension-data/gamemodechristian.kellner.me.v7.shell-extension.zip
+gnome-extensions install gamemodechristian.kellner.me.v7.shell-extension.zip
+dbus-launch --exit-with-session gnome-extensions enable gamemode@christian.kellner.me
+rm gamemodechristian.kellner.me.v7.shell-extension.zip
