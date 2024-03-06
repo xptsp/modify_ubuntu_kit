@@ -580,7 +580,7 @@ elif [[ "$1" == "usb_load" ]]; then
 	sed -i "s|vmlinuz |vmlinuz boot=casper live-media=/dev/disk/by-uuid/${UUID} |" ${FILE}
 
 #==============================================================================
-# Copy "extract" folder <<FROM>> my Ubuntu split-partition USB stick: 
+# Copy <<FROM>> my Ubuntu split-partition USB stick to "extract" folder: 
 #==============================================================================
 elif [[ "$1" == "usb_copy" ]]; then
 	DEV=$(mount | grep " ${UNPACK_DIR}/usb_casper" | cut -d" " -f 1)

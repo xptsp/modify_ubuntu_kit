@@ -28,7 +28,9 @@ ln -sf ${MUK_DIR}/edit_chroot.sh /usr/local/bin/edit_chroot
 if [[ -d /usr/lib/ubiquity/target-config ]]; then 
 	test -e /usr/lib/ubiquity/target-config/99_finisher && rm /usr/lib/ubiquity/target-config/99_finisher
  	ln -sf ${MUK_DIR}/files/tasks.d/99_finisher.sh /usr/lib/ubiquity/target-config/99_finisher
- 	test -e /etc/rc.local || cp ${MUK_DIR}/files/rc.local /etc/
- 	sed -i "s|^exit 0|${MUK_DIR}/files/firstboot.sh\n&|" /etc/rc.local
+ 	FILE=/etc/rc.local
+ 	test -e ${FILE} || cp ${MUK_DIR}/files/rc.local ${FILE}
+ 	grep -q "files/firstboot.sh" ${FILE} || sed -i "s|^exit 0|${MUK_DIR}/files/firstboot.sh\n&|" ${FILE}
  	mkdir -p /usr/local/finisher/{boot,tasks,post}.d
+ 	ln -sf /usr/sbin/update-grub /usr/local/finisher/boot.d/99-update-grub
 fi

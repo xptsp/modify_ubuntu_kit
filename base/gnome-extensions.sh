@@ -28,11 +28,11 @@ gnome-extensions install grand-theft-focuszalckos.github.com.v3.shell-extension.
 dbus-launch --exit-with-session gnome-extensions enable grand-theft-focus@zalckos.github.com
 rm grand-theft-focuszalckos.github.com.v3.shell-extension.zip
 
-# Second: Burn My Windows >> https://extensions.gnome.org/exte7nsion/4679/burn-my-windows/
-wget https://extensions.gnome.org/extension-data/burn-my-windowsschneegans.github.com.v40.shell-extension.zip
-gnome-extensions install burn-my-windowsschneegans.github.com.v40.shell-extension.zip
-dbus-launch --exit-with-session gnome-extensions enable burn-my-windows@schneegans.github.com
-rm burn-my-windowsschneegans.github.com.v40.shell-extension.zip
+# Second: Dash-to-Dock Workaround >> https://extensions.gnome.org/extension/6712/dash-to-dock-workaround/
+wget https://extensions.gnome.org/extension-data/dash-to-dock-workaroundpopov895.ukr.net.v3.shell-extension.zip
+gnome-extensions install dash-to-dock-workaroundpopov895.ukr.net.v3.shell-extension.zip
+dbus-launch --exit-with-session gnome-extensions enable dash-to-dock-workaround@popov895.ukr.net
+rm dash-to-dock-workaroundpopov895.ukr.net.v3.shell-extension.zip
 
 # Third: Prevent Double Empty Window >> https://extensions.gnome.org/extension/4711/prevent-double-empty-window/
 wget https://extensions.gnome.org/extension-data/prevent-double-empty-windowsilliewous.nl.v4.shell-extension.zip
