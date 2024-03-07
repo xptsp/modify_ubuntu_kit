@@ -24,7 +24,7 @@ export ISO_LABEL=$([[ -z "${ISO_LABEL}" ]] && echo ${ISO_PREFIX} ${ISO_VERSION} 
 # Default sto removing old kernels from chroot environment.  Set to 0 to prevent this.
 export OLD_KERNEL=${OLD_KERNEL:-"1"}
 # Determine ISO version number to use:
-[[ -f ${UNPACK_DIR}/edit/etc/os-release ]] && export ISO_VERSION=$(cat ${UNPACK_DIR}/edit/etc/os-release | grep "VERSION_ID=" | cut -d "\"" -f 2 | cut -d " " -f 2)
+[[ -f ${UNPACK_DIR}/edit/etc/os-release ]] && export ISO_VERSION=$(cat ${UNPACK_DIR}/edit/etc/os-release | grep "VERSION=" | cut -d "\"" -f 2 | cut -d " " -f 1)
 # MUK path:
 export MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 # Custom USB Stick partition #1 identification:
@@ -32,7 +32,7 @@ export USB_LIVE=${USB_LIVE:-"LABEL=\"UBUNTU_LIVE\""}
 export USB_LIVE=$(echo ${USB_LIVE} | cut -d= -f 1)=\"$(echo ${USB_LIVE} | cut -d= -f 2 | sed "s|\"||g")\"
 # Custom USB Stick partition #2 identification:
 export USB_CASPER=${USB_CASPER:-"LABEL=\"UBUNTU_CASPER\""}
-export USB_CASPER=$(echo ${USB_CASPER} | cut -d= -f 1)=\"$(echo ${USB_CASPER} | cut -d= -f 2 | sed "s|\"||g")\"
+echo ${USB_CASPER} | grep -q "=" && export USB_CASPER=$(echo ${USB_CASPER} | cut -d= -f 1)=\"$(echo ${USB_CASPER} | cut -d= -f 2 | sed "s|\"||g")\"
 
 #==============================================================================
 # Get the necessary functions in order to function correctly:
@@ -49,10 +49,12 @@ if ! [[ -z "$1" || "$1" == "--help" ]]; then
 	MKSQUASH=$(whereis mksquashfs | cut -d ":" -f 2 | cut -d " " -f 2)
 	GENISO=$(whereis genisoimage | cut -d ":" -f 2 | cut -d " " -f 2)
 	GIT=$(whereis git | cut -d ":" -f 2 | cut -d " " -f 2)
+	XOR=$(whereis xorriso | cut -d ":" -f 2 | cut -d " " -f 2)
 	if [[ -z $MKSQUASH || -z $GENISO || -z $GIT ]]; then
-		_title "Installing necessary packages"
+		_title "Installing necessary packages..."
 		apt-get update >& /dev/null
 		apt-get install -y $([[ -z $MKSQUASH ]] && echo "squashfs-tools") $([[ -z $GENISO ]] && echo "genisoimage") $([[ -z $GIT ]] && echo "git")
+		if [[ -z "${XOR}" ]]; then apt list xorriso 2> /dev/null | grep -q xorriso && apt-get install -y xorriso; fi 
 	fi
 fi
 
@@ -70,6 +72,10 @@ if [[ "$1" == "update" ]]; then
 	_title "Fetching latest version of this script"
 	if [ ! -d ${MUK_DIR} ]; then
 		git clone --depth=1 https://github.com/xptsp/modify_ubuntu_kit ${MUK_DIR}
+	else
+		cd ${MUK_DIR}
+		git reset --hard
+		git pull
 	fi
 	[[ -f ${MUK_DIR}/install.sh ]] && ${MUK_DIR}/install.sh
 	_title "Script has been updated to latest version."
@@ -121,7 +127,6 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		fi
 
 		### Second: Update MUK, then setup the CHROOT environment:
-		$0 update
 		cd ${UNPACK_DIR}
 		$0 unmount
 		$0 mount || exit 1
@@ -130,8 +135,6 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		mount --bind /run/ ${UNPACK_DIR}/edit/run
 		mount --bind /dev/ ${UNPACK_DIR}/edit/dev
 		mount -t tmpfs tmpfs ${UNPACK_DIR}/edit/tmp
-		mkdir -p ${UNPACK_DIR}/edit/tmp/host
-		mount --bind / ${UNPACK_DIR}/edit/tmp/host
 
 		### Third: Copy MUK into chroot environment:
 		rm -rf ${UNPACK_DIR}/edit/${MUK_DIR}
@@ -269,7 +272,6 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		_title "Undoing CHROOT environment modifications..."
 		if apt-mark showhold | grep -q firefox; then apt list firefox 2> /dev/null | grep -q 1snap1 && apt-mark unhold firefox > /dev/null; fi
 		chmod 440 /etc/sudoers.d/*
-		umount -lf /tmp/host
 		rm -rf /tmp/* ~/.bash_history
 		rm /var/lib/dbus/machine-id
 		rm /sbin/initctl
@@ -360,7 +362,7 @@ elif [[ "$1" == "unpack" ]]; then
 #==============================================================================
 # Did user request to pack the chroot environment?
 #==============================================================================
-elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
+elif [[ "$1" == "pack" || "$1" == "pack-xz" || "$1" == "changes" || "$1" == "changes-xz" ]]; then
 	if [[ $(ischroot; echo $?) -ne 1 ]]; then
 		_error "Cannot use ${BLUE}pack${GREEN} inside chroot environment!"
 		exit 1
@@ -392,7 +394,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 		sed -i "s|initrd.gz|initrd|g" ${UNPACK_DIR}/extract/boot/grub/grub.cfg
 	fi
 
-	# Third: Copy the new VMLINUZ from the unpacked filesystem:	
+	# Third: Copy the new VMLINUZ from the unpacked filesystem:
 	VMLINUZ=$(ls vmlinuz-* 2> /dev/null | sort -r | head -1)
 	[[ -z "${VMLINUZ}" ]] && VMLINUZ=$(ls boot/vmlinuz-* 2> /dev/null | sort -r | head -1)
 	if [[ -z "${VMLINUZ}" ]]; then
@@ -411,17 +413,25 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	sed -i '/casper/d' extract/casper/filesystem.manifest
 
 	# Fifth: Set necessary flags for compression:
-	[[ ! "$(echo $@ | grep pack-xz)" == "" ]] && FLAG_XZ=1
+	[[ "$1" =~ -xz$ ]] && FLAG_XZ=1
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 
 	# Sixth: Pack the filesystem-opt.squashfs if required:
-	_title "Building ${BLUE}filesystem.squashfs${GREEN}...."
+	FS=filesystem_$(date +"%Y%m%d")
+	if [[ -f extract/casper/${FS}.squashfs ]]; then
+		COUNTER=1
+		while [ -f extract/casper/${FS}-${COUNTER}.squashfs ]; do COUNTER=$((COUNTER+1)); done
+		FS=${FS}-${COUNTER}
+	fi
+	FS=${FS}.squashfs
+	_title "Building ${BLUE}${FS}${GREEN}...."
 	if [[ ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
 		echo opt/${SPLIT_OPT}/* > /tmp/exclude
 		XZ="${XZ} -ef /tmp/exclude -wildcards"
 	fi
-	[[ -f extract/casper/filesystem-new.squashfs ]] && rm extract/casper/filesystem-new.squashfs
-	mksquashfs edit extract/casper/filesystem-new.squashfs -b 1048576 ${XZ}
+	[[ -f extract/casper/${FS} ]] && rm extract/casper/${FS}
+	[[ "$1" == "pack" || "$1" == "pack-xz" ]] && SRC=edit || SRC=.upper
+	mksquashfs ${SRC} extract/casper/${FS} -b 1048576 ${XZ}
 
 	# Seventh: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
 	[[ "${KEEP_CIFS:-"0"}" == "1" && -f extract/casper/filesystem.manifest-remove ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
@@ -433,8 +443,11 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 	# Ninth: remove the overlay filesystem and upper layer of overlay, then create the "md5sum.txt" file:
 	_title "Removing the overlay filesystem and upper layer of overlay..."
 	umount -q ${UNPACK_DIR}/edit
-	umount -q ${UNPACK_DIR}/.lower
-	mv extract/casper/filesystem-new.squashfs extract/casper/filesystem.squashfs
+	for DIR in ${UNPACK_DIR}/.lower*; do umount -q ${DIR}; rmdir ${DIR}; done
+	if [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
+		mv extract/casper/${FS} extract/casper/filesystem.squashfs
+		rm extract/casper/filesystem-*.squashfs
+	fi
 	rm -rf .upper
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
 	_title "Creating the "md5sum.txt" file..."
@@ -464,7 +477,7 @@ elif [[ "$1" == "iso" ]]; then
 	fi
 
 	# First: Figure out what to name the ISO to avoid conflicts
-	_title "Determining ISO filename...."
+	_title "Determining ISO filename and patching \"grub.cfg\"...."
 	[[ "$(dirname ${ISO_DIR})" == "." ]] && ISO_DIR=$(pwd)
 	if [[ -f ${UNPACK_DIR}/extract/casper/build.txt ]]; then
 		ISO_POSTFIX=$(cat ${UNPACK_DIR}/extract/casper/build.txt)
@@ -481,14 +494,57 @@ elif [[ "$1" == "iso" ]]; then
 		ISO_FILE=${ISO_FILE}-${COUNTER}
 	fi
 
+	# Try to patch grub.cfg for successful LiveCD boot.  Why this is necessary is beyond me.....
+	FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
+	sed -i "s|boot=casper ||g" ${FILE}
+	sed -i "s|persistent ||g" ${FILE}
+	sed -i "s|file=|persistent boot=casper file=|g" ${FILE}
+
 	# Second: Create the ISO
 	_title "Building ${BLUE}${ISO_FILE}.iso${GREEN}...."
-	cd ${UNPACK_DIR}/extract
-	test -d isolinux || cp -aR ${MUK_DIR}/files/isolinux ./
-	if [[ "${FLAG_MKISOFS}" == "0" ]]; then
-		genisoimage -allow-limited-size -D -r -V "${ISO_LABEL}" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ${ISO_DIR}/${ISO_FILE}.iso .
+	# Is ubuntu distribution one of these codenames?
+	LINE=($(ls --time-style=long-iso -l ${UNPACK_DIR}/extract/dists | grep " stable" | tail -1))
+	if [[ "$(echo ${LINE[5]} | cut -d- -f 1)" -lt 2023 && "${LINE[9]}" != "jammy" ]]; then
+		# >>>> OLD WAY TO CREATE ISO: Not valid for Jammy and above <<<<<
+		# Create the ISO the old way:
+		cd ${UNPACK_DIR}/extract
+		test -d isolinux || cp -aR ${MUK_DIR}/files/isolinux ./
+		if [[ "${FLAG_MKISOFS}" == "0" ]]; then
+			genisoimage -allow-limited-size -D -r -V "${ISO_LABEL}" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ${ISO_DIR}/${ISO_FILE}.iso .
+		else
+			mkisofs -allow-limited-size -D -r -V "${ISO_LABEL}" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ${ISO_DIR}/${ISO_FILE}.iso .
+		fi
 	else
-		mkisofs -allow-limited-size -D -r -V "${ISO_LABEL}" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ${ISO_DIR}/${ISO_FILE}.iso .
+		# >>>> NEW WAY TO CREATE ISO: Valid for Jammy and above <<<<<
+		if [[ ! -f ${UNPACK_DIR}/boot_hybrid.img || ! -f ${UNPACK_DIR}/boot_efi.img ]]; then
+			# Extract the MBR template for --grub2-mbr:
+			ISO=$(ls ${UNPACK_DIR}/ubuntu-*.iso | head -1)
+			if [[ -z "${ISO}" ]]; then _error "No Ubuntu ISO found in \"${UNPACK_DIR}\"!  Aborting!"; exit 1; fi
+			dd if=${ISO} bs=1 count=432 of=${UNPACK_DIR}/boot_hybrid.img
+
+			# Extract the EFI partition image image for -append_partition:
+			INFO=($(fdisk -l ${ISO} | grep "EFI"))
+			if [[ "${INFO[5]} ${INFO[6]}" != "EFI System" ]]; then _error "No EFI filesystem present in ISO!  Aborting!"; exit 1; fi
+			dd if=${ISO} bs=512 skip=${INFO[1]} count=${INFO[3]} of=${UNPACK_DIR}/boot_efi.img
+		fi
+
+		# Finally pack up an ISO the new way:
+		xorriso -as mkisofs -r \
+  			-V 'Ubuntu 22.04 LTS MODIF (EFIBIOS)' \
+  			-o ${ISO_FILE}.iso \
+  			--grub2-mbr ${UNPACK_DIR}/boot_hybrid.img \
+  			-partition_offset 16 \
+  			--mbr-force-bootable \
+  			-append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b ${UNPACK_DIR}/boot_efi.img \
+  			-appended_part_as_gpt \
+  			-iso_mbr_part_type a2a0d0ebe5b9334487c068b6b72699c7 \
+  			-c '/boot.catalog' \
+  			-b '/boot/grub/i386-pc/eltorito.img' \
+				-no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info \
+  			-eltorito-alt-boot \
+  			-e '--interval:appended_partition_2:::' \
+				-no-emul-boot \
+			${UNPACK_DIR}/extract
 	fi
 
 	# Third: Tell user we done!
@@ -548,47 +604,51 @@ elif [[ "$1" == "docker_umount" ]]; then
 # Mount my Ubuntu split-partition USB stick properly:
 #==============================================================================
 elif [[ "$1" == "usb_mount" ]]; then
-	if ! blkid | grep -q "${USB_LIVE}"; then _error "No USB Live partition 1 found! (Ref: \"$USB_LIVE\")"; exit 1; fi
-	if ! blkid | grep -q "${USB_CASPER}"; then _error "No USB Casper partition 2 found! (Ref: \"$USB_CASPER\")"; exit 1; fi
-	mount | grep -q ${UNPACK_DIR}/mnt && umount -lfq ${UNPACK_DIR}/mnt 
-	mkdir -p ${UNPACK_DIR}/usb_{casper,live} ${UNPACK_DIR}/mnt
-	umount -q $(blkid | grep ${USB_LIVE} | cut -d: -f 1)
-	mount ${USB_LIVE} ${UNPACK_DIR}/usb_live -t vfat -o noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022
-	umount -q $(blkid | grep ${USB_CASPER} | cut -d: -f 1)
-	mount ${USB_CASPER} ${UNPACK_DIR}/usb_casper -t ext4 -o defaults,noatime,nofail
-	mount | grep -q ${UNPACK_DIR}/mnt || unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_live=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid || exit 1
+	UB=$(blkid | grep "${USB_LIVE}" | cut -d: -f 1)
+	RO=$(blkid | grep "${USB_CASPER}" | cut -d: -f 1)
+	if [[ -z "${UB}" ]]; then _error "No USB Live partition 1 found! (Ref: \"$USB_LIVE\")"; exit 1; fi
+	if [[ -z "${RO}" ]]; then _error "No USB Casper partition 2 found! (Ref: \"$USB_CASPER\")"; exit 1; fi
+	mount | grep -q ${UNPACK_DIR}/mnt && umount -lfq ${UNPACK_DIR}/mnt
+	mkdir -p ${UNPACK_DIR}/usb_{base,casper} ${UNPACK_DIR}/mnt
+	umount -q ${UB} || exit 1
+	mount ${UB} ${UNPACK_DIR}/usb_base -t vfat -o noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022 || exit 1
+	umount -q ${RO} || exit 1
+	mount ${RO} ${UNPACK_DIR}/usb_casper -t ext4 -o defaults,noatime,nofail || exit 1
+	mount | grep -q ${UNPACK_DIR}/mnt || unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_base=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid || exit 1
 
 #==============================================================================
 # Unmount my Ubuntu split-partition USB stick properly:
 #==============================================================================
 elif [[ "$1" == "usb_unmount" ]]; then
-	umount -q ${UNPACK_DIR}/mnt
-	umount -q ${UNPACK_DIR}/usb_casper
-	umount -q ${UNPACK_DIR}/usb_live
+	umount -q ${UNPACK_DIR}/mnt || exit 1
+	umount -q ${UNPACK_DIR}/usb_base || exit 1
+	umount -q ${UNPACK_DIR}/usb_casper || exit 1
+	rmdir ${UNPACK_DIR}/usb_{ro,live,casper}
 
 #==============================================================================
-# Copy "extract" folder <<TO>> my Ubuntu split-partition USB stick: 
+# Copy "extract" folder <<TO>> my Ubuntu split-partition USB stick:
 #==============================================================================
 elif [[ "$1" == "usb_load" ]]; then
-	DEV=$(mount | grep " ${UNPACK_DIR}/usb_casper" | cut -d" " -f 1)
+	DEV=$(mount | grep "${UNPACK_DIR}/usb_casper" | cut -d" " -f 1)
 	if [[ -z "${DEV}" ]]; then $0 usb_mount || exit 1; fi
-	copy -R --verbose --update ${UNPACK_DIR}/extract/* ${UNPACK_DIR}/mnt
+	copy -R --verbose --update ${UNPACK_DIR}/extract/casper* ${UNPACK_DIR}/mnt/casper/
 	eval `blkid -o export ${DEV}`
 	FILE=${UNPACK_DIR}/mnt/boot/grub/grub.cfg
 	sed -i "s| boot=casper||" ${FILE}
+	sed -i "s| persistent||" ${FILE}
 	sed -i "s| live-media=/dev/disk/by-uuid/[0-9a-z\-]*||" ${FILE}
-	sed -i "s|vmlinuz |vmlinuz boot=casper live-media=/dev/disk/by-uuid/${UUID} |" ${FILE}
+	sed -i "s|vmlinuz |vmlinuz persistent boot=casper live-media=/dev/disk/by-uuid/${UUID} |" ${FILE}
 
 #==============================================================================
-# Copy <<FROM>> my Ubuntu split-partition USB stick to "extract" folder: 
+# Copy <<FROM>> my Ubuntu split-partition USB stick to "extract" folder:
 #==============================================================================
 elif [[ "$1" == "usb_copy" ]]; then
-	DEV=$(mount | grep " ${UNPACK_DIR}/usb_casper" | cut -d" " -f 1)
+	DEV=$(mount | grep "${UNPACK_DIR}/usb_casper" | cut -d" " -f 1)
 	if [[ -z "${DEV}" ]]; then $0 usb_mount || exit 1; fi
-	copy -R --verbose --update ${UNPACK_DIR}/mnt/* ${UNPACK_DIR}/extract/
+	copy -R --verbose --update ${UNPACK_DIR}/mnt/casper* ${UNPACK_DIR}/extract/casper
 	FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
-	sed -i "s| boot=casper||" ${FILE}
-	sed -i "s| live-media=/dev/disk/by-uuid/[0-9a-z\-]*||" ${FILE}
+	sed -i "s| persistent||g" ${FILE}
+	sed -i "s| live-media=/dev/disk/by-uuid/[0-9a-z\-]*||g" ${FILE}
 
 #==============================================================================
 # Invalid parameter specified.  List available parameters:
@@ -601,6 +661,8 @@ else
 	echo -e "  ${GREEN}unpack${NC}         Copies the Ubuntu installer files from DVD or ISO on hard drive."
 	echo -e "  ${GREEN}pack${NC}           Packs the unpacked filesystem into ${BLUE}filesystem.squashfs${NC}."
 	echo -e "  ${GREEN}pack-xz${NC}        Packs the unpacked filesystem using XZ compression into ${BLUE}filesystem.squashfs${NC}."
+	echo -e "  ${GREEN}changes${NC}        Packs changes to ${BLUE}filesystem.squashfs${NC} into it's own squashfs file."
+	echo -e "  ${GREEN}changes-xz${NC}     Packs changes to ${BLUE}filesystem.squashfs${NC} using XZ compression into it\'s own squashfs file."
 	echo -e "  ${GREEN}iso${NC}            Builds an ISO image in ${BLUE}${ISO_DIR}${NC} containing the packed filesystem."
 	echo -e "  ${GREEN}rebuild${NC}        Combines ${GREEN}--pack${NC} and ${GREEN}--iso${NC} options."
 	echo -e "  ${GREEN}rebuild-xz${NC}     Combines ${GREEN}--pack-xz${NC} and ${GREEN}--iso${NC} options."
@@ -617,7 +679,7 @@ else
 	echo -e "  ${GREEN}docker_umount${NC}  Unmounts the chroot docker directory to host docker directory."
 	echo -e ""
 	echo "Custom split-partition USB drive related commands:"
-	echo -e "  ${GREEN}usb_mount${NC}      Mount my custom split-partition USB drive." 
+	echo -e "  ${GREEN}usb_mount${NC}      Mount my custom split-partition USB drive."
 	echo -e "  ${GREEN}usb_unmount${NC}    Properly unmount my custom split-partition USB drive."
 	echo -e "  ${GREEN}usb_load${NC}       Copy hard drive edition to my custom split-partition USB drive."
 	echo -e "  ${GREEN}usb_copy${NC}       Copy custom split-partition USB drive to hard drive edition."
