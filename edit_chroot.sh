@@ -154,6 +154,24 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 			$0 docker_umount
 		fi
 
+		### Thirteenth: Copy the new INITRD from the unpacked filesystem:
+		cd ${UNPACK_DIR}/edit
+		INITRD=$(ls initrd.img-* 2> /dev/null | sort -r | head -1)
+		[[ -z "${INITRD}" ]] && INITRD_SRC=$(ls boot/initrd.img-* 2> /dev/null | sort -r | head -1)
+		if [[ ! -z "${INITRD_SRC}" ]]; then
+			_title "Moving INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
+			mv ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
+			sed -i "s|initrd.gz|initrd|g" ${UNPACK_DIR}/extract/boot/grub/grub.cfg
+		fi
+
+		### Fourteenth: Copy the new VMLINUZ from the unpacked filesystem:
+		VMLINUZ=$(ls vmlinuz-* 2> /dev/null | sort -r | head -1)
+		[[ -z "${VMLINUZ}" ]] && VMLINUZ=$(ls boot/vmlinuz-* 2> /dev/null | sort -r | head -1)
+		if [[ ! -z "${VMLINUZ}" ]]; then
+			_title "Moving VMLINUZ from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
+			mv ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
+		fi
+
 		### Sixth: Remove mounts for CHROOT environment:
 		$0 unmount
 		_title "Exited CHROOT environment"
@@ -268,7 +286,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 			(while read p r; do systemctl disable $p; done) < /usr/local/finisher/disabled.list >& /dev/null
 		fi
 
-		### Thirteenth: Clean up everything done to "chroot" into this ISO image:
+		### Fifteenth: Clean up everything done to "chroot" into this ISO image:
 		_title "Undoing CHROOT environment modifications..."
 		if apt-mark showhold | grep -q firefox; then apt list firefox 2> /dev/null | grep -q 1snap1 && apt-mark unhold firefox > /dev/null; fi
 		chmod 440 /etc/sudoers.d/*
@@ -382,29 +400,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" || "$1" == "changes" || "$1" == "cha
 	rm -rf ${UNPACK_DIR}/edit${MUK_DIR}
 	cp -R ${MUK_DIR} ${UNPACK_DIR}/edit/opt/
 
-	# Second: Copy the new INITRD from the unpacked filesystem:
-	cd ${UNPACK_DIR}/edit
-	INITRD=$(ls initrd.img-* 2> /dev/null | sort -r | head -1)
-	[[ -z "${INITRD}" ]] && INITRD_SRC=$(ls boot/initrd.img-* 2> /dev/null | sort -r | head -1)
-	if [[ -z "${INITRD_SRC}" ]]; then
-		_error "No INITRD.IMG file detected in chroot environment!  Skipping!"
-	else
-		_title "Moving INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
-		mv ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
-		sed -i "s|initrd.gz|initrd|g" ${UNPACK_DIR}/extract/boot/grub/grub.cfg
-	fi
-
-	# Third: Copy the new VMLINUZ from the unpacked filesystem:
-	VMLINUZ=$(ls vmlinuz-* 2> /dev/null | sort -r | head -1)
-	[[ -z "${VMLINUZ}" ]] && VMLINUZ=$(ls boot/vmlinuz-* 2> /dev/null | sort -r | head -1)
-	if [[ -z "${VMLINUZ}" ]]; then
-		_error "No VMLINUZ file detected in chroot environment!  Skipping!"
-	else
-		_title "Moving VMLINUZ from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
-		mv ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
-	fi
-
-	# Fourth: Build the list of installed packages in unpacked filesystem:
+	# Second: Build the list of installed packages in unpacked filesystem:
 	cd ${UNPACK_DIR}
 	_title "Building list of installed packages...."
 	chmod +w extract/casper/filesystem.manifest >& /dev/null
@@ -412,11 +408,11 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" || "$1" == "changes" || "$1" == "cha
 	sed -i '/ubiquity/d' extract/casper/filesystem.manifest
 	sed -i '/casper/d' extract/casper/filesystem.manifest
 
-	# Fifth: Set necessary flags for compression:
+	# Third: Set necessary flags for compression:
 	[[ "$1" =~ -xz$ ]] && FLAG_XZ=1
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 
-	# Sixth: Pack the filesystem-opt.squashfs if required:
+	# Fourth: Pack the filesystem-opt.squashfs if required:
 	FS=filesystem_$(date +"%Y%m%d")
 	if [[ -f extract/casper/${FS}.squashfs ]]; then
 		COUNTER=1
@@ -425,28 +421,23 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" || "$1" == "changes" || "$1" == "cha
 	fi
 	FS=${FS}.squashfs
 	_title "Building ${BLUE}${FS}${GREEN}...."
-	if [[ ! -z "${SPLIT_OPT}" && -d edit/opt/${SPLIT_OPT} ]]; then
-		echo opt/${SPLIT_OPT}/* > /tmp/exclude
-		XZ="${XZ} -ef /tmp/exclude -wildcards"
-	fi
-	[[ -f extract/casper/${FS} ]] && rm extract/casper/${FS}
 	[[ "$1" == "pack" || "$1" == "pack-xz" ]] && SRC=edit || SRC=.upper
 	mksquashfs ${SRC} extract/casper/${FS} -b 1048576 ${XZ}
 
-	# Seventh: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
+	# Fifth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
 	[[ "${KEEP_CIFS:-"0"}" == "1" && -f extract/casper/filesystem.manifest-remove ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
 
-	# Eighth: Create the "filesystem.size" file:
+	# Sixth: Create the "filesystem.size" file:
 	_title "Updating ${BLUE}filesystem.size${GREEN}...."
 	du -s --block-size=1 edit | cut -f1 > extract/casper/filesystem.size
 
-	# Ninth: remove the overlay filesystem and upper layer of overlay, then create the "md5sum.txt" file:
+	# Seventh: remove the overlay filesystem and upper layer of overlay, then create the "md5sum.txt" file:
 	_title "Removing the overlay filesystem and upper layer of overlay..."
 	umount -q ${UNPACK_DIR}/edit
 	for DIR in ${UNPACK_DIR}/.lower*; do umount -q ${DIR}; rmdir ${DIR}; done
 	if [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 		mv extract/casper/${FS} extract/casper/filesystem.squashfs
-		rm extract/casper/filesystem-*.squashfs
+		test -f extract/casper/filesystem-*.squashfs && rm extract/casper/filesystem-*.squashfs
 	fi
 	rm -rf .upper
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
@@ -455,7 +446,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" || "$1" == "changes" || "$1" == "cha
 	[ -f md5sum.txt ] && rm md5sum.txt
 	find -type f -print0 | xargs -0 md5sum | grep -v isolinux/boot.cat | tee md5sum.txt >& /dev/null
 
-	# Tenth: Tell user we done!
+	# Eighth: Tell user we done!
 	_title "Done packing and preparing extracted filesystem!"
 
 #==============================================================================
@@ -478,7 +469,7 @@ elif [[ "$1" == "iso" ]]; then
 
 	# First: Figure out what to name the ISO to avoid conflicts
 	_title "Determining ISO filename and patching \"grub.cfg\"...."
-	[[ "$(dirname ${ISO_DIR})" == "." ]] && ISO_DIR=$(pwd)
+	ISO_DIR=${UNPACK_DIR}
 	if [[ -f ${UNPACK_DIR}/extract/casper/build.txt ]]; then
 		ISO_POSTFIX=$(cat ${UNPACK_DIR}/extract/casper/build.txt)
 	elif [[ -e ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ]]; then
@@ -493,6 +484,7 @@ elif [[ "$1" == "iso" ]]; then
 		while [ -f "${ISO_DIR}/${ISO_FILE}-${COUNTER}.iso" ]; do COUNTER=$((COUNTER+1)); done
 		ISO_FILE=${ISO_FILE}-${COUNTER}
 	fi
+	ISO_FILE=${ISO_FILE,,}
 
 	# Try to patch grub.cfg for successful LiveCD boot.  Why this is necessary is beyond me.....
 	FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
@@ -531,7 +523,7 @@ elif [[ "$1" == "iso" ]]; then
 		# Finally pack up an ISO the new way:
 		xorriso -as mkisofs -r \
   			-V 'Ubuntu 22.04 LTS MODIF (EFIBIOS)' \
-  			-o ${ISO_FILE}.iso \
+  			-o ${ISO_DIR}/${ISO_FILE}.iso \
   			--grub2-mbr ${UNPACK_DIR}/boot_hybrid.img \
   			-partition_offset 16 \
   			--mbr-force-bootable \
