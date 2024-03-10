@@ -173,6 +173,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		fi
 
 		### Sixth: Remove mounts for CHROOT environment:
+		cd ${UNPACK_DIR}
 		$0 unmount
 		_title "Exited CHROOT environment"
 	else
@@ -489,8 +490,7 @@ elif [[ "$1" == "iso" ]]; then
 	# Try to patch grub.cfg for successful LiveCD boot.  Why this is necessary is beyond me.....
 	FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
 	sed -i "s|boot=casper ||g" ${FILE}
-	sed -i "s|persistent ||g" ${FILE}
-	sed -i "s|file=|persistent boot=casper file=|g" ${FILE}
+	sed -i "s|file=|boot=casper file=|g" ${FILE}
 
 	# Second: Create the ISO
 	_title "Building ${BLUE}${ISO_FILE}.iso${GREEN}...."
@@ -600,13 +600,15 @@ elif [[ "$1" == "usb_mount" ]]; then
 	RO=$(blkid | grep "${USB_CASPER}" | cut -d: -f 1)
 	if [[ -z "${UB}" ]]; then _error "No USB Live partition 1 found! (Ref: \"$USB_LIVE\")"; exit 1; fi
 	if [[ -z "${RO}" ]]; then _error "No USB Casper partition 2 found! (Ref: \"$USB_CASPER\")"; exit 1; fi
+	if mount | grep -q ${UNPACK_DIR}/mnt; then umount -q ${UNPACK_DIR}/mnt || exit 1; fi
 	mount | grep -q ${UNPACK_DIR}/mnt && umount -lfq ${UNPACK_DIR}/mnt
 	mkdir -p ${UNPACK_DIR}/usb_{base,casper} ${UNPACK_DIR}/mnt
-	umount -q ${UB} || exit 1
+	if mount | grep -q ${UB}; then umount -q ${UB} || exit 1; fi
 	mount ${UB} ${UNPACK_DIR}/usb_base -t vfat -o noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022 || exit 1
-	umount -q ${RO} || exit 1
-	mount ${RO} ${UNPACK_DIR}/usb_casper -t ext4 -o defaults,noatime,nofail || exit 1
+	if mount | grep -q ${RO}; then umount -q ${RO} || exit 1; fi
+	mount ${RO} ${UNPACK_DIR}/usb_casper -t ext4 -o defaults,noatime || exit 1
 	mount | grep -q ${UNPACK_DIR}/mnt || unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_base=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid || exit 1
+	_title "Finished mounting split-partition USB stick!"
 
 #==============================================================================
 # Unmount my Ubuntu split-partition USB stick properly:
@@ -615,7 +617,8 @@ elif [[ "$1" == "usb_unmount" ]]; then
 	umount -q ${UNPACK_DIR}/mnt || exit 1
 	umount -q ${UNPACK_DIR}/usb_base || exit 1
 	umount -q ${UNPACK_DIR}/usb_casper || exit 1
-	rmdir ${UNPACK_DIR}/usb_{ro,live,casper}
+	rmdir ${UNPACK_DIR}/usb_{base,casper}
+	_title "Split-partition USB stick successfully unmounted!"
 
 #==============================================================================
 # Copy "extract" folder <<TO>> my Ubuntu split-partition USB stick:
@@ -627,9 +630,9 @@ elif [[ "$1" == "usb_load" ]]; then
 	eval `blkid -o export ${DEV}`
 	FILE=${UNPACK_DIR}/mnt/boot/grub/grub.cfg
 	sed -i "s| boot=casper||" ${FILE}
-	sed -i "s| persistent||" ${FILE}
 	sed -i "s| live-media=/dev/disk/by-uuid/[0-9a-z\-]*||" ${FILE}
-	sed -i "s|vmlinuz |vmlinuz persistent boot=casper live-media=/dev/disk/by-uuid/${UUID} |" ${FILE}
+	sed -i "s|vmlinuz |vmlinuz boot=casper live-media=/dev/disk/by-uuid/${UUID} |" ${FILE}
+	_title "File copy to split-partition USB stick completed!"
 
 #==============================================================================
 # Copy <<FROM>> my Ubuntu split-partition USB stick to "extract" folder:
@@ -639,8 +642,8 @@ elif [[ "$1" == "usb_copy" ]]; then
 	if [[ -z "${DEV}" ]]; then $0 usb_mount || exit 1; fi
 	copy -R --verbose --update ${UNPACK_DIR}/mnt/casper* ${UNPACK_DIR}/extract/casper
 	FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
-	sed -i "s| persistent||g" ${FILE}
 	sed -i "s| live-media=/dev/disk/by-uuid/[0-9a-z\-]*||g" ${FILE}
+	_title "File copy from split-partition USB stick completed!"
 
 #==============================================================================
 # Invalid parameter specified.  List available parameters:
@@ -678,4 +681,4 @@ else
 	echo -e ""
 	echo -e "Note that this command ${RED}REQUIRES${NC} root access in order to function it's job!"
 fi
-[[ "$1" =~ (usb_|)(un|)mount ]] || echo -e ""
+[[ "$1" =~ (usb_|docker_|)(un|)mount ]] || echo -e ""
