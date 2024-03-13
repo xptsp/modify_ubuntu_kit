@@ -101,7 +101,7 @@ elif [[ "$1" == "mount" ]]; then
 		echo -n ":${UNPACK_DIR}/.lower${COUNT}"
 	done)
 	TLOWER=($(echo $TLOWER | sed "s|\:|\n|g" | tac))
-	LOWER=$(echo ${TLOWER[@]} | sed "s| |:|g") 
+	LOWER=$(echo ${TLOWER[@]} | sed "s| |:|g")
 	mount -t overlay -o lowerdir=${LOWER},upperdir=${UNPACK_DIR}/.upper,workdir=${UNPACK_DIR}/.work overlay ${UNPACK_DIR}/edit || exit 1
 	_title "Necessary chroot filesystem mount points have been mounted!"
 
@@ -641,10 +641,29 @@ elif [[ "$1" == "usb_copy" ]]; then
 	_title "File copy from split-partition USB stick completed!"
 
 #==============================================================================
+# Prepare a casper-rw persistence file for Live CD:
+#==============================================================================
+elif [[ "$1" == "snap_prep" ]]; then
+	if mount | grep " / " | grep "/cow "; then _error "Live CD detected!  Aborting"; exit 1; fi
+	DIR=$(blkid | grep -m 1 "TYPE=\"ext" | cut -d: -f 1 | while read DEV; do
+		DIR=$(mount | grep -m 1 ${DEV} | awk '{print $3}')
+		if [[ ! -z "${DIR}" ]]; then
+			[[ "$(( $(df ${DIR} | tail -1 | awk '{print $4}') / 1024 ))" -ge 4096 ]] && echo $DIR && break;
+		fi
+	done)
+	if [[ -z "${DIR}" ]]; then _error "No partition detected using ext4 partition type!  Aborting!"; exit 1; fi
+	_title "Creating \"${DIR}/casper-rw\" file...."
+	FILE=${DIR}/casper-rw
+	dd if=/dev/zero of=${FILE} bs=1M count=4096 status=progress
+	_title "Formatting \"${DIR}/casper-rw\" file...."
+	mkfs.ext4 ${FILE}
+	_title "Completed creation of \"${DIR}/casper-rw\" file...."
+
+#==============================================================================
 # Update snap configuration (REQUIRES LIVE CD!)
 #==============================================================================
 elif [[ "$1" == "snap_rebuild" ]]; then
-	if ! mount | grep " / " | grep "/cow "; then _error "Live CD not detected!  Aborting"; exit 1; fi 
+	if ! mount | grep " / " | grep "/cow "; then _error "Live CD not detected!  Aborting"; exit 1; fi
 
 	_title "Disabling current snaps...."
 	SNAPS=($(snap list --all 2> /dev/null | awk '{print $1}' | grep -v "Name"))
@@ -674,7 +693,7 @@ elif [[ "$1" == "snap_rebuild" ]]; then
 	SNAPS=/var/lib/snapd/snaps/
 	SEEDS=/var/lib/snapd/seed/snaps
 	ASSERT=/var/lib/snapd/seed/assertions/
-	for SNAP in ${SNAPS[@]}; do
+	for SNAP in snapd core22 ${SNAPS[@]}; do
 		snap download ${SNAP}
 		mv ${SNAP}_*.assert ${ASSERT}/
 		FILE=$(basename ${SNAP}*.snap)
@@ -719,7 +738,8 @@ else
 	echo -e "  ${GREEN}usb_copy${NC}       Copy custom split-partition USB drive to hard drive edition."
 	echo -e ""
 	echo "Snap-related commands:"
-	echo -e "  ${GREEN}snap_rebuild${NC}  Rebuilds snap directories with latest versions of each snap.  ${RED}LIVE CD REQUIRED!${NC}"
+	echo -e "  ${GREEN}snap_prep${NC}      Prepare a casper-rw persistence file for Live CD." 
+	echo -e "  ${GREEN}snap_rebuild${NC}   Rebuilds snap directories with latest versions of each snap.  ${RED}LIVE CD REQUIRED!${NC}"
 	echo -e ""
 	echo -e "Note that this command ${RED}REQUIRES${NC} root access in order to function it's job!"
 fi
