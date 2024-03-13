@@ -435,8 +435,8 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" || "$1" == "changes" || "$1" == "cha
 	umount -q ${UNPACK_DIR}/edit
 	for DIR in ${UNPACK_DIR}/.lower*; do umount -q ${DIR}; rmdir ${DIR}; done
 	if [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
-		mv extract/casper/${FS} extract/casper/filesystem.squashfs
-		test -f extract/casper/filesystem_*.squashfs && rm extract/casper/filesystem_*.squashfs
+		mv ${UNPACK_DIR}/extract/casper/${FS} ${UNPACK_DIR}/extract/casper/filesystem.squashfs
+		[[ "$(ls ${UNPACK_DIR}/extract/casper/filesystem_*.squashfs | wc -l)" -gt 0 ]] && rm ${UNPACK_DIR}/extract/casper/filesystem_*.squashfs
 	fi
 	rm -rf .upper
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
@@ -461,9 +461,6 @@ elif [[ "$1" == "iso" ]]; then
 	elif [[ ! -f ${UNPACK_DIR}/extract/casper/filesystem.squashfs ]]; then
 		_error "No packed filesystem!  Use ${BLUE}edit_chroot pack${GREEN} first!"
 		exit 1
-	elif [[ ! -d "${ISO_DIR}" ]]; then
-		_error "Changing ISO destination to ${BLUE}$(pwd)${GREEN}...."
-		ISO_DIR=$(pwd)
 	fi
 
 	# First: Figure out what to name the ISO to avoid conflicts
