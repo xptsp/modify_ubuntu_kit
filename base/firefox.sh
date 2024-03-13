@@ -31,6 +31,8 @@ _title "Copy launchers to the desktop and trust them..."
 cp /usr/share/applications/firefox.desktop ~/Desktop/
 dbus-launch --exit-with-session gio set ~/Desktop/firefox.desktop metadata::trusted true
 chmod a+x ~/Desktop/firefox.desktop
+dbus-launch --exit-with-session gio set ~/Desktop/firefox.desktop metadata::trusted true
 cp /usr/share/applications/thunderbird.desktop ~/Desktop/
 dbus-launch --exit-with-session gio set ~/Desktop/thunderbird.desktop metadata::trusted true
 chmod a+x ~/Desktop/thunderbird.desktop
+dbus-launch --exit-with-session gio set ~/Desktop/thunderbird.desktop metadata::trusted true
