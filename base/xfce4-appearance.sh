@@ -15,7 +15,7 @@ fi
 _title "Unpacking the new default user UI settings..."
 #==============================================================================
 # First: Unpack the new XFCE settings:
-[[ "$(apt list --installed xfce4* 2> /dev/null | wc -l)" -eq 1 ]] && echo "XFCE4 plymouth theme not installed!  Aborting..." && exit 0
+[[ "$(apt list --installed xfce4 2> /dev/null | wc -l)" -eq 1 ]] && echo "XFCE4 plymouth theme not installed!  Aborting..." && exit 0
 unzip -o /opt/modify_ubuntu_kit/files/red_dragon.zip -d /etc/skel/.config/
 
 # Second: Create link to new plymouth background:

@@ -436,7 +436,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" || "$1" == "changes" || "$1" == "cha
 	for DIR in ${UNPACK_DIR}/.lower*; do umount -q ${DIR}; rmdir ${DIR}; done
 	if [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 		mv ${UNPACK_DIR}/extract/casper/${FS} ${UNPACK_DIR}/extract/casper/filesystem.squashfs
-		[[ "$(ls ${UNPACK_DIR}/extract/casper/filesystem_*.squashfs | wc -l)" -gt 0 ]] && rm ${UNPACK_DIR}/extract/casper/filesystem_*.squashfs
+		rm ${UNPACK_DIR}/extract/casper/filesystem_*.squashfs 2> /dev/null
 	fi
 	rm -rf .upper
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
@@ -474,13 +474,11 @@ elif [[ "$1" == "iso" ]]; then
 		ISO_POSTFIX=amd64
 	fi
 	ISO_FILE=${ISO_PREFIX}-${ISO_VERSION}-${ISO_POSTFIX}
+	ISO_FILE=${ISO_FILE,,}
 	[[ "${FLAG_ADD_DATE}" == "1" ]] && ISO_FILE=${ISO_FILE}-$(date +"%Y%m%d")
 	if [[ -f "${ISO_DIR}/${ISO_FILE}.iso" ]]; then
-		COUNTER=1
-		while [ -f "${ISO_DIR}/${ISO_FILE}-${COUNTER}.iso" ]; do COUNTER=$((COUNTER+1)); done
-		ISO_FILE=${ISO_FILE}-${COUNTER}
+		ISO_FILE=${ISO_FILE}-$(( $(ls ${ISO_DIR}/${ISO_FILE}-* | sed "s|${ISO_DIR}/${ISO_FILE}-||" | sed "s|\.iso||" | sort -n | tail -1) + 1 ))
 	fi
-	ISO_FILE=${ISO_FILE,,}
 
 	# Try to patch grub.cfg for successful LiveCD boot.  Why this is necessary is beyond me.....
 	FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
