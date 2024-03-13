@@ -645,6 +645,8 @@ elif [[ "$1" == "usb_copy" ]]; then
 # Update snap configuration (REQUIRES LIVE CD!)
 #==============================================================================
 elif [[ "$1" == "snap_rebuild" ]]; then
+	if ! mount | grep " / " | grep "/cow "; then _error "Live CD not detected!  Aborting"; exit 1; fi 
+
 	_title "Disabling current snaps...."
 	SNAPS=($(snap list --all 2> /dev/null | awk '{print $1}' | grep -v "Name"))
 	for SNAP in ${SNAPS[@]}; do snap disable ${SNAP}; done
@@ -668,19 +670,20 @@ elif [[ "$1" == "snap_rebuild" ]]; then
 	_title "Downloading current versions of available snaps..."
 	mkdir -p /var/lib/snapd/seed/{assertions,snaps}
 	cd /tmp
+	YAML=/var/lib/snapd/seed/seed.yaml
+	echo "snaps:" > ${YAML}
 	SNAPS=/var/lib/snapd/snaps/
-	SEED=/var/lib/snapd/seed/seed.yaml
-	echo "snaps:" > ${SEED}
-	SEED_SNAP=/var/lib/snapd/seed/snaps
+	SEEDS=/var/lib/snapd/seed/snaps
 	ASSERT=/var/lib/snapd/seed/assertions/
 	for SNAP in ${SNAPS[@]}; do
 		snap download ${SNAP}
 		mv ${SNAP}_*.assert ${ASSERT}/
-		snap install ${SNAP}
-		FILE=$(basename $(ls ${SNAPS}/${SNAP}*.snap))
-		ln ${SNAPS}/${FILE} ${SEED_SNAP}/
-		(echo -e "\t-"; echo -e "\t\tname: ${SNAP}"; echo -e "\t\tchannel: stable"; echo -e "\t\tfile: ${FILE}") >> ${SEED}
+		FILE=$(basename ${SNAP}*.snap))
+		snap install ${FILE}
+		ln ${SNAPS}/${FILE} ${SEEDS}/${FILE}
+		(echo -e "\t-"; echo -e "\t\tname: ${SNAP}"; echo -e "\t\tchannel: stable"; echo -e "\t\tfile: ${FILE}") >> ${YAML}
 	done
+	_title "Completed updating the snap configuration!"
 
 #==============================================================================
 # Invalid parameter specified.  List available parameters:
