@@ -54,7 +54,7 @@ if ! [[ -z "$1" || "$1" == "--help" ]]; then
 		_title "Installing necessary packages..."
 		apt-get update >& /dev/null
 		apt-get install -y $([[ -z $MKSQUASH ]] && echo "squashfs-tools") $([[ -z $GENISO ]] && echo "genisoimage") $([[ -z $GIT ]] && echo "git")
-		if [[ -z "${XOR}" ]]; then apt list xorriso 2> /dev/null | grep -q xorriso && apt-get install -y xorriso; fi 
+		if [[ -z "${XOR}" ]]; then apt list xorriso 2> /dev/null | grep -q xorriso && apt-get install -y xorriso; fi
 	fi
 fi
 
@@ -89,23 +89,19 @@ elif [[ "$1" == "mount" ]]; then
 		_error "No \"filesystem.squashfs\" found!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 		exit 1
 	fi
+	mount | grep -q "${UNPACK_DIR}/edit " && umount edit
+	mount | grep "${UNPACK}/.lower" | awk '{print $3}' | while read DIR; do umount -lfq ${DIR}; rmdir ${DIR}; done
 	mkdir -p ${UNPACK_DIR}/{.lower,.upper,.work,edit}
-	if ! mount | grep -q "${UNPACK_DIR}/extract/casper/filesystem.squashfs"; then
-		mount ${UNPACK_DIR}/extract/casper/filesystem.squashfs ${UNPACK_DIR}/.lower || exit 1
-	fi
-	LOWER=${UNPACK_DIR}/.lower
-	COUNT=1
-	ls ${UNPACK_DIR}/extract/casper/*.squashfs | grep -v "/filesystem.squashfs" | while read FILE; do
-		if ! mount | grep -q "${UNPACK_DIR}/extract/casper/filesystem.squashfs"; then
-			mkdir -p ${UNPACK_DIR}/.lower${COUNT}
-			mount ${FILE} ${UNPACK_DIR}/.lower${COUNT} || exit 1
-			LOWER=${UNPACK_DIR}/.lower${COUNT}:${LOWER}
-			COUNT=$((COUNT + 1))
-		fi
-	done
-	if ! mount | grep -q "${UNPACK_DIR}/edit "; then
-		mount -t overlay -o lowerdir=${LOWER},upperdir=${UNPACK_DIR}/.upper,workdir=${UNPACK_DIR}/.work overlay ${UNPACK_DIR}/edit || exit 1
-	fi
+	mount ${UNPACK_DIR}/extract/casper/filesystem.squashfs ${UNPACK_DIR}/.lower || exit 1
+	COUNT=0
+	LOWER=${UNPACK_DIR}/.lower$(ls ${UNPACK_DIR}/extract/casper/filesystem_*.squashfs 2> /dev/null | while read FILE; do
+		COUNT=$((COUNT + 1))
+		mkdir -p ${UNPACK_DIR}/.lower${COUNT}
+		mount ${FILE} ${UNPACK_DIR}/.lower${COUNT} || exit 1
+		echo -n ":${UNPACK_DIR}/.lower${COUNT}"
+	done)
+	mount -t overlay -o lowerdir=${LOWER},upperdir=${UNPACK_DIR}/.upper,workdir=${UNPACK_DIR}/.work overlay ${UNPACK_DIR}/edit || exit 1
+	_title "Necessary chroot filesystem mount points have been mounted!"
 
 #==============================================================================
 # Are we changing the unpacked CHROOT environment?
@@ -313,7 +309,7 @@ elif [[ "$1" == "unmount" ]]; then
 	_title "Unmounting filesystem mount points...."
 	umount -qlf ${UNPACK_DIR}/edit/tmp/host >& /dev/null
 	mount | grep "${UNPACK_DIR}/edit" | awk '{print $3}' | tac | while read DIR; do umount -qlf ${DIR}; done
-	mount | grep "${UNPACK_DIR}/.lower" | awk '{print $3}' | while read DIR; do umount -qlf ${DIR}; done
+	mount | grep "${UNPACK_DIR}/.lower" | awk '{print $3}' | while read DIR; do umount -qlf ${DIR}; rmdir ${DIR}; done
 	$0 docker_umount -q
 	_title "All filesystem mount points should be unmounted now."
 
@@ -438,7 +434,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" || "$1" == "changes" || "$1" == "cha
 	for DIR in ${UNPACK_DIR}/.lower*; do umount -q ${DIR}; rmdir ${DIR}; done
 	if [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
 		mv extract/casper/${FS} extract/casper/filesystem.squashfs
-		test -f extract/casper/filesystem-*.squashfs && rm extract/casper/filesystem-*.squashfs
+		test -f extract/casper/filesystem_*.squashfs && rm extract/casper/filesystem_*.squashfs
 	fi
 	rm -rf .upper
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
@@ -646,6 +642,47 @@ elif [[ "$1" == "usb_copy" ]]; then
 	_title "File copy from split-partition USB stick completed!"
 
 #==============================================================================
+# Update snap configuration (REQUIRES LIVE CD!)
+#==============================================================================
+elif [[ "$1" == "snap_rebuild" ]]; then
+	_title "Disabling current snaps...."
+	SNAPS=($(snap list --all 2> /dev/null | awk '{print $1}' | grep -v "Name"))
+	for SNAP in ${SNAPS[@]}; do snap disable ${SNAP}; done
+
+	_title "Unmounting snap-related directories..."
+	mount | grep "/var/lib/snap" | awk '{print $3}' | while read DIR; do umount ${DIR}; done
+
+	_title "Removing current snaps..."
+	while [[ "${#SNAPS[@]}" -gt 0 ]]; do
+		snap list --all | awk '{print $1}' | while read SNAP; do snap remove ${SNAP}; done
+		SNAPS=($(snap list --all 2> /dev/null | awk '{print $1}' | grep -v "Name"))
+	done
+
+	_title "Purging \"snapd\" package and settings..."
+	apt purge -y snapd
+	rm -rf /var/{snap,lib/snap,lib/snapd} /etc/systemd/system/snap*
+
+	_title "Reinstalling \"snapd\" package..."
+	apt install -y snapd
+
+	_title "Downloading current versions of available snaps..."
+	mkdir -p /var/lib/snapd/seed/{assertions,snaps}
+	cd /tmp
+	SNAPS=/var/lib/snapd/snaps/
+	SEED=/var/lib/snapd/seed/seed.yaml
+	echo "snaps:" > ${SEED}
+	SEED_SNAP=/var/lib/snapd/seed/snaps
+	ASSERT=/var/lib/snapd/seed/assertions/
+	for SNAP in ${SNAPS[@]}; do
+		snap download ${SNAP}
+		mv ${SNAP}_*.assert ${ASSERT}/
+		snap install ${SNAP}
+		FILE=$(basename $(ls ${SNAPS}/${SNAP}*.snap))
+		ln ${SNAPS}/${FILE} ${SEED_SNAP}/
+		(echo -e "\t-"; echo -e "\t\tname: ${SNAP}"; echo -e "\t\tchannel: stable"; echo -e "\t\tfile: ${FILE}") >> ${SEED}
+	done
+
+#==============================================================================
 # Invalid parameter specified.  List available parameters:
 #==============================================================================
 else
@@ -678,6 +715,9 @@ else
 	echo -e "  ${GREEN}usb_unmount${NC}    Properly unmount my custom split-partition USB drive."
 	echo -e "  ${GREEN}usb_load${NC}       Copy hard drive edition to my custom split-partition USB drive."
 	echo -e "  ${GREEN}usb_copy${NC}       Copy custom split-partition USB drive to hard drive edition."
+	echo -e ""
+	echo "Snap-related commands:"
+	echo -e "  ${GREEN}snap_rebuild${NC}  Rebuilds snap directories with latest versions of each snap.  ${RED}LIVE CD REQUIRED!${NC}"
 	echo -e ""
 	echo -e "Note that this command ${RED}REQUIRES${NC} root access in order to function it's job!"
 fi
