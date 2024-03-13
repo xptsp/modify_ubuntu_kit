@@ -6,14 +6,15 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Downloads GDM change background script."
+	echo -e "${RED}Purpose:${NC} Replaces default Ubuntu background with Red Dragon background..."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Downloading GDM change background script..."
+_title "Replacing default Ubuntu background with Red Dragon background..."
 #==============================================================================
-apt install -y wget libglib2.0-dev-bin
-wget github.com/thiggy01/change-gdm-background/raw/master/change-gdm-background -O /usr/local/bin/change-gdm-background
-chmod +x /usr/local/bin/change-gdm-background
+cd /usr/share/backgrounds
+mv warty-final-ubuntu.png warty-final-ubuntu-original.png
+cp ${MUK_DIR}/files/red_dragon.png /usr/share/backgrounds/
+ln -sf red_dragon.png warty-final-ubuntu.png

@@ -652,7 +652,7 @@ elif [[ "$1" == "snap_rebuild" ]]; then
 	for SNAP in ${SNAPS[@]}; do snap disable ${SNAP}; done
 
 	_title "Unmounting snap-related directories..."
-	mount | grep "/var/lib/snap" | awk '{print $3}' | while read DIR; do umount ${DIR}; done
+	mount | grep "/var/snap" | awk '{print $3}' | while read DIR; do umount ${DIR}; done
 
 	_title "Removing current snaps..."
 	while [[ "${#SNAPS[@]}" -gt 0 ]]; do
@@ -678,7 +678,7 @@ elif [[ "$1" == "snap_rebuild" ]]; then
 	for SNAP in ${SNAPS[@]}; do
 		snap download ${SNAP}
 		mv ${SNAP}_*.assert ${ASSERT}/
-		FILE=$(basename ${SNAP}*.snap))
+		FILE=$(basename ${SNAP}*.snap)
 		snap install ${FILE}
 		ln ${SNAPS}/${FILE} ${SEEDS}/${FILE}
 		(echo -e "\t-"; echo -e "\t\tname: ${SNAP}"; echo -e "\t\tchannel: stable"; echo -e "\t\tfile: ${FILE}") >> ${YAML}
