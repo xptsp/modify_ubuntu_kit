@@ -6,13 +6,13 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs Imitation DOS commands on your computer."
+	echo -e "${RED}Purpose:${NC} Installs imitation DOS commands and custom scripts on your computer."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Creating the imitation DOS commands..."
+_title "Creating imitation DOS commands..."
 #==============================================================================
 DST=/usr/local/bin
 ln -sf /bin/cp ${DST}/copy
@@ -25,3 +25,14 @@ ln -sf /bin/cat ${DST}/list
 ln -sf /bin/nano ${DST}/edit
 ln -sf /sbin/ifconfig ${DST}/ipconfig
 ln -sf /usr/bin/clear ${DST}/cls
+
+#==============================================================================
+_title "Getting other custom scripts..."
+#==============================================================================
+FILE=/usr/local/bin/peanut
+wget https://raw.githubusercontent.com/xptsp/bpiwrt-builder/master/files/usr/local/bin/peanut -O ${FILE}
+chmod +x ${FILE} 
+
+FILE=~/.bash_aliases
+wget https://raw.githubusercontent.com/xptsp/bpiwrt-builder/master/files/root/.bash_aliases -O ${FILE}
+chmod +x ${FILE}
