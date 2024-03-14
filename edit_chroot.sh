@@ -599,7 +599,7 @@ elif [[ "$1" == "usb_mount" ]]; then
 	if mount | grep -q ${UB}; then umount -q ${UB} || exit 1; fi
 	mount ${UB} ${UNPACK_DIR}/usb_base -t vfat -o noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022 || exit 1
 	if mount | grep -q ${RO}; then umount -q ${RO} || exit 1; fi
-	mount ${RO} ${UNPACK_DIR}/usb_casper -t ext4 -o defaults,noatime || exit 1
+	mount ${RO} ${UNPACK_DIR}/usb_casper -t ext3 -o defaults,noatime || exit 1
 	mount | grep -q ${UNPACK_DIR}/mnt || unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_base=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid || exit 1
 	_title "Finished mounting split-partition USB stick!"
 
@@ -639,67 +639,85 @@ elif [[ "$1" == "usb_copy" ]]; then
 	_title "File copy from split-partition USB stick completed!"
 
 #==============================================================================
-# Prepare a casper-rw persistence file for Live CD:
-#==============================================================================
-elif [[ "$1" == "snap_prep" ]]; then
-	if mount | grep " / " | grep "/cow "; then _error "Live CD detected!  Aborting"; exit 1; fi
-	DIR=$(blkid | grep -m 1 "TYPE=\"ext" | cut -d: -f 1 | while read DEV; do
-		DIR=$(mount | grep -m 1 ${DEV} | awk '{print $3}')
-		if [[ ! -z "${DIR}" ]]; then
-			[[ "$(( $(df ${DIR} | tail -1 | awk '{print $4}') / 1024 ))" -ge 4096 ]] && echo $DIR && break;
-		fi
-	done)
-	if [[ -z "${DIR}" ]]; then _error "No partition detected using ext4 partition type!  Aborting!"; exit 1; fi
-	_title "Creating \"${DIR}/casper-rw\" file...."
-	FILE=${DIR}/casper-rw
-	dd if=/dev/zero of=${FILE} bs=1M count=4096 status=progress
-	_title "Formatting \"${DIR}/casper-rw\" file...."
-	mkfs.ext4 ${FILE}
-	_title "Completed creation of \"${DIR}/casper-rw\" file...."
-
-#==============================================================================
 # Update snap configuration (REQUIRES LIVE CD!)
 #==============================================================================
-elif [[ "$1" == "snap_rebuild" ]]; then
-	if ! mount | grep " / " | grep "/cow "; then _error "Live CD not detected!  Aborting"; exit 1; fi
+elif [[ "$1" == "snap_rebuild" || "$1" == "snap_rebuild_test" ]]; then
+	# If we are NOT in a Live CD environment, abort with error!
+	if ! mount | grep -q " / " | grep "/cow "; then _error "Live CD not detected!  Aborting"; exit 1; fi
 
-	_title "Disabling current snaps...."
-	SNAPS=($(snap list --all 2> /dev/null | awk '{print $1}' | grep -v "Name"))
-	for SNAP in ${SNAPS[@]}; do snap disable ${SNAP}; done
+	if [[ "$1" == "snap_rebuild" ]]; then
+		_title "Disabling current snaps...."
+		SNAPS=($(snap list --all 2> /dev/null | awk '{print $1}' | sed "/^Name$/d"))
+		for SNAP in ${SNAPS[@]}; do snap disable ${SNAP}; done
 
-	_title "Unmounting snap-related directories..."
-	mount | grep "/var/snap" | awk '{print $3}' | while read DIR; do umount ${DIR}; done
+		_title "Unmounting snap-related directories..."
+		mount | grep "/var/snap" | awk '{print $3}' | while read DIR; do umount ${DIR}; done
 
-	_title "Removing current snaps..."
-	while [[ "${#SNAPS[@]}" -gt 0 ]]; do
-		snap list --all | awk '{print $1}' | while read SNAP; do snap remove ${SNAP}; done
-		SNAPS=($(snap list --all 2> /dev/null | awk '{print $1}' | grep -v "Name"))
-	done
+		_title "Removing current snaps..."
+		while [[ "${#SNAPS[@]}" -gt 0 ]]; do
+			snap list --all 2> /dev/null | grep -ve "^Name" | awk '{print $1}' | while read SNAP; do snap remove ${SNAP}; done
+			SNAPS=($(snap list --all 2> /dev/null | awk '{print $1}' | sed "/^Name$/d"))
+		done
 
-	_title "Purging \"snapd\" package and settings..."
-	apt purge -y snapd
-	rm -rf /var/{snap,lib/snap,lib/snapd} /etc/systemd/system/snap*
+		_title "Purging \"snapd\" package and settings..."
+		apt purge -y snapd
+		rm -rf /var/{snap,lib/snap,lib/snapd} /etc/systemd/system/snap*
 
-	_title "Reinstalling \"snapd\" package..."
-	apt install -y snapd
+		_title "Reinstalling \"snapd\" package..."
+		apt install -y snapd
+	else
+		SNAPS=(bare core22 gnome-42-2204 gtk-common-themes snap-store snapd snapd-desktop-integration)
+	fi
 
 	_title "Downloading current versions of available snaps..."
 	mkdir -p /var/lib/snapd/seed/{assertions,snaps}
 	cd /tmp
 	YAML=/var/lib/snapd/seed/seed.yaml
 	echo "snaps:" > ${YAML}
-	SNAPS=/var/lib/snapd/snaps/
+	SNAP_DIR=/var/lib/snapd/snaps/
 	SEEDS=/var/lib/snapd/seed/snaps
 	ASSERT=/var/lib/snapd/seed/assertions/
 	for SNAP in snapd core22 ${SNAPS[@]}; do
-		snap download ${SNAP}
-		mv ${SNAP}_*.assert ${ASSERT}/
-		FILE=$(basename ${SNAP}*.snap)
-		snap install ${FILE}
-		ln ${SNAPS}/${FILE} ${SEEDS}/${FILE}
-		(echo -e "\t-"; echo -e "\t\tname: ${SNAP}"; echo -e "\t\tchannel: stable"; echo -e "\t\tfile: ${FILE}") >> ${YAML}
+		if [[ ! -f ${SNAP_DIR}/${SEED}_*.snap ]]; then
+			snap download ${SNAP}
+			snap ack ${SNAP}_*.assert
+			mv ${SNAP}_*.assert ${ASSERT}/
+			FILE=$(basename ${SNAP}_*.snap)
+			snap install ${FILE}
+			test -f ${SEEDS}/${FILE} || ln ${SNAP_DIR}/${FILE} ${SEEDS}/${FILE}
+		fi
+		FILE=$(basename ${SNAP}_*.snap)
+		grep -q "${FILE}" ${YAML} || (echo -e "\t-"; echo -e "\t\tname: ${SNAP}"; echo -e "\t\tchannel: stable"; echo -e "\t\tfile: ${FILE}") >> ${YAML}
 	done
-	_title "Completed updating the snap configuration!"
+	_title "Completed rebuilding the snap configuration!"
+
+#==============================================================================
+# Copy snap configuration from persistent partition:
+#==============================================================================
+elif [[ "$1" == "snap_copy" ]]; then
+	# If we are in a Live CD environment, abort with error!
+	if ! blkid | grep -q "LABEL=\"casper-rw\""; then _error "No persistent partition labeled \"casper-rw\" found!  Aborting!"; exit 1; fi
+
+	# Mount persistent partiton and chroot environment:
+	_title "Mounting partition with label \"casper-rw\"..."
+	mkdir -p ${UNPACK_DIR}/.casper
+	if mount | grep -q ${UNPACK_DIR}/.casper; then umount -q ${UNPACK_DIR}/.casper || exit 1; fi
+	mount LABEL=casper-rw ${UNPACK_DIR}/.casper || exit 1
+	$0 mount || exit 1
+
+	# Replace existing snap directories with those from the casper-rw partition:
+	_title "Replacing snap directories..."
+	SRC=${UNPACK_DIR}/.casper/upper
+	EDIT=${UNPACK_DIR}/edit
+	rm -rf ${EDIT}/var/lib/snapd
+	cp -aR ${SRC}/var/lib/snapd ${EDIT}/var/lib/
+	rm -rf ${EDIT}/var/snap
+	cp -aR ${SRC}/var/snap ${EDIT}/var/
+	rm -rf ${EDIT}/snap
+	cp -aR ${SRC}/snap ${EDIT}/
+	rm -rf ${EDIT}/etc/systemd/system/snap*
+	cp -aR ${SRC}/etc/systemd/system/snap* ${EDIT}/etc/systemd/system/ 2> /dev/null
+	_title "Completed copying the snap configuration!"
 
 #==============================================================================
 # Invalid parameter specified.  List available parameters:
@@ -736,8 +754,8 @@ else
 	echo -e "  ${GREEN}usb_copy${NC}       Copy custom split-partition USB drive to hard drive edition."
 	echo -e ""
 	echo "Snap-related commands:"
-	echo -e "  ${GREEN}snap_prep${NC}      Prepare a casper-rw persistence file for Live CD." 
 	echo -e "  ${GREEN}snap_rebuild${NC}   Rebuilds snap directories with latest versions of each snap.  ${RED}LIVE CD REQUIRED!${NC}"
+	echo -e "  ${GREEN}snap_copy${NC}      Copy snap configuration from persistent partition."
 	echo -e ""
 	echo -e "Note that this command ${RED}REQUIRES${NC} root access in order to function it's job!"
 fi
