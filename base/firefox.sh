@@ -11,7 +11,11 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 	exit 0
 fi
 # Refuse to do this with the snap version of Firefox installed:
-if apt list --installed firefox | grep -q 1:1snap1-0ubuntu2; then echo "ERROR: Snap version of Firefox is still present!"; exit 1; fi
+if apt list --installed firefox | grep -q 1:1snap1-0ubuntu2; then
+	if [[ -f /var/lib/snapd/snaps/firefox_*.snap ]]; then 
+		echo "ERROR: Snap version of Firefox is still present!"; exit 1;
+	fi 
+fi
 
 #==============================================================================
 _title "Installing DEB-version installation of Mozilla Firefox..."

@@ -405,12 +405,9 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" || "$1" == "changes" || "$1" == "cha
 	[[ "$1" =~ -xz$ ]] && FLAG_XZ=1
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 
-	# Fourth: Pack the filesystem-opt.squashfs if required:
+	# Fourth: Pack the filesystem into squashfs if required:
 	FS=filesystem_$(date +"%Y%m%d")
-	if [[ -f extract/casper/${FS}.squashfs ]]; then
-		ISO_FILE=${FS}-$(( $(ls ${FS}-* | sed "s|${FS}-||" | sed "s|\.squashfs||" | sort -n | tail -1) + 1 ))
-	fi
-	FS=${FS}.squashfs
+	FS=${FS}-$(( $(ls extract/casper/${FS}-* 2> /dev/null | sed "s|extract/casper/${FS}-||" | sed "s|\.squashfs||" | sort -n | tail -1) + 1 )).squashfs
 	_title "Building ${BLUE}${FS}${GREEN}...."
 	[[ "$1" == "pack" || "$1" == "pack-xz" ]] && SRC=edit || SRC=.upper
 	mksquashfs ${SRC} extract/casper/${FS} -b 1048576 ${XZ}

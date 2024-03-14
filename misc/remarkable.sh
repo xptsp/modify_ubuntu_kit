@@ -14,6 +14,6 @@ fi
 #==============================================================================
 _title "Installing Remarkable for Linux..."
 #==============================================================================
-wget https://remarkableapp.github.io/files/remarkable_1.87_all.deb -O /tmp/remarkable_1.87_all.deb
+wget https://eric.seifert.casa/remarkable_1.87_all.deb -O /tmp/remarkable_1.87_all.deb
 apt install -y /tmp/remarkable_1.87_all.deb
 rm /tmp/remarkable_1.87_all.deb

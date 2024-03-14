@@ -45,34 +45,6 @@ systemctl restart apcupsd
 sed -i "s|^WALL=.*|WALL=logger|" /etc/apcupsd/apccontrol
 
 #==============================================================================
-_title "Installing Argos Gnome extension and custom APCACCESS script..."
-#==============================================================================
-# First: Install the Argos extension:
-#==============================================================================
-git clone https://github.com/bryango/argos /tmp/argos
-mv /tmp/argos/argos@pew.worldwidemann.com /usr/share/gnome-shell/extensions/
-rm -rf /tmp/argos
-
-#==============================================================================
-# Second: Create our custom apcaccess script:
-#==============================================================================
-DIR=~/.config/argos
-mkdir -p ${DIR}
-FILE=${DIR}/apcaccess.r.10s+.sh
-cat << EOF > 
-#!/usr/bin/env bash
-LEVEL=\$(apcaccess | grep BCHARGE | awk '{print \$3}')
-CHARGING=\$(apcaccess | grep STATUS | grep -q ONLINE || echo "-charging")
-LABELS=(missing empty caution low good full)
-WHICH=\$(( \${LEVEL/\./} / 200 ))
-ICON=battery-\${LABELS[\$WHICH]}\${CHARGING}
-echo "APC | iconName=\${ICON}"
-echo "---"
-apcaccess | while read LINE; do echo "<small>\$LINE</small> | font=monospace"; done
-EOF
-chmod +x ${FILE}
-
-#==============================================================================
 _title "Adding hibernation script to APCUPS script directory..."
 #==============================================================================
 FILE=/usr/local/bin/hibernate
