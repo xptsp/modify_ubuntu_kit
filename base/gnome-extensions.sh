@@ -63,7 +63,6 @@ wget https://extensions.gnome.org/extension-data/openweather-extensionjenslody.d
 gnome-extensions install openweather-extensionjenslody.de.v118.shell-extension.zip
 dbus-launch --exit-with-session gnome-extensions enable openweather-extension@jenslody.de
 rm openweather-extensionjenslody.de.v118.shell-extension.zip
-unzip -o ${MUK_DIR}/files/openweather_schemas.zip -d ~/.local/share/gnome-shell/extensions/openweather-extension@jenslody.de/schemas/
 
 # Eighth: Dock to Panel >> https://extensions.gnome.org/extension/1160/dash-to-panel/ 
 wget https://extensions.gnome.org/extension-data/dash-to-paneljderose9.github.com.v56.shell-extension.zip
@@ -72,7 +71,7 @@ dbus-launch --exit-with-session gnome-extensions enable dash-to-panel@jderose9.g
 rm dash-to-paneljderose9.github.com.v56.shell-extension.zip
 
 # Ninth: ArcMenu >> https://extensions.gnome.org/extension/3628/arcmenu/ 
-wget https://extensions.gnome.org/extension-data/arcmenuarcmenu.com.v48.shell-extension.zip1
+wget https://extensions.gnome.org/extension-data/arcmenuarcmenu.com.v48.shell-extension.zip
 gnome-extensions install arcmenuarcmenu.com.v48.shell-extension.zip
 dbus-launch --exit-with-session gnome-extensions enable arcmenu@arcmenu.com
 rm arcmenuarcmenu.com.v48.shell-extension.zip
@@ -88,3 +87,19 @@ wget https://extensions.gnome.org/extension-data/gamemodechristian.kellner.me.v7
 gnome-extensions install gamemodechristian.kellner.me.v7.shell-extension.zip
 dbus-launch --exit-with-session gnome-extensions enable gamemode@christian.kellner.me
 rm gamemodechristian.kellner.me.v7.shell-extension.zip
+
+#==============================================================================
+_title "Extracting and compiling custom schema files for extensions..."
+#==============================================================================
+cd /tmp/
+unzip -o ${MUK_DIR}/files/gnome-extensions-schemas.zip
+cd gnome-extensions-schemas/
+ls | while read DIR; do
+	DEST=~/.local/share/gnome-shell/extensions/${DIR}/schemas
+	XML=$(basename ${DIR}/*.xml)
+	test -f ${DEST}/${XML}.original || cp ${DEST}/${XML} ${DEST}/${XML}.original
+	mv ${DIR}/*.xml ${DEST}/
+	glib-compile-schemas ${DEST}/
+done
+cd ..
+rm -rf gnome-extensions-schemas/
