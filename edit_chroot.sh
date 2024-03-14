@@ -15,13 +15,7 @@ export FLAG_MKISOFS=${FLAG_MKISOFS:-"0"}
 export UNPACK_DIR=${UNPACK_DIR:-"/home/img"}
 # Where to place the generated ISO file.  Defaults to current directory.
 export ISO_DIR=${ISO_DIR:-"${UNPACK_DIR}"}
-# ISO name prefix string.  Defaults to "ubuntu".  (format: prefix-version-postfix)
-export ISO_PREFIX=${ISO_PREFIX:-"Ubuntu"}
-# ISO postfix string.  Defaults to "desktop".  (format: prefix-version-postfix)
-export ISO_POSTFIX=${ISO_POSTFIX:-"desktop"}
-# Label to use for ISO.  Defaults to "${ISO_PREFIX} ${ISO_VERSION}"
-export ISO_LABEL=$([[ -z "${ISO_LABEL}" ]] && echo ${ISO_PREFIX} ${ISO_VERSION} || echo ${ISO_LABEL})
-# Default sto removing old kernels from chroot environment.  Set to 0 to prevent this.
+# Default to removing old kernels from chroot environment.  Set to 0 to prevent this.
 export OLD_KERNEL=${OLD_KERNEL:-"1"}
 # Determine ISO version number to use:
 [[ -f ${UNPACK_DIR}/edit/etc/os-release ]] && export ISO_VERSION=$(cat ${UNPACK_DIR}/edit/etc/os-release | grep "VERSION=" | cut -d "\"" -f 2 | cut -d " " -f 1)
@@ -218,7 +212,6 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 			### "build": Install all scripts found in the specified build folder:
 			cd ${MUK_DIR}/$2
 			for file in *.sh; do ./$file; done
-			echo $2 > /usr/local/finisher/build.txt
 		fi
 
 		### Fourth: If user 999 exists, change that user ID so that LiveCD works:
@@ -414,9 +407,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" || "$1" == "changes" || "$1" == "cha
 	# Fourth: Pack the filesystem-opt.squashfs if required:
 	FS=filesystem_$(date +"%Y%m%d")
 	if [[ -f extract/casper/${FS}.squashfs ]]; then
-		COUNTER=1
-		while [ -f extract/casper/${FS}-${COUNTER}.squashfs ]; do COUNTER=$((COUNTER+1)); done
-		FS=${FS}-${COUNTER}
+		ISO_FILE=${FS}-$(( $(ls ${FS}-* | sed "s|${FS}-||" | sed "s|\.squashfs||" | sort -n | tail -1) + 1 ))
 	fi
 	FS=${FS}.squashfs
 	_title "Building ${BLUE}${FS}${GREEN}...."
@@ -463,29 +454,41 @@ elif [[ "$1" == "iso" ]]; then
 		exit 1
 	fi
 
-	# First: Figure out what to name the ISO to avoid conflicts
-	_title "Determining ISO filename and patching \"grub.cfg\"...."
+	# First: Read either the OS's "build.txt" file OR the "os-release":
 	ISO_DIR=${UNPACK_DIR}
-	if [[ -f ${UNPACK_DIR}/extract/casper/build.txt ]]; then
-		ISO_POSTFIX=$(cat ${UNPACK_DIR}/extract/casper/build.txt)
-	elif [[ -e ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ]]; then
-		ISO_POSTFIX=$(cat ${UNPACK_DIR}/edit/usr/local/finisher/build.txt)
+	unset MUK_BUILD
+	if [[ -f ${UNPACK_DIR}/edit/etc/os-release ]]; then
+		source ${UNPACK_DIR}/edit/etc/os-release
+	elif [[ -f ${UNPACK_DIR}/extract/casper/build.txt ]]; then
+		if [[ $(${UNPACK_DIR}/extract/casper/build.txt | wc -l) -ge 1 ]]; then
+			source ${UNPACK_DIR}/extract/casper/build.txt
+		else
+			if [[ -f ${UNPACK_DIR}/edit/etc/os-release ]]; then
+				source ${UNPACK_DIR}/edit/etc/os-release
+			else
+				source /etc/os-release
+			fi
+			MUK_DIR=$(cat ${UNPACK_DIR}/extract/casper/build.txt)
+		fi 
 	else
-		ISO_POSTFIX=amd64
+		source /etc/os-release
 	fi
-	ISO_FILE=${ISO_PREFIX}-${ISO_VERSION}-${ISO_POSTFIX}
+
+	# Second: Figure out what to name the ISO to avoid conflicts
+	_title "Determining ISO filename and patching \"grub.cfg\"...."
+	ISO_FILE=${ID}-${VERSION_ID}-${MUK_BUILD:-"desktop-amd64"}
 	ISO_FILE=${ISO_FILE,,}
 	[[ "${FLAG_ADD_DATE}" == "1" ]] && ISO_FILE=${ISO_FILE}-$(date +"%Y%m%d")
 	if [[ -f "${ISO_DIR}/${ISO_FILE}.iso" ]]; then
 		ISO_FILE=${ISO_FILE}-$(( $(ls ${ISO_DIR}/${ISO_FILE}-* | sed "s|${ISO_DIR}/${ISO_FILE}-||" | sed "s|\.iso||" | sort -n | tail -1) + 1 ))
 	fi
 
-	# Try to patch grub.cfg for successful LiveCD boot.  Why this is necessary is beyond me.....
+	# Third: Try to patch grub.cfg for successful LiveCD boot.  Why this is necessary is beyond me.....
 	FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
 	sed -i "s|boot=casper ||g" ${FILE}
 	sed -i "s|file=|boot=casper file=|g" ${FILE}
 
-	# Second: Create the ISO
+	# Fourth: Create the ISO
 	_title "Building ${BLUE}${ISO_FILE}.iso${GREEN}...."
 	# Is ubuntu distribution one of these codenames?
 	LINE=($(ls --time-style=long-iso -l ${UNPACK_DIR}/extract/dists | grep " stable" | tail -1))
@@ -532,7 +535,7 @@ elif [[ "$1" == "iso" ]]; then
 			${UNPACK_DIR}/extract
 	fi
 
-	# Third: Tell user we done!
+	# Fifth: Tell user we done!
 	_title "Done building ${BLUE}${ISO_DIR}/${ISO_FILE}.iso${GREEN}!"
 
 #==============================================================================
@@ -540,10 +543,8 @@ elif [[ "$1" == "iso" ]]; then
 #==============================================================================
 elif [[ "$1" == "rebuild" ]]; then
 	$0 pack $2 && $0 iso $2
-	exit 0
 elif [[ "$1" == "rebuild-xz" ]]; then
 	$0 pack-xz $2 && $0 iso $2
-	exit 0
 
 #==============================================================================
 # Did user request to mount chroot environment docker folder to host machine?

@@ -14,4 +14,6 @@ fi
 #==============================================================================
 _title "Marking OS as htpc..."
 #==============================================================================
-echo "htpc" > /usr/local/finisher/build.txt
+FILE=/usr/local/finisher/build.txt
+cp /etc/os-release ${FILE}
+echo "MUK_BUILD=\"htpc\"" >> ${FILE}

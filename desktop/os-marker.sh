@@ -14,4 +14,6 @@ fi
 #==============================================================================
 _title "Marking OS as desktop..."
 #==============================================================================
-echo "desktop" > /usr/local/finisher/build.txt
+FILE=/usr/local/finisher/build.txt
+cp /etc/os-release ${FILE}
+echo "MUK_BUILD=\"desktop\"" >> ${FILE}
