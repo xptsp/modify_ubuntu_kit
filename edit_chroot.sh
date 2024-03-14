@@ -33,22 +33,23 @@ echo ${USB_CASPER} | grep -q "=" && export USB_CASPER=$(echo ${USB_CASPER} | cut
 #==============================================================================
 [[ ! -e ${MUK_DIR}/files/includes.sh ]] && (echo Missing includes file!  Aborting!; exit 1)
 . ${MUK_DIR}/files/includes.sh
+function chk_installed() { apt list --installed $1 2> /dev/null | grep -q "$1" || PKGS+=($1); } 
 
 #==============================================================================
 # If no help is requested, make sure script is running as root and needed
 # packages have been installed on this computer.
 #==============================================================================
 if ! [[ -z "$1" || "$1" == "--help" ]]; then
-	# Make sure we got everything we need to create a customized Ubuntu disc:
-	MKSQUASH=$(whereis mksquashfs | cut -d ":" -f 2 | cut -d " " -f 2)
-	GENISO=$(whereis genisoimage | cut -d ":" -f 2 | cut -d " " -f 2)
-	GIT=$(whereis git | cut -d ":" -f 2 | cut -d " " -f 2)
-	XOR=$(whereis xorriso | cut -d ":" -f 2 | cut -d " " -f 2)
-	if [[ -z $MKSQUASH || -z $GENISO || -z $GIT ]]; then
+	declare -a PKGS
+	chk_installed squashfs-tools
+	chk_installed genisoimage
+	chk_installed git
+	chk_installed xorriso
+	chk_installed dialog
+	if [[ ! -z "${PKGS[@]}" ]]; then
 		_title "Installing necessary packages..."
 		apt-get update >& /dev/null
-		apt-get install -y $([[ -z $MKSQUASH ]] && echo "squashfs-tools") $([[ -z $GENISO ]] && echo "genisoimage") $([[ -z $GIT ]] && echo "git")
-		if [[ -z "${XOR}" ]]; then apt list xorriso 2> /dev/null | grep -q xorriso && apt-get install -y xorriso; fi
+		apt install -y ${PKGS[@]}
 	fi
 fi
 
