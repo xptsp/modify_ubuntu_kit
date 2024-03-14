@@ -490,9 +490,9 @@ elif [[ "$1" == "iso" ]]; then
 
 	# Fourth: Create the ISO
 	_title "Building ${BLUE}${ISO_FILE}.iso${GREEN}...."
-	# Is ubuntu distribution one of these codenames?
-	LINE=($(ls --time-style=long-iso -l ${UNPACK_DIR}/extract/dists | grep " stable" | tail -1))
-	if [[ "$(echo ${LINE[5]} | cut -d- -f 1)" -lt 2023 && "${LINE[9]}" != "jammy" ]]; then
+	source /etc/os-release
+	test -f ${UNPACK_DIR}/extract/casper/build.txt && source ${UNPACK_DIR}/extract/casper/build.txt
+	if [[ "${VERSION_ID/\./}" -lt 2204 ]]; then
 		# >>>> OLD WAY TO CREATE ISO: Not valid for Jammy and above <<<<<
 		# Create the ISO the old way:
 		cd ${UNPACK_DIR}/extract

@@ -34,3 +34,6 @@ if [[ -d /usr/lib/ubiquity/target-config ]]; then
  	mkdir -p /usr/local/finisher/{boot,tasks,post}.d
  	ln -sf /usr/sbin/update-grub /usr/local/finisher/boot.d/99-update-grub
 fi
+
+# Don't require password for the "edit_chroot" command: 
+echo "LL ALL=(ALL) NOPASSWD:/usr/local/bin/edit_chroot" > /etc/sudoers.d/edit_chroot
