@@ -14,6 +14,8 @@ fi
 #==============================================================================
 _title "Installing Wine..."
 #==============================================================================
-dpkg --add-architecture i386
+mkdir -p /etc/apt/keyrings
+curl -s https://dl.winehq.org/wine-builds/winehq.key | sudo gpg --dearmor | sudo tee /usr/share/keyrings/winehq.gpg > /dev/null
+echo deb [signed-by=/usr/share/keyrings/winehq.gpg] http://dl.winehq.org/wine-builds/ubuntu/ $(lsb_release -cs) main | sudo tee /etc/apt/sources.list.d/winehq.list
 apt update
 apt install -y --install-recommends wine-stable
