@@ -33,7 +33,7 @@ echo ${USB_CASPER} | grep -q "=" && export USB_CASPER=$(echo ${USB_CASPER} | cut
 #==============================================================================
 [[ ! -e ${MUK_DIR}/files/includes.sh ]] && (echo Missing includes file!  Aborting!; exit 1)
 . ${MUK_DIR}/files/includes.sh
-function chk_installed() { apt list --installed $1 2> /dev/null | grep -q "$1" || PKGS+=($1); } 
+function chk_installed() { whereis $1 | grep -q "$1" || PKGS+=(${2:-$1}); } 
 
 #==============================================================================
 # If no help is requested, make sure script is running as root and needed
@@ -41,7 +41,7 @@ function chk_installed() { apt list --installed $1 2> /dev/null | grep -q "$1" |
 #==============================================================================
 if ! [[ -z "$1" || "$1" == "--help" ]]; then
 	declare -a PKGS
-	chk_installed squashfs-tools
+	chk_installed mksquashfs squashfs-tools
 	chk_installed genisoimage
 	chk_installed git
 	chk_installed xorriso
