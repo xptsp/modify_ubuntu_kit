@@ -88,6 +88,24 @@ gnome-extensions install gamemodechristian.kellner.me.v7.shell-extension.zip
 dbus-launch --exit-with-session gnome-extensions enable gamemode@christian.kellner.me
 rm gamemodechristian.kellner.me.v7.shell-extension.zip
 
+# Twelfth: Battery Indicator >> https://extensions.gnome.org/extension/5615/battery-indicator-upower/ 
+wget https://extensions.gnome.org/extension-data/battery-indicatorjgotti.org.v7.shell-extension.zip
+gnome-extensions install battery-indicatorjgotti.org.v7.shell-extension.zip
+dbus-launch --exit-with-session gnome-extensions enable battery-indicator@jgotti.org
+rm battery-indicatorjgotti.org.v7.shell-extension.zip
+
+# Thirteenth: Add To Desktop >> https://extensions.gnome.org/extension/3240/add-to-desktop/
+wget https://extensions.gnome.org/extension-data/add-to-desktoptommimon.github.com.v10.shell-extension.zip
+gnome-extensions install add-to-desktoptommimon.github.com.v10.shell-extension.zip
+dbus-launch --exit-with-session gnome-extensions enable add-to-desktop@tommimon.github.com
+rm add-to-desktoptommimon.github.com.v10.shell-extension.zip
+
+# Fourteenth: Notification Banner Reloaded >> https://extensions.gnome.org/extension/4651/notification-banner-reloaded/ 
+wget https://extensions.gnome.org/extension-data/notification-banner-reloadedmarcinjakubowski.github.com.v8.shell-extension.zip
+gnome-extensions install notification-banner-reloadedmarcinjakubowski.github.com.v8.shell-extension.zip
+dbus-launch --exit-with-session gnome-extensions enable notification-banner-reloaded@marcinjakubowski.github.com
+rm notification-banner-reloadedmarcinjakubowski.github.com.v8.shell-extension.zip
+
 #==============================================================================
 _title "Extracting and compiling custom schema files for extensions..."
 #==============================================================================

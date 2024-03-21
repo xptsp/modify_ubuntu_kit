@@ -137,7 +137,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		### Fourth: Enter the CHROOT environment:
 		_title "Entering CHROOT environment"
 		chroot ${UNPACK_DIR}/edit ${MUK_DIR}/edit_chroot.sh $@
-		[[ -f ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ]] && cp ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ${UNPACK_DIR}/extract/casper/build.txt
+		cp ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ${UNPACK_DIR}/extract/casper/build.txt
 
 		### Fifth: Run required commands outside chroot commands:
 		if [[ -f ${UNPACK_DIR}/edit/usr/local/finisher/outside_chroot.list ]]; then
@@ -516,7 +516,8 @@ elif [[ "$1" == "iso" ]]; then
 
 		# Finally pack up an ISO the new way:
 		xorriso -as mkisofs -r \
-  			-V 'Ubuntu 22.04 LTS MODIF (EFIBIOS)' \
+  			-V "Modded ${PRETTY_NAME}" \
+			-J -joliet-long -iso-level 3 \
   			-o ${ISO_DIR}/${ISO_FILE}.iso \
   			--grub2-mbr ${UNPACK_DIR}/boot_hybrid.img \
   			-partition_offset 16 \
@@ -644,31 +645,29 @@ elif [[ "$1" == "snap_rebuild" || "$1" == "snap_rebuild_test" ]]; then
 	# If we are NOT in a Live CD environment, abort with error!
 	if ! mount | grep -q " / " | grep "/cow "; then _error "Live CD not detected!  Aborting"; exit 1; fi
 
-	if [[ "$1" == "snap_rebuild" ]]; then
-		_title "Disabling current snaps...."
-		SNAPS=($(snap list --all 2> /dev/null | awk '{print $1}' | sed "/^Name$/d"))
-		for SNAP in ${SNAPS[@]}; do snap disable ${SNAP}; done
+	_title "Disabling current snaps...."
+	SNAPS=(snapd $(snap list --all 2> /dev/null | awk '{print $1}' | sed "/^Name$/d"))
+	for SNAP in ${SNAPS[@]}; do snap disable ${SNAP}; done
 
-		_title "Unmounting snap-related directories..."
-		mount | grep "/var/snap" | awk '{print $3}' | while read DIR; do umount ${DIR}; done
+	_title "Unmounting snap-related directories..."
+	mount | grep "/var/snap" | awk '{print $3}' | while read DIR; do umount ${DIR}; done
 
-		_title "Removing current snaps..."
-		while [[ "${#SNAPS[@]}" -gt 0 ]]; do
-			snap list --all 2> /dev/null | grep -ve "^Name" | awk '{print $1}' | while read SNAP; do snap remove ${SNAP}; done
-			SNAPS=($(snap list --all 2> /dev/null | awk '{print $1}' | sed "/^Name$/d"))
-		done
+	_title "Removing current snaps..."
+	while true; do
+		LIST=($(snap list --all 2> /dev/null | awk '{print $1}' | sed "/^Name$/d"))
+		[[ -z "${LIST[@]}" ]] && break
+		for SNAP in ${LIST[@]}; do snap remove ${SNAP}; done
+	done
 
-		_title "Purging \"snapd\" package and settings..."
-		apt purge -y snapd
-		rm -rf /var/{snap,lib/snap,lib/snapd} /etc/systemd/system/snap*
+	_title "Purging \"snapd\" package and settings..."
+	apt purge -y snapd
+	rm -rf /var/{snap,lib/snap,lib/snapd} /etc/systemd/system/snap*
 
-		_title "Reinstalling \"snapd\" package..."
-		apt install -y snapd
-	else
-		SNAPS=(bare core22 gnome-42-2204 gtk-common-themes snap-store snapd snapd-desktop-integration)
-	fi
+	_title "Reinstalling \"snapd\" package..."
+	apt install -y snapd
 
 	_title "Downloading current versions of available snaps..."
+	[[ "$1" == "snap_rebuild_test" ]] && SNAPS=(bare core22 gnome-42-2204 gtk-common-themes snap-store snapd snapd-desktop-integration)
 	mkdir -p /var/lib/snapd/seed/{assertions,snaps}
 	cd /tmp
 	YAML=/var/lib/snapd/seed/seed.yaml

@@ -6,7 +6,7 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs XRDP on your computer."
+	echo -e "${RED}Purpose:${NC} Installs Jekyll on your computer."
 	echo ""
 	exit 0
 fi

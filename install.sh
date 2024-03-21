@@ -36,4 +36,4 @@ if [[ -d /usr/lib/ubiquity/target-config ]]; then
 fi
 
 # Don't require password for the "edit_chroot" command: 
-echo "LL ALL=(ALL) NOPASSWD:/usr/local/bin/edit_chroot" > /etc/sudoers.d/edit_chroot
+echo "ALL ALL=(ALL) NOPASSWD:/usr/local/bin/edit_chroot" > /etc/sudoers.d/edit_chroot

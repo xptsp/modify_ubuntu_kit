@@ -6,7 +6,7 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs WINE on your computer."
+	echo -e "${RED}Purpose:${NC} Compiles joycond for your computer."
 	echo ""
 	exit 0
 fi
@@ -14,8 +14,11 @@ fi
 #==============================================================================
 _title "Installing Wine..."
 #==============================================================================
-mkdir -p /etc/apt/keyrings
-curl -s https://dl.winehq.org/wine-builds/winehq.key | sudo gpg --dearmor | sudo tee /usr/share/keyrings/winehq.gpg > /dev/null
-echo deb [signed-by=/usr/share/keyrings/winehq.gpg] http://dl.winehq.org/wine-builds/ubuntu/ $(lsb_release -cs) main | sudo tee /etc/apt/sources.list.d/winehq.list
-apt update
-apt install -y --install-recommends winehq-stable
+apt install -y libevdev-dev build-essential cmake libevdev-dev git pkg-config libudev-dev
+cd /tmp
+git clone https://github.com/DanielOgorchock/joycond
+cd joycond
+cmake .
+make
+make install
+systemctl enable joycond
