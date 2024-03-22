@@ -33,23 +33,22 @@ echo ${USB_CASPER} | grep -q "=" && export USB_CASPER=$(echo ${USB_CASPER} | cut
 #==============================================================================
 [[ ! -e ${MUK_DIR}/files/includes.sh ]] && (echo Missing includes file!  Aborting!; exit 1)
 . ${MUK_DIR}/files/includes.sh
-function chk_installed() { whereis $1 | grep -q "$1" || PKGS+=(${2:-$1}); } 
 
 #==============================================================================
 # If no help is requested, make sure script is running as root and needed
 # packages have been installed on this computer.
 #==============================================================================
 if ! [[ -z "$1" || "$1" == "--help" ]]; then
-	declare -a PKGS
-	chk_installed mksquashfs squashfs-tools
-	chk_installed genisoimage
-	chk_installed git
-	chk_installed xorriso
-	chk_installed dialog
-	if [[ ! -z "${PKGS[@]}" ]]; then
-		_title "Installing necessary packages..."
-		apt-get update >& /dev/null
-		apt install -y ${PKGS[@]}
+	# Make sure we got everything we need to create a customized Ubuntu disc:
+	PKGS=()
+	whereis mksquashfs | grep -q "/mksquashfs" || PKGS+=( squashfs-tools )
+	whereis genisoimage | grep -q "/genisoimage" || PKGS+=( genisoimage )
+	whereis xorriso | grep -q "/xorriso" || PKGS+=( xorriso )
+	whereis git | grep -q "/git" || PKGS+=( git )
+	if [[ ! -z "${PKGS[@]}" ]]; then 
+		_title "Installing necessary packages"
+		apt update >& /dev/null
+		apt-get install -y ${PKGS[@]}
 	fi
 fi
 
@@ -715,6 +714,10 @@ elif [[ "$1" == "snap_copy" ]]; then
 	cp -aR ${SRC}/snap ${EDIT}/
 	rm -rf ${EDIT}/etc/systemd/system/snap*
 	cp -aR ${SRC}/etc/systemd/system/snap* ${EDIT}/etc/systemd/system/ 2> /dev/null
+
+	# Unmount casper partition and tell user we're finished:
+	umount -lfq ${UNPACK_DIR}/.casper
+	rmdir ${UNPACK_DIR}/.casper 
 	_title "Completed copying the snap configuration!"
 
 #==============================================================================
