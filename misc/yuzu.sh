@@ -18,6 +18,7 @@ _title "Installing Yuzu..."
 FILE=/usr/bin/Linux-Yuzu-EA-4176.AppImage
 wget https://archive.org/download/yuzu-bin-src-2024/Linux-Yuzu-EA-4176.AppImage -O ${FILE}
 chmod +x ${FILE}
+cp ${MUK_DIR}/files/yuzu.png /usr/share/icons/
 
 # Create application shortcut:
 cat << EOF > /usr/share/applications/yuzu.desktop 
@@ -29,4 +30,5 @@ Terminal=false
 Exec=${FILE}
 Name=Yuzu
 Comment=Yuzu Nintendo Switch Emulator
+Keywords=game;emulator;
 EOF
