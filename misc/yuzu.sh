@@ -16,7 +16,7 @@ _title "Installing Yuzu..."
 #==============================================================================
 # Download the AppImage and make executable:
 FILE=/usr/bin/Linux-Yuzu-EA-4176.AppImage
-wget https://archive.org/download/yuzu-bin-src-2024/Linux-Yuzu-EA-4176.AppImage -O ${FILE}
+wget https://github.com/pineappleEA/pineapple-src/releases/download/EA-4176/Linux-Yuzu-EA-4176.AppImage -O ${FILE}
 chmod +x ${FILE}
 cp ${MUK_DIR}/files/yuzu.png /usr/share/icons/
 
@@ -31,4 +31,6 @@ Exec=${FILE}
 Name=Yuzu
 Comment=Yuzu Nintendo Switch Emulator
 Keywords=game;emulator;
+Categories=Game;Emulator;
+Icon=yuzu.png
 EOF

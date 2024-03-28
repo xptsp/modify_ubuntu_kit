@@ -36,3 +36,10 @@ _title "Copying \".bashrc\" and \".profile\" from \"/etc/skel\" to \"root\"..."
 #==============================================================================
 cp /etc/skel/.{bashrc,profile} /root
 sed -i "s|32m|31m|" /root/.bashrc
+
+#==============================================================================
+_title "Adding new value under \"/etc/sudoers.d/\"..."
+# Inspired by: https://www.gamingonlinux.com/2024/03/ubuntu-2404-increases-vm-max-map-count-for-smoother-linux-gaming/
+#==============================================================================
+sed -i "/vm.max_map_count/d" /etc/sysctl.d/*.conf
+echo "vm.max_map_count = 1048576" > /etc/sysctl.d/98-custom-optimization.conf
