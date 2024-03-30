@@ -25,3 +25,8 @@ rm /tmp/urserver.deb
 ln -sf ${MUK_DIR}/files/urserver.service /etc/systemd/system/urserver.service
 systemctl enable urserver
 ischroot || systemctl start urserver
+
+# Third: Make a custom remote that works with Ubuntu:
+#==============================================================================
+cd /opt/urserver/remotes/Unified/Main/
+tar xfvz ${MUK_DIR}/files/PiInput.tgz

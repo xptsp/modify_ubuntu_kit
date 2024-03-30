@@ -1,1 +1,1 @@
-../desktop/x11vnc.sh
+../misc/x11vnc.sh
