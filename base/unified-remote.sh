@@ -20,13 +20,14 @@ wget https://www.unifiedremote.com/download/linux-x64-deb -O /tmp/urserver.deb
 apt install -y /tmp/urserver.deb
 rm /tmp/urserver.deb
 
-# Second: Adding Unified Remote systemd service:
+# Second: Make a custom remote that works with Ubuntu:
+#==============================================================================
+cd /opt/urserver/remotes/Unified/Main/
+tar xfvz ${MUK_DIR}/files/PiInput.tgz
+
+# Third: Adding Unified Remote systemd service:
 #==============================================================================
 ln -sf ${MUK_DIR}/files/urserver.service /etc/systemd/system/urserver.service
 systemctl enable urserver
 ischroot || systemctl start urserver
 
-# Third: Make a custom remote that works with Ubuntu:
-#==============================================================================
-cd /opt/urserver/remotes/Unified/Main/
-tar xfvz ${MUK_DIR}/files/PiInput.tgz
