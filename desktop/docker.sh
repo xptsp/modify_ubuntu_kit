@@ -24,10 +24,48 @@ test -f ${FILE} && rm ${FILE}
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o ${FILE}
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list
 apt update
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose
 
 #==============================================================================
 _title "Creating docker user..."
 #==============================================================================
 useradd -M -g docker -r -d /home/docker -s /usr/sbin/nologin docker
 add_taskd 80_docker.sh
+
+#==============================================================================
+_title "Creating docker-compose services..."
+#==============================================================================
+# Create: docker-compose.service file:
+cat << EOF > /lib/systemd/system/docker-compose.service
+[Unit]
+Description=Docker Compose Service
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/docker-compose -f /home/docker/docker-compose.yaml up
+ExecStop=/usr/bin/docker-compose stop
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
+EOF
+# Create: docker-compose@.service file:
+cat << EOF > /lib/systemd/system/docker-compose@.service
+[Unit]
+Description=Docker Compose Service (\%i)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/docker-compose -f /home/docker/%i/docker-compose.yaml up
+ExecStop=/usr/bin/docker-compose stop
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
+EOF

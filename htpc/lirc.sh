@@ -21,19 +21,29 @@ echo "lirc lirc/transmitter select None" | debconf-set-selections
 echo "lirc lirc/serialport select /dev/ttyS0" | debconf-set-selections
 echo "lirc lirc/remote select Windows Media Center Transceivers/Remotes (all)" | debconf-set-selections
 
-# Second: Add the xenial repo, install the package, then remove the repo:
+# Second: Add the Ubuntu 16.04 repository and keys:
 #==============================================================================
-if [[ $OS_VER -gt 1604 ]]; then
-	echo "deb http://ca.archive.ubuntu.com/ubuntu/ xenial universe" > /etc/apt/sources.list.d/xenial.list
-	apt update
-	apt install -y lirc/xenial
-	apt-mark hold lirc
-	rm /etc/apt/sources.list.d/xenial.list
-	apt update
-else
-	apt install lirc
-fi
+echo "deb http://ca.archive.ubuntu.com/ubuntu/ xenial universe" > /etc/apt/sources.list.d/xenial.list
+apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 40976EAF437D05B5
+apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3B4FE6ACC0B21F32
 
-# Third: Add finisher task to configure "LIRC":
+# Third: Pin the necessary packages so that they are pulled instead of the default ones:
+#==============================================================================
+cat << EOF > /etc/apt/preferences.d/lirc
+Package: lirc*
+Pin: release v=16.04
+Pin-Priority: 1100
+
+Package: liblircclient0
+Pin: release v=16.04
+Pin-Priority: 1100
+EOF
+
+# Fourth: Install the LIRC packages from the Ubuntu xenial repository:
+#==============================================================================
+apt update
+apt install -y lirc
+
+# Fifth: Add finisher task to configure "LIRC":
 #==============================================================================
 add_taskd 50_lirc.sh
