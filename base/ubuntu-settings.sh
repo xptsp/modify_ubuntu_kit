@@ -34,6 +34,10 @@ add_bootd 15_grub_timeout.sh
 #==============================================================================
 _title "Copying \".bashrc\" and \".profile\" from \"/etc/skel\" to \"root\"..."
 #==============================================================================
+FILE=~/.bash_aliases
+wget https://raw.githubusercontent.com/xptsp/bpiwrt-builder/master/files/root/.bash_aliases -O ${FILE}
+chmod +x ${FILE}
+
 cp /etc/skel/.{bashrc,profile} /root
 sed -i "s|32m|31m|" /root/.bashrc
 

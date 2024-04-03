@@ -32,7 +32,3 @@ _title "Getting other custom scripts..."
 FILE=/usr/local/bin/peanut
 wget https://raw.githubusercontent.com/xptsp/bpiwrt-builder/master/files/usr/local/bin/peanut -O ${FILE}
 chmod +x ${FILE} 
-
-FILE=~/.bash_aliases
-wget https://raw.githubusercontent.com/xptsp/bpiwrt-builder/master/files/root/.bash_aliases -O ${FILE}
-chmod +x ${FILE}
