@@ -38,8 +38,10 @@ FILE=~/.bash_aliases
 wget https://raw.githubusercontent.com/xptsp/bpiwrt-builder/master/files/root/.bash_aliases -O ${FILE}
 chmod +x ${FILE}
 
-cp /etc/skel/.{bashrc,profile} /root
-sed -i "s|32m|31m|" /root/.bashrc
+FILE=/root/.bashrc
+cp /etc/skel/.{bashrc,profile} ${FILE}
+sed -i "s|32m|31m|" ${FILE}
+sed -i "s|# don't put|HOME=\$\(cat /etc/passwd \| grep -e "^\${SUDO_USER}:" \| cut -d: -f 6\)\n\n# don't put|" ${FILE}
 
 #==============================================================================
 _title "Adding new value under \"/etc/sudoers.d/\"..."

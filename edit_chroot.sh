@@ -34,17 +34,25 @@ echo ${USB_CASPER} | grep -q "=" && export USB_CASPER=$(echo ${USB_CASPER} | cut
 [[ ! -e ${MUK_DIR}/files/includes.sh ]] && (echo Missing includes file!  Aborting!; exit 1)
 . ${MUK_DIR}/files/includes.sh
 
+export UI=$([[ "$1" =~ -ui$ ]] && echo "Y" || echo "N")
+export ACTION=${1/-ui/}
+function _ui_title() { if [[ "$UI" == "N" ]]; then _title $@; else dialog --msgbox "$@" 8 60; clear; fi }  
+function _ui_error() { if [[ "$UI" == "N" ]]; then _error $@; else dialog --msgbox "$@" 8 60; clear; fi }  
+
 #==============================================================================
 # If no help is requested, make sure script is running as root and needed
 # packages have been installed on this computer.
 #==============================================================================
-if ! [[ -z "$1" || "$1" == "--help" ]]; then
+if [[ ! "${ACTION}" =~ (help|--help) ]]; then
 	# Make sure we got everything we need to create a customized Ubuntu disc:
 	PKGS=()
 	whereis mksquashfs | grep -q "/mksquashfs" || PKGS+=( squashfs-tools )
 	whereis genisoimage | grep -q "/genisoimage" || PKGS+=( genisoimage )
 	whereis xorriso | grep -q "/xorriso" || PKGS+=( xorriso )
 	whereis git | grep -q "/git" || PKGS+=( git )
+	whereis dialog | grep -q "/dialog" || PKGS+=( dialog )
+
+	# Install any packages that we need for the script to run:
 	if [[ ! -z "${PKGS[@]}" ]]; then 
 		_title "Installing necessary packages"
 		apt update >& /dev/null
@@ -55,12 +63,12 @@ fi
 #==============================================================================
 # Did user request to safely unmount the filesystem mount points?
 #==============================================================================
-if [[ "$1" == "update" ]]; then
+if [[ "${ACTION}" == "update" ]]; then
 	if [[ $(ischroot; echo $?) -ne 1 ]]; then
-		_error "Cannot use ${BLUE}update${GREEN} inside chroot environment!"
+		_ui_error "Cannot use ${BLUE}update${GREEN} inside chroot environment!"
 		exit 1
 	elif [[ ! -d ${MUK_DIR}/.git ]]; then
-		_error "Unable to update the toolkit because it is not a GitHub repository!"
+		_ui_error "Unable to update the toolkit because it is not a GitHub repository!"
 		exit 1
 	fi
 	_title "Fetching latest version of this script"
@@ -68,22 +76,24 @@ if [[ "$1" == "update" ]]; then
 		git clone --depth=1 https://github.com/xptsp/modify_ubuntu_kit ${MUK_DIR}
 	else
 		cd ${MUK_DIR}
+		OWNER=($(ls -l | awk '{print $3":"$4}' | sort | uniq | grep -v "root:root" | grep -v "^:$"))
 		git reset --hard
 		git pull
+		[[ ! -z "${OWNER[0]}" ]] && chown -R ${OWNER[0]} *
 	fi
 	[[ -f ${MUK_DIR}/install.sh ]] && ${MUK_DIR}/install.sh
-	_title "Script has been updated to latest version."
+	_ui_title "Script has been updated to latest version."
 	exit 0
 
 #==============================================================================
 # Are we changing the unpacked CHROOT environment?
 #==============================================================================
-elif [[ "$1" == "mount" ]]; then
+elif [[ "${ACTION}" == "mount" ]]; then
 	if [[ ! -f ${UNPACK_DIR}/extract/casper/filesystem.squashfs ]]; then
-		_error "No \"filesystem.squashfs\" found!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
+		_ui_error "No \"filesystem.squashfs\" found!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 		exit 1
 	fi
-	mount | grep -q "${UNPACK_DIR}/edit " && umount edit
+	mount | grep -q "${UNPACK_DIR}/edit " && umount ${UNPACK_DIR}/edit
 	mount | grep "${UNPACK}/.lower" | awk '{print $3}' | while read DIR; do umount -lfq ${DIR}; rmdir ${DIR}; done
 	mkdir -p ${UNPACK_DIR}/{.lower,.upper,.work,edit}
 	mount ${UNPACK_DIR}/extract/casper/filesystem.squashfs ${UNPACK_DIR}/.lower || exit 1
@@ -97,12 +107,12 @@ elif [[ "$1" == "mount" ]]; then
 	TLOWER=($(echo $TLOWER | sed "s|\:|\n|g" | tac))
 	LOWER=$(echo ${TLOWER[@]} | sed "s| |:|g")
 	mount -t overlay -o lowerdir=${LOWER},upperdir=${UNPACK_DIR}/.upper,workdir=${UNPACK_DIR}/.work overlay ${UNPACK_DIR}/edit || exit 1
-	_title "Necessary chroot filesystem mount points have been mounted!"
+	_ui_title "Necessary chroot filesystem mount points have been mounted!"
 
 #==============================================================================
 # Are we changing the unpacked CHROOT environment?
 #==============================================================================
-elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
+elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "build" ]]; then
 	#==========================================================================
 	# Determine if we are working inside or outside the CHROOT environment
 	#==========================================================================
@@ -111,9 +121,19 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		# RESULT: We are outside the chroot environment:
 		#======================================================================
 		### First: Make sure that the CHROOT environment actually exists:
-		if [[ "$1" == "build" ]]; then
-			if [[ ! "$2" == "base" && ! "$2" == "desktop" && ! "$2" == "htpc" && ! "$2" == "docker" ]]; then
-				_error "Invalid parameter!  Supported values are: ${RED}base${GREEN}, ${RED}desktop${GREEN}, ${RED}htpc${GREEN} and ${RED}docker${GREEN}!"
+		if [[ "${ACTION}" == "build" ]]; then
+			valid=($(find ${MUK_DIR}/* -maxdepth 0 -type d | while read DIR; do basename $DIR; done))
+			if [[ "$2" != "misc" && ! -z "${valid[$2]}" ]]; then
+				# If the "build" choice was made, ask which directory to run through:
+				if [[ "${UI}" == "Y" ]]; then
+					choice2=(base "Base build" desktop "Desktop build" htpc "HTPC build" docker "Docker build" misc "Miscellaneous build")
+					height=$(( ${#choice2[@]} / 2 + 7 ))
+					option2=$(dialog --menu "Available Build Packages:" ${height} 40 16  "${choice2[@]}" 2>&1 >/dev/tty)
+					[[ -z "${option2}" ]] && clear && exit 1
+				fi
+				valid="${valid[@]}"
+				valid=${valid// /${GREEN}, ${RED}}
+				_error "Invalid build specified!  Supported values are: ${RED}${valid}${GREEN}!"
 				exit 1
 			fi
 		fi
@@ -195,7 +215,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 		test -e /usr/local/bin/cls || ln -sf /usr/bin/clear /usr/local/bin/cls
 
 		### Third: Next action depends on parameter passed....
-		if [[ "$1" == "enter" ]]; then
+		if [[ "${ACTION}" == "enter" ]]; then
 			### "enter": Create a bash shell for user to make alterations to chroot environment
 			clear
 			_title "Ready to modify CHROOT environment!"
@@ -208,7 +228,7 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 			mv /tmp/.bashrc /etc/skel/.bashrc
 			[ -f /etc/debian_chroot ] && rm /etc/debian_chroot
 			clear
-		elif [[ "$1" == "build" ]]; then
+		elif [[ "${ACTION}" == "build" ]]; then
 			### "build": Install all scripts found in the specified build folder:
 			cd ${MUK_DIR}/$2
 			for file in *.sh; do ./$file; done
@@ -296,9 +316,9 @@ elif [[ "$1" == "enter" || "$1" == "upgrade" || "$1" == "build" ]]; then
 #==============================================================================
 # Did user request to safely unmount the filesystem mount points?
 #==============================================================================
-elif [[ "$1" == "unmount" ]]; then
+elif [[ "${ACTION}" == "unmount" ]]; then
 	if [[ $(ischroot; echo $?) -ne 1 ]]; then
-		_error "Cannot use ${BLUE}unmount${GREEN} inside chroot environment!"
+		_ui_error "Cannot use ${BLUE}unmount${GREEN} inside chroot environment!"
 		exit 1
 	fi
 	_title "Unmounting filesystem mount points...."
@@ -306,32 +326,32 @@ elif [[ "$1" == "unmount" ]]; then
 	mount | grep "${UNPACK_DIR}/edit" | awk '{print $3}' | tac | while read DIR; do umount -qlf ${DIR}; done
 	mount | grep "${UNPACK_DIR}/.lower" | awk '{print $3}' | while read DIR; do umount -qlf ${DIR}; rmdir ${DIR}; done
 	$0 docker_umount -q
-	_title "All filesystem mount points should be unmounted now."
+	_ui_title "All filesystem mount points should be unmounted now."
 
 #==============================================================================
 # Did user request to safely remove the unpacked filesystem?
 #==============================================================================
-elif [[ "$1" == "remove" ]]; then
+elif [[ "${ACTION}" == "remove" ]]; then
 	if [[ $(ischroot; echo $?) -ne 1 ]]; then
-		_error "Cannot use ${BLUE}remove${GREEN} inside chroot environment!"
+		_ui_error "Cannot use ${BLUE}remove${GREEN} inside chroot environment!"
 		exit 1
 	elif [[ ! -d ${UNPACK_DIR}/edit ]]; then
-		_error "No unpacked filesystem!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
+		_ui_error "No unpacked filesystem!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 		exit 1
 	fi
 	$0 unmount
 	_title "Removing modifications to squashfs..."
 	umount -q ${UNPACK_DIR}/edit
 	rm -rf ${UNPACK_DIR}/.upper
-	_title "Modifications to squashfs filesystem has been removed."
+	_ui_title "Modifications to squashfs filesystem has been removed."
 
 #==============================================================================
 # Did user request to unpack the ISO?
 #==============================================================================
-elif [[ "$1" == "unpack" ]]; then
+elif [[ "${ACTION}" == "unpack" ]]; then
 	# First: Make sure everything is okay before proceeding:
 	if [[ $(ischroot; echo $?) -ne 1 ]]; then
-		_error "Cannot use ${BLUE}unpack${GREEN} inside chroot environment!"
+		_ui_error "Cannot use ${BLUE}unpack${GREEN} inside chroot environment!"
 		exit 1
 	fi
 	cd ${UNPACK_DIR}
@@ -340,17 +360,17 @@ elif [[ "$1" == "unpack" ]]; then
 	ISO=$2
 	if [[ -z "$ISO" ]]; then
 		if mount /dev/cdrom ${UNPACK_DIR}/mnt; then
-			_error "No DVD in the drive!"
+			_ui_error "No DVD in the drive!"
 			exit 1
 		fi
 	else
 		if ! mount -o loop $ISO ${UNPACK_DIR}/mnt >& /dev/null; then
-			_error "Specified ISO unable to be mounted!"
+			_ui_error "Specified ISO unable to be mounted!"
 			exit 1
 		fi
 	fi
 	if [[ ! -f mnt/casper/filesystem.squashfs ]]; then
-		_error "Cannot find a ${BLUE}filesystem.squashfs${GREEN} to extract!!!"
+		_ui_error "Cannot find a ${BLUE}filesystem.squashfs${GREEN} to extract!!!"
 		exit 1
 	fi
 
@@ -367,20 +387,20 @@ elif [[ "$1" == "unpack" ]]; then
 	umount -q mnt
 
 	# Fourth: Tell user we done!
-	_title "Ubuntu ISO unpacked!"
+	_ui_title "Ubuntu ISO has been unpacked!"
 
 #==============================================================================
 # Did user request to pack the chroot environment?
 #==============================================================================
-elif [[ "$1" == "pack" || "$1" == "pack-xz" || "$1" == "changes" || "$1" == "changes-xz" ]]; then
+elif [[ "${ACTION}" =~ (pack|changes)(-xz|) ]]; then
 	if [[ $(ischroot; echo $?) -ne 1 ]]; then
-		_error "Cannot use ${BLUE}pack${GREEN} inside chroot environment!"
+		_ui_error "Cannot use ${BLUE}pack${GREEN} inside chroot environment!"
 		exit 1
 	elif [[ ! -d ${UNPACK_DIR}/extract ]]; then
-		_error "No ISO structure created!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
+		_ui_error "No ISO structure created!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 		exit 1
 	elif [[ ! -d ${UNPACK_DIR}/edit ]]; then
-		_error "No unpacked filesystem!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
+		_ui_error "No unpacked filesystem!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 		exit 1
 	fi
 
@@ -401,14 +421,14 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" || "$1" == "changes" || "$1" == "cha
 	sed -i '/casper/d' extract/casper/filesystem.manifest
 
 	# Third: Set necessary flags for compression:
-	[[ "$1" =~ -xz$ ]] && FLAG_XZ=1
+	[[ "${ACTION}" =~ -xz$ ]] && FLAG_XZ=1
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 
 	# Fourth: Pack the filesystem into squashfs if required:
 	FS=filesystem_$(date +"%Y%m%d")
 	FS=${FS}-$(( $(ls extract/casper/${FS}-* 2> /dev/null | sed "s|extract/casper/${FS}-||" | sed "s|\.squashfs||" | sort -n | tail -1) + 1 )).squashfs
 	_title "Building ${BLUE}${FS}${GREEN}...."
-	[[ "$1" == "pack" || "$1" == "pack-xz" ]] && SRC=edit || SRC=.upper
+	[[ "${ACTION}" == "pack" || "${ACTION}" == "pack-xz" ]] && SRC=edit || SRC=.upper
 	mksquashfs ${SRC} extract/casper/${FS} -b 1048576 ${XZ}
 
 	# Fifth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
@@ -422,7 +442,7 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" || "$1" == "changes" || "$1" == "cha
 	_title "Removing the overlay filesystem and upper layer of overlay..."
 	umount -q ${UNPACK_DIR}/edit
 	for DIR in ${UNPACK_DIR}/.lower*; do umount -q ${DIR}; rmdir ${DIR}; done
-	if [[ "$1" == "pack" || "$1" == "pack-xz" ]]; then
+	if [[ "${ACTION}" == "pack" || "${ACTION}" == "pack-xz" ]]; then
 		mv ${UNPACK_DIR}/extract/casper/${FS} ${UNPACK_DIR}/extract/casper/filesystem.squashfs
 		rm ${UNPACK_DIR}/extract/casper/filesystem_*.squashfs 2> /dev/null
 	fi
@@ -434,20 +454,20 @@ elif [[ "$1" == "pack" || "$1" == "pack-xz" || "$1" == "changes" || "$1" == "cha
 	find -type f -print0 | xargs -0 md5sum | grep -v isolinux/boot.cat | tee md5sum.txt >& /dev/null
 
 	# Eighth: Tell user we done!
-	_title "Done packing and preparing extracted filesystem!"
+	_ui_title "Done packing and preparing extracted filesystem!"
 
 #==============================================================================
 # Did user request to create the ISO?
 #==============================================================================
-elif [[ "$1" == "iso" ]]; then
+elif [[ "${ACTION}" == "iso" ]]; then
 	if [[ $(ischroot; echo $?) -ne 1 ]]; then
-		_error "Cannot use ${BLUE}iso${GREEN} inside chroot environment!"
+		_ui_error "Cannot use ${BLUE}iso${GREEN} inside chroot environment!"
 		exit 1
 	elif [[ ! -d ${UNPACK_DIR}/extract ]]; then
-		_error "No ISO structure copied!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
+		_ui_error "No ISO structure copied!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 		exit 1
 	elif [[ ! -f ${UNPACK_DIR}/extract/casper/filesystem.squashfs ]]; then
-		_error "No packed filesystem!  Use ${BLUE}edit_chroot pack${GREEN} first!"
+		_ui_error "No packed filesystem!  Use ${BLUE}edit_chroot pack${GREEN} first!"
 		exit 1
 	fi
 
@@ -504,12 +524,12 @@ elif [[ "$1" == "iso" ]]; then
 		if [[ ! -f ${UNPACK_DIR}/boot_hybrid.img || ! -f ${UNPACK_DIR}/boot_efi.img ]]; then
 			# Extract the MBR template for --grub2-mbr:
 			ISO=$(ls ${UNPACK_DIR}/ubuntu-*.iso | head -1)
-			if [[ -z "${ISO}" ]]; then _error "No Ubuntu ISO found in \"${UNPACK_DIR}\"!  Aborting!"; exit 1; fi
+			if [[ -z "${ISO}" ]]; then _ui_error "No Ubuntu ISO found in \"${UNPACK_DIR}\"!  Aborting!"; exit 1; fi
 			dd if=${ISO} bs=1 count=432 of=${UNPACK_DIR}/boot_hybrid.img
 
 			# Extract the EFI partition image image for -append_partition:
 			INFO=($(fdisk -l ${ISO} | grep "EFI"))
-			if [[ "${INFO[5]} ${INFO[6]}" != "EFI System" ]]; then _error "No EFI filesystem present in ISO!  Aborting!"; exit 1; fi
+			if [[ "${INFO[5]} ${INFO[6]}" != "EFI System" ]]; then _ui_error "No EFI filesystem present in ISO!  Aborting!"; exit 1; fi
 			dd if=${ISO} bs=512 skip=${INFO[1]} count=${INFO[3]} of=${UNPACK_DIR}/boot_efi.img
 		fi
 
@@ -534,20 +554,20 @@ elif [[ "$1" == "iso" ]]; then
 	fi
 
 	# Fifth: Tell user we done!
-	_title "Done building ${BLUE}${ISO_DIR}/${ISO_FILE}.iso${GREEN}!"
+	_ui_title "Done building ${BLUE}${ISO_DIR}/${ISO_FILE}.iso${GREEN}!"
 
 #==============================================================================
 # Did user request to rebuild the filesystem.squashfs and the ISO together?
 #==============================================================================
-elif [[ "$1" == "rebuild" ]]; then
+elif [[ "${ACTION}" == "rebuild" ]]; then
 	$0 pack $2 && $0 iso $2
-elif [[ "$1" == "rebuild-xz" ]]; then
+elif [[ "${ACTION}" == "rebuild-xz" ]]; then
 	$0 pack-xz $2 && $0 iso $2
 
 #==============================================================================
 # Did user request to mount chroot environment docker folder to host machine?
 #==============================================================================
-elif [[ "$1" == "docker_mount" ]]; then
+elif [[ "${ACTION}" == "docker_mount" ]]; then
 	_title "Mounting chroot docker directory on live system:"
 
 	# Create the necessary directories:
@@ -562,7 +582,7 @@ elif [[ "$1" == "docker_mount" ]]; then
 #==============================================================================
 # Did user request to unmount chroot environment docker folder from host machine?
 #==============================================================================
-elif [[ "$1" == "docker_umount" ]]; then
+elif [[ "${ACTION}" == "docker_umount" ]]; then
 	# If the docker folder doesn't exist, exit the script:
 	[[ ! -d ${UNPACK_DIR}/edit/home/docker/.sys ]] && exit
 
@@ -574,12 +594,12 @@ elif [[ "$1" == "docker_umount" ]]; then
 	MOUNT=$([[ -f /var/lib/docker/${ID} ]] && echo "Y")
 	[[ -f ${UNPACK_DIR}/edit/home/docker/.sys/${ID} ]] && rm ${UNPACK_DIR}/edit/home/docker/.sys/${ID}
 	if [[ -z "${MOUNT}" ]]; then
-		[[ ! "$2" == "-q" ]] && _error "Docker directory in chroot environment is not mounted on host system!"
+		[[ ! "$2" == "-q" ]] && _ui_error "Docker directory in chroot environment is not mounted on host system!"
 		exit 2
 	fi
 
 	# Unmount the chroot environment docker directory:
-	_title "Unmounting chroot docker directory from live system:"
+	_ui_title "Unmounting chroot docker directory from live system:"
 	systemctl stop docker
 	umount -q /var/lib/docker
 	systemctl start docker
@@ -587,11 +607,11 @@ elif [[ "$1" == "docker_umount" ]]; then
 #==============================================================================
 # Mount my Ubuntu split-partition USB stick properly:
 #==============================================================================
-elif [[ "$1" == "usb_mount" ]]; then
+elif [[ "${ACTION}" == "usb_mount" ]]; then
 	UB=$(blkid | grep "${USB_LIVE}" | cut -d: -f 1)
 	RO=$(blkid | grep "${USB_CASPER}" | cut -d: -f 1)
-	if [[ -z "${UB}" ]]; then _error "No USB Live partition 1 found! (Ref: \"$USB_LIVE\")"; exit 1; fi
-	if [[ -z "${RO}" ]]; then _error "No USB Casper partition 2 found! (Ref: \"$USB_CASPER\")"; exit 1; fi
+	if [[ -z "${UB}" ]]; then _ui_error "No USB Live partition 1 found! (Ref: \"$USB_LIVE\")"; exit 1; fi
+	if [[ -z "${RO}" ]]; then _ui_error "No USB Casper partition 2 found! (Ref: \"$USB_CASPER\")"; exit 1; fi
 	if mount | grep -q ${UNPACK_DIR}/mnt; then umount -q ${UNPACK_DIR}/mnt || exit 1; fi
 	mount | grep -q ${UNPACK_DIR}/mnt && umount -lfq ${UNPACK_DIR}/mnt
 	mkdir -p ${UNPACK_DIR}/usb_{base,casper} ${UNPACK_DIR}/mnt
@@ -600,22 +620,22 @@ elif [[ "$1" == "usb_mount" ]]; then
 	if mount | grep -q ${RO}; then umount -q ${RO} || exit 1; fi
 	mount ${RO} ${UNPACK_DIR}/usb_casper -t ext3 -o defaults,noatime || exit 1
 	mount | grep -q ${UNPACK_DIR}/mnt || unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_base=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid || exit 1
-	_title "Finished mounting split-partition USB stick!"
+	_ui_title "Finished mounting split-partition USB stick!"
 
 #==============================================================================
 # Unmount my Ubuntu split-partition USB stick properly:
 #==============================================================================
-elif [[ "$1" == "usb_unmount" ]]; then
+elif [[ "${ACTION}" == "usb_unmount" ]]; then
 	umount -q ${UNPACK_DIR}/mnt || exit 1
 	umount -q ${UNPACK_DIR}/usb_base || exit 1
 	umount -q ${UNPACK_DIR}/usb_casper || exit 1
 	rmdir ${UNPACK_DIR}/usb_{base,casper}
-	_title "Split-partition USB stick successfully unmounted!"
+	_ui_title "Split-partition USB stick successfully unmounted!"
 
 #==============================================================================
 # Copy "extract" folder <<TO>> my Ubuntu split-partition USB stick:
 #==============================================================================
-elif [[ "$1" == "usb_load" ]]; then
+elif [[ "${ACTION}" == "usb_load" ]]; then
 	DEV=$(mount | grep "${UNPACK_DIR}/usb_casper" | cut -d" " -f 1)
 	if [[ -z "${DEV}" ]]; then $0 usb_mount || exit 1; fi
 	copy -R --verbose --update ${UNPACK_DIR}/extract/casper* ${UNPACK_DIR}/mnt/casper/
@@ -624,28 +644,28 @@ elif [[ "$1" == "usb_load" ]]; then
 	sed -i "s| boot=casper||" ${FILE}
 	sed -i "s| live-media=/dev/disk/by-uuid/[0-9a-z\-]*||" ${FILE}
 	sed -i "s|vmlinuz |vmlinuz boot=casper live-media=/dev/disk/by-uuid/${UUID} |" ${FILE}
-	_title "File copy to split-partition USB stick completed!"
+	_ui_title "File copy to split-partition USB stick completed!"
 
 #==============================================================================
 # Copy <<FROM>> my Ubuntu split-partition USB stick to "extract" folder:
 #==============================================================================
-elif [[ "$1" == "usb_copy" ]]; then
+elif [[ "${ACTION}" == "usb_copy" ]]; then
 	DEV=$(mount | grep "${UNPACK_DIR}/usb_casper" | cut -d" " -f 1)
 	if [[ -z "${DEV}" ]]; then $0 usb_mount || exit 1; fi
 	copy -R --verbose --update ${UNPACK_DIR}/mnt/casper* ${UNPACK_DIR}/extract/casper
 	FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
 	sed -i "s| live-media=/dev/disk/by-uuid/[0-9a-z\-]*||g" ${FILE}
-	_title "File copy from split-partition USB stick completed!"
+	_ui_title "File copy from split-partition USB stick completed!"
 
 #==============================================================================
 # Update snap configuration (REQUIRES LIVE CD!)
 #==============================================================================
-elif [[ "$1" == "snap_rebuild" || "$1" == "snap_rebuild_test" ]]; then
+elif [[ "${ACTION}" =~ snap_rebuild(|_test) ]]; then
 	# If we are NOT in a Live CD environment, abort with error!
-	if ! mount | grep -q " / " | grep "/cow "; then _error "Live CD not detected!  Aborting"; exit 1; fi
+	if ! mount | grep -q " / " | grep "/cow "; then _ui_error "Live CD not detected!  Aborting"; exit 1; fi
 
 	_title "Disabling current snaps...."
-	SNAPS=(snapd $(snap list --all 2> /dev/null | awk '{print $1}' | sed "/^Name$/d"))
+	SNAPS=(snapd $(snap list --all 2> /dev/null | awk '{print ${ACTION}}' | sed "/^Name$/d"))
 	for SNAP in ${SNAPS[@]}; do snap disable ${SNAP}; done
 
 	_title "Unmounting snap-related directories..."
@@ -653,7 +673,7 @@ elif [[ "$1" == "snap_rebuild" || "$1" == "snap_rebuild_test" ]]; then
 
 	_title "Removing current snaps..."
 	while true; do
-		LIST=($(snap list --all 2> /dev/null | awk '{print $1}' | sed "/^Name$/d"))
+		LIST=($(snap list --all 2> /dev/null | awk '{print ${ACTION}}' | sed "/^Name$/d"))
 		[[ -z "${LIST[@]}" ]] && break
 		for SNAP in ${LIST[@]}; do snap remove ${SNAP}; done
 	done
@@ -666,7 +686,7 @@ elif [[ "$1" == "snap_rebuild" || "$1" == "snap_rebuild_test" ]]; then
 	apt install -y snapd
 
 	_title "Downloading current versions of available snaps..."
-	[[ "$1" == "snap_rebuild_test" ]] && SNAPS=(bare core22 gnome-42-2204 gtk-common-themes snap-store snapd snapd-desktop-integration)
+	[[ "${ACTION}" == "snap_rebuild_test" ]] && SNAPS=(bare core22 gnome-42-2204 gtk-common-themes snap-store snapd snapd-desktop-integration)
 	mkdir -p /var/lib/snapd/seed/{assertions,snaps}
 	cd /tmp
 	YAML=/var/lib/snapd/seed/seed.yaml
@@ -686,14 +706,14 @@ elif [[ "$1" == "snap_rebuild" || "$1" == "snap_rebuild_test" ]]; then
 		FILE=$(basename ${SNAP}_*.snap)
 		grep -q "${FILE}" ${YAML} || (echo -e "\t-"; echo -e "\t\tname: ${SNAP}"; echo -e "\t\tchannel: stable"; echo -e "\t\tfile: ${FILE}") >> ${YAML}
 	done
-	_title "Completed rebuilding the snap configuration!"
+	_ui_title "Completed rebuilding the snap configuration!"
 
 #==============================================================================
 # Copy snap configuration from persistent partition:
 #==============================================================================
-elif [[ "$1" == "snap_copy" ]]; then
+elif [[ "${ACTION}" == "snap_copy" ]]; then
 	# If we are in a Live CD environment, abort with error!
-	if ! blkid | grep -q "LABEL=\"casper-rw\""; then _error "No persistent partition labeled \"casper-rw\" found!  Aborting!"; exit 1; fi
+	if ! blkid | grep -q "LABEL=\"casper-rw\""; then _ui_error "No persistent partition labeled \"casper-rw\" found!  Aborting!"; exit 1; fi
 
 	# Mount persistent partiton and chroot environment:
 	_title "Mounting partition with label \"casper-rw\"..."
@@ -718,13 +738,13 @@ elif [[ "$1" == "snap_copy" ]]; then
 	# Unmount casper partition and tell user we're finished:
 	umount -lfq ${UNPACK_DIR}/.casper
 	rmdir ${UNPACK_DIR}/.casper 
-	_title "Completed copying the snap configuration!"
+	_ui_title "Completed copying the snap configuration!"
 
 #==============================================================================
 # Invalid parameter specified.  List available parameters:
 #==============================================================================
-else
-	[[ ! "$1" == "--help" ]] && echo "Invalid parameter specified!"
+elif [[ ! -z "${ACTION}" ]]; then
+	[[ ! "${ACTION}" == "--help" ]] && echo "Invalid parameter specified!"
 	echo "Usage: edit_chroot [OPTION]"
 	echo ""
 	echo "Available commands:"
@@ -739,6 +759,7 @@ else
 	echo -e "  ${GREEN}build${NC}          Enter the unpacked filesystem environment to install specified series of packages."
 	echo -e "  ${GREEN}enter${NC}          Enter the unpacked filesystem environment to make changes."
 	echo -e "  ${GREEN}upgrade${NC}        Only upgrades Ubuntu packages with updates available."
+	echo -e "  ${GREEN}mount${NC}          Mounts all unpacked filesystem mount points."
 	echo -e "  ${GREEN}unmount${NC}        Safely unmounts all unpacked filesystem mount points."
 	echo -e "  ${GREEN}remove${NC}         Safely removes the unpacked filesystem from the hard drive."
 	echo -e "  ${GREEN}update${NC}         Updates this script with the latest version."
@@ -757,7 +778,39 @@ else
 	echo "Snap-related commands:"
 	echo -e "  ${GREEN}snap_rebuild${NC}   Rebuilds snap directories with latest versions of each snap.  ${RED}LIVE CD REQUIRED!${NC}"
 	echo -e "  ${GREEN}snap_copy${NC}      Copy snap configuration from persistent partition."
-	echo -e ""
-	echo -e "Note that this command ${RED}REQUIRES${NC} root access in order to function it's job!"
+
+#==============================================================================
+# No command-line option specified!  Show the menu:
+#==============================================================================
+else
+	while true; do
+		# Present the available options to the user.  Exit if no choice made:
+		choices=(
+			enter       "Enter the unpacked filesystem environment to make changes."
+			unpack      "Copies the Ububuntu installer files from DVD/ISO on hard drive"
+			pack        "Packs the unpacked filesystem."
+			changes     "Packs the CHANGES to the unpacked filesystem ."
+			iso         "Builds an ISO containing the packed filesystem."
+			rebuild     "Combines the \"pack\" and \"iso\" operations."
+			build       "Enter unpacked filesystem environment to install specified packages."
+			upgrade     "Only upgrades Ubuntu packages with any updates available."
+			mount       "Mounts all unpacked filesystem mount points."
+			unmount     "Safely unmount all unpacked filesystem mount points."
+		)
+		height=$(( ${#choices[@]} / 2 + 7 ))
+		unset option2
+		choice=$(dialog --menu "Available \"edit_chroot\" options:" ${height} 80 16  "${choices[@]}" 2>&1 >/dev/tty)
+		[[ -z "$choice" ]] && break
+		
+		# If the "pack", "changes", or "reubild" choice was made, ask about XZ compression:
+		if [[ "$choice" =~ (pack|changes|rebuild) ]]; then
+			choice=${choice}$(dialog --yesno "Use XZ compression?" 10 40 2>&1 >/dev/tty && echo "-xz")
+		fi
+
+		# Clear the screen, then call itself to do the choice:
+		clear
+		$0 ${choice}-ui ${option2}
+	done
+	clear
 fi
-[[ "$1" =~ (usb_|docker_|)(un|)mount ]] || echo -e ""
+[[ "${ACTION}" =~ (usb_|docker_|)(un|)mount ]] || echo -e ""

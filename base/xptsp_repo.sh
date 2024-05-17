@@ -6,16 +6,16 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs GitHub Desktop for Linux on your computer."
+	echo -e "${RED}Purpose:${NC} Installs XPtsp APT repository onto the computer."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Installing GitHub Desktop for Linux..."
+_title "Install XPtsp APT repository..."
 #==============================================================================
-# First: Install the software:
-wget -qO - https://mirror.mwt.me/shiftkey-desktop/gpgkey | gpg --dearmor > tee /usr/share/keyrings/mwt-desktop.gpg
-echo "deb [arch=amd64 signed-by=/usr/share/keyrings/mwt-desktop.gpg] https://mirror.mwt.me/shiftkey-desktop/deb/ any main" > /etc/apt/sources.list.d/mwt-desktop.list
+# First: Install the repo...
+apt install -y curl
+curl -s --compressed "https://xptsp.github.io/ppa/KEY.gpg" | gpg --dearmor | tee /etc/apt/trusted.gpg.d/xptsp_ppa.gpg >/dev/null
+curl -s --compressed -o /etc/apt/sources.list.d/xptsp_ppa.list "https://xptsp.github.io/ppa/ppa.list"
 apt update
-apt install -y github-desktop
