@@ -31,6 +31,8 @@ dns:
   ratelimit_whitelist: []
   refuse_any: true
   upstream_dns:
+    - '[/lan/]127.0.0.1:54'
+    - '[//]127.0.0.1:54'
     - https://dns.cloudflare.com/dns-query
   upstream_dns_file: ""
   bootstrap_dns:
@@ -76,7 +78,8 @@ dns:
   upstream_timeout: 10s
   private_networks: []
   use_private_ptr_resolvers: true
-  local_ptr_upstreams: []
+  local_ptr_upstreams:
+    - 192.168.10.1:547
   serve_http3: false
   use_http3_upstreams: false
 tls:
