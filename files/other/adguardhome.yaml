@@ -6,7 +6,7 @@ http:
   session_ttl: 720h
 users:
   - name: root
-    password: $2a$10$WaVJBpASlreEyV9PcYKMsubGN/z/NZSwFS62d1.xB.bL6UWE8jWRm
+    password: $2a$10$UpNFnun5M5boRFVv26RTk.83e8mfek8Zpx8DY5aA5nel8BJvrB/YW
 auth_attempts: 5
 block_auth_min: 15
 http_proxy: ""
@@ -28,10 +28,10 @@ dns:
     - https://dns.cloudflare.com/dns-query
   upstream_dns_file: ""
   bootstrap_dns:
-    - 1.1.1.1:853
-    - 1.0.0.1:853
-    - 2606:4700:4700::1111:853
-    - 2606:4700:4700::1001:853
+    - 1.1.1.1
+    - 1.0.0.1
+    - 2606:4700:4700::1111
+    - 2606:4700:4700::1001
   fallback_dns: []
   upstream_mode: load_balance
   fastest_timeout: 1s
@@ -63,7 +63,8 @@ dns:
   upstream_timeout: 10s
   private_networks: []
   use_private_ptr_resolvers: true
-  local_ptr_upstreams: []
+  local_ptr_upstreams:
+    - 192.168.10.1:54
   use_dns64: false
   dns64_prefixes: []
   serve_http3: false
@@ -98,7 +99,7 @@ statistics:
   interval: 24h
   enabled: true
 filters:
-  - enabled: true
+  - enabled: false
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
     name: AdGuard DNS filter
     id: 1
@@ -109,11 +110,11 @@ filters:
   - enabled: true
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_33.txt
     name: Steven Black's List
-    id: 1718839261
+    id: 1687290376
   - enabled: true
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_8.txt
     name: NoCoin Filter List
-    id: 1718839262
+    id: 1719010992
 whitelist_filters: []
 user_rules: []
 dhcp:
