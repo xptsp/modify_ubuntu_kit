@@ -106,6 +106,10 @@ elif [[ "${ACTION}" == "mount" ]]; then
 		mount ${FILE} ${UNPACK_DIR}/.lower${COUNT} || exit 1
 		echo -n ":${UNPACK_DIR}/.lower${COUNT}"
 	done)
+	if [[ -f ${UNPACK_DIR}/extract/live/vmlinuz0 && ! -f ${UNPACK_DIR}/.upper/boot/firmware/config.txt ]]; then
+		mkdir -p ${UNPACK_DIR}/.upper/boot/firmware
+		touch ${UNPACK_DIR}/.upper/boot/firmware/config.txt
+	fi 
 	TLOWER=($(echo $TLOWER | sed "s|\:|\n|g" | tac))
 	LOWER=$(echo ${TLOWER[@]} | sed "s| |:|g")
 	mount -t overlay -o lowerdir=${LOWER},upperdir=${UNPACK_DIR}/.upper,workdir=${UNPACK_DIR}/.work overlay ${UNPACK_DIR}/edit || exit 1
@@ -524,6 +528,7 @@ elif [[ "${ACTION}" == "iso" ]]; then
 	fi
 
 	# First: Read either the OS's "build.txt" file OR the "os-release":
+	_title "Determining ISO filename...."
 	ISO_DIR=${UNPACK_DIR}
 	unset MUK_BUILD
 	[[ -d ${UNPACK_DIR}/extract/live ]] && DIR=live || DIR=casper
@@ -536,13 +541,14 @@ elif [[ "${ACTION}" == "iso" ]]; then
 	fi
 
 	# Second: Figure out what to name the ISO to avoid conflicts
-	_title "Determining ISO filename and patching \"grub.cfg\"...."
-	if [[ "$(ls extract/live/vmlinuz[0-2] | wc -l)" -gt 1 ]]; then
-		ISO_FILE=$(date +"%Y-%m-%d")-raspios-${VERSION_CODENAME}-i386
+	if [[ -f extract/live/vmlinuz0 ]]; then
+		NAME=raspios
+		ID=$(date +"%Y-%m-%d")-${NAME}
+		VERSION=${VERSION_CODENAME}
 		FLAG_ADD_DATE=0
-	else
-		ISO_FILE=${ID}-$(grep VERSION= /etc/os-release | cut -d= -f 2 | sed "s|\"||" | awk '{print $1}')-${MUK_BUILD:-"desktop-amd64"}
+		MUK_BUILD=i386
 	fi
+	ISO_FILE=${ID}-${VERSION}-${MUK_BUILD:-"desktop-amd64"}
 	ISO_FILE=${ISO_FILE,,}
 	[[ "${FLAG_ADD_DATE}" == "1" ]] && ISO_FILE=${ISO_FILE}-$(date +"%Y%m%d")
 	if [[ -f "${ISO_DIR}/${ISO_FILE}.iso" ]]; then
@@ -550,9 +556,12 @@ elif [[ "${ACTION}" == "iso" ]]; then
 	fi
 
 	# Third: Try to patch grub.cfg for successful LiveCD boot.  Why this is necessary is beyond me.....
-	FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
-	sed -i "s|boot=casper ||g" ${FILE}
-	sed -i "s|file=|boot=casper file=|g" ${FILE}
+	if [[ "${ID}" == "ubuntu" ]]; then
+		_title "Patching \"grub.cfg\"...."
+		FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
+		sed -i "s|boot=casper ||g" ${FILE}
+		sed -i "s|file=|boot=casper file=|g" ${FILE}
+	fi
 
 	# Fourth: Create the ISO
 	_title "Building ${BLUE}${ISO_FILE}.iso${GREEN}...."
@@ -570,18 +579,20 @@ elif [[ "${ACTION}" == "iso" ]]; then
 			mkisofs -allow-limited-size -D -r -V "${ISO_LABEL}" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ${ISO_DIR}/${ISO_FILE}.iso .
 		fi
 	else
-		# >>>> NEW WAY TO CREATE ISO: Valid for Jammy and above <<<<<
-		if [[ ! -f ${UNPACK_DIR}/boot_hybrid.img || ! -f ${UNPACK_DIR}/boot_efi.img ]]; then
+		# >>>> NEW WAY TO CREATE ISO: Valid for Ubuntu Jammy, Debian Bookworm, and above <<<<<
+		if [[ ! -f ${UNPACK_DIR}/${NAME}_hybrid.img || ! -f ${UNPACK_DIR}/${NAME}_efi.img ]]; then
 			# Extract the MBR template for --grub2-mbr:
 			ISO=$(ls ${UNPACK_DIR}/ubuntu-*.iso | head -1)
 			if [[ -z "${ISO}" ]]; then _ui_error "No Ubuntu ISO found in \"${UNPACK_DIR}\"!  Aborting!"; exit 1; fi
-			dd if=${ISO} bs=1 count=432 of=${UNPACK_DIR}/boot_hybrid.img
+			dd if=${ISO} bs=1 count=432 of=${UNPACK_DIR}/${NAME}_hybrid.img
 
 			# Extract the EFI partition image image for -append_partition:
 			INFO=($(fdisk -l ${ISO} | grep "EFI"))
 			if [[ -z "${INFO}" ]]; then _ui_error "No EFI filesystem present in ISO!  Aborting!"; exit 1; fi
-			dd if=${ISO} bs=512 skip=${INFO[1]} count=${INFO[3]} of=${UNPACK_DIR}/boot_efi.img
+			dd if=${ISO} bs=512 skip=${INFO[1]} count=${INFO[3]} of=${UNPACK_DIR}/${NAME}_efi.img
 		fi
+
+		# Determine which EFI image file to use in the ISO:  
 		IMG=/boot/grub/i386-pc/eltorito.img
 		if [[ ! -f ${UNPACK_DIR}/extract/${IMG} ]]; then
 			IMG=/boot/grub/efi.img
@@ -590,14 +601,13 @@ elif [[ "${ACTION}" == "iso" ]]; then
 
 		# Finally pack up an ISO the new way:
 		xorriso -as mkisofs -r \
-  			-V "Modded ${PRETTY_NAME}" \
+  			-V "${NAME} $(echo ${VERSION} | awk '{print $1}')" \
 			-J -joliet-long -iso-level 3 \
   			-o ${ISO_DIR}/${ISO_FILE}.iso \
-  			--grub2-mbr ${UNPACK_DIR}/boot_hybrid.img \
-  			--rockridge no
+  			--grub2-mbr ${UNPACK_DIR}/${NAME,,}_hybrid.img \
   			-partition_offset 16 \
   			--mbr-force-bootable \
-  			-append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b ${UNPACK_DIR}/boot_efi.img \
+  			-append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b ${UNPACK_DIR}/${NAME,,}_efi.img \
   			-appended_part_as_gpt \
   			-iso_mbr_part_type a2a0d0ebe5b9334487c068b6b72699c7 \
   			-c '/boot.catalog' \
