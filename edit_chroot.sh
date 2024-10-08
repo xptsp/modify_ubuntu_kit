@@ -89,14 +89,16 @@ if [[ "${ACTION}" == "update" ]]; then
 # Are we changing the unpacked CHROOT environment?
 #==============================================================================
 elif [[ "${ACTION}" == "mount" ]]; then
-	if [[ ! -f ${UNPACK_DIR}/extract/casper/filesystem.squashfs ]]; then
-		_ui_error "No \"filesystem.squashfs\" found!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
-		exit 1
-	fi
 	mount | grep -q "${UNPACK_DIR}/edit " && umount ${UNPACK_DIR}/edit
 	mount | grep "${UNPACK}/.lower" | awk '{print $3}' | while read DIR; do umount -lfq ${DIR}; rmdir ${DIR}; done
 	mkdir -p ${UNPACK_DIR}/{.lower,.upper,.work,edit}
-	mount ${UNPACK_DIR}/extract/casper/filesystem.squashfs ${UNPACK_DIR}/.lower || exit 1
+	test -d ${UNPACK_DIR}/extract/live && DIR=live || DIR=casper
+	if [[ -f ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs ]]; then
+		mount ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs ${UNPACK_DIR}/.lower || exit 1
+	else
+		_ui_error "No \"filesystem.squashfs\" found!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
+		exit 1
+	fi
 	COUNT=0
 	TLOWER=${UNPACK_DIR}/.lower$(ls ${UNPACK_DIR}/extract/casper/filesystem_*.squashfs 2> /dev/null | while read FILE; do
 		COUNT=$((COUNT + 1))
@@ -156,7 +158,12 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 		### Fourth: Enter the CHROOT environment:
 		_title "Entering CHROOT environment"
 		chroot ${UNPACK_DIR}/edit ${MUK_DIR}/edit_chroot.sh $@
-		cp ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ${UNPACK_DIR}/extract/casper/build.txt
+		[[ -d ${UNPACK_DIR}/extract/live ]] && DIR=live || DIR=casper
+		if [[ -f ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ]]; then
+			cp ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ${UNPACK_DIR}/extract/${DIR}/build.txt
+		else
+			cp ${UNPACK_DIR}/edit/etc/os-release ${UNPACK_DIR}/extract/${DIR}/build.txt
+		fi
 
 		### Fifth: Run required commands outside chroot commands:
 		if [[ -f ${UNPACK_DIR}/edit/usr/local/finisher/outside_chroot.list ]]; then
@@ -168,20 +175,58 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 
 		### Thirteenth: Copy the new INITRD from the unpacked filesystem:
 		cd ${UNPACK_DIR}/edit
-		INITRD=$(ls initrd.img-* 2> /dev/null | sort -r | head -1)
-		[[ -z "${INITRD}" ]] && INITRD_SRC=$(ls boot/initrd.img-* 2> /dev/null | sort -r | head -1)
+		INITRD=$(ls initrd.img-* 2> /dev/null | tail -1)
+		[[ -z "${INITRD}" ]] && INITRD_SRC=$(ls boot/initrd.img-* 2> /dev/null | tail -1)
 		if [[ ! -z "${INITRD_SRC}" ]]; then
-			_title "Moving INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
-			mv ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
+			# Is this Ubuntu?
+			if [[ -f ${UNPACK_DIR}/extract/casper/initrd ]]; then
+				_title "Moving INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
+				mv ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
+			# Or is this Debian?
+			elif [[ -d ${UNPACK_DIR}/extract/live ]]; then
+				# Is this the Raspberry Pi OS image?
+				if [[ -f ${UNPACK_DIR}/extract/live/vmlinuz0 ]]; then
+					VER=$(echo ${INITRD_SRC} | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*")
+					_title "Copying INITRD0.IMG from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-686${GREEN}..."
+					cp ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-686 ${UNPACK_DIR}/extract/live/initrd0.img
+					_title "Copying INITRD1.IMG from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-686-pae${GREEN}..."
+					cp ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-686-pae ${UNPACK_DIR}/extract/live/initrd1.img
+					_title "Copying INITRD2.IMG from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-amd64${GREEN}..."
+					cp ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-amd64 ${UNPACK_DIR}/extract/live/initrd2.img
+				else
+					# Must be just regular Debian:
+					_title "Copying INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
+					cp ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/live/initrd
+				fi
+			fi
 			sed -i "s|initrd.gz|initrd|g" ${UNPACK_DIR}/extract/boot/grub/grub.cfg
 		fi
 
 		### Fourteenth: Copy the new VMLINUZ from the unpacked filesystem:
-		VMLINUZ=$(ls vmlinuz-* 2> /dev/null | sort -r | head -1)
-		[[ -z "${VMLINUZ}" ]] && VMLINUZ=$(ls boot/vmlinuz-* 2> /dev/null | sort -r | head -1)
+		VMLINUZ=$(ls vmlinuz-* 2> /dev/null | tail -1)
+		[[ -z "${VMLINUZ}" ]] && VMLINUZ=$(ls boot/vmlinuz-* 2> /dev/null | tail -1)
 		if [[ ! -z "${VMLINUZ}" ]]; then
-			_title "Moving VMLINUZ from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
-			mv ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
+			# Is this Ubuntu?
+			if [[ -f ${UNPACK_DIR}/extract/casper/initrd ]]; then	# Ubuntu:
+				_title "Moving VMLINUZ from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
+				mv ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
+			# Or is this Debian?
+			elif [[ -d ${UNPACK_DIR}/extract/live ]]; then			
+				# Is this the Raspberry Pi OS image?
+				if [[ -f ${UNPACK_DIR}/extract/live/vmlinuz0 ]]; then	
+					VER=$(echo ${INITRD_SRC} | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*")
+					_title "Copying VMLINUZ0 from unpacked filesystem from ${BLUE}vmlinuz-${VER}-686${GREEN}...."
+					cp ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-686 ${UNPACK_DIR}/extract/live/vmlinuz0
+					_title "Copying VMLINUZ1 from unpacked filesystem from ${BLUE}vmlinuz-${VER}-686-pae${GREEN}...."
+					cp ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-686-pae ${UNPACK_DIR}/extract/live/vmlinuz1
+					_title "Copying VMLINUZ2 from unpacked filesystem from ${BLUE}vmlinuz-${VER}-amd64${GREEN}...."
+					cp ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-amd64 ${UNPACK_DIR}/extract/live/vmlinuz2
+				else
+					# Must be just regular Debian:
+					_title "Copying VMLINUZ from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
+					cp ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/live/vmlinuz
+				fi
+			fi
 		fi
 
 		### Sixth: Remove mounts for CHROOT environment:
@@ -211,7 +256,9 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 
 		### Second: Install the chroot tools if required, then put firefox on hold if it is still snap version:
 		${MUK_DIR}/install.sh
-		if ! apt-mark showhold | grep -q firefox; then apt list --installed firefox 2> /dev/null | grep -q 1snap1 && apt-mark hold firefox > /dev/null; fi
+		if grep -q "ID=ubuntu" /etc/os-release; then
+			if ! apt-mark showhold | grep -q firefox; then apt list --installed firefox 2> /dev/null | grep -q 1snap1 && apt-mark hold firefox > /dev/null; fi
+		fi
 		test -e /usr/local/bin/cls || ln -sf /usr/bin/clear /usr/local/bin/cls
 
 		### Third: Next action depends on parameter passed....
@@ -234,25 +281,27 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 			for file in *.sh; do ./$file; done
 		fi
 
-		### Fourth: If user 999 exists, change that user ID so that LiveCD works:
-		if [[ "$(id -u 999 >& /dev/null; echo $?)" -eq 0 ]]; then
-			uid_name=$(id -un 999)
-			uid_new=998
-			while [ "$(id -u ${uid_new} >& /dev/null; echo $?)" -eq 0 ]; do uid_new=$((uid_new-1)); done
-			_title "Changing user \"${uid_name}\" from UID 999 to ${uid_new} so LiveCD works..."
-			usermod -u ${uid_new} ${uid_name}
-			chown -Rhc --from=999 ${uid_new} / >& /dev/null
-		fi
+		# This only needs to happen in Ubuntu:
+		if [[ ! "$(grep -e "^ID=" /etc/os-release)" =~ ID=\"?debian\"? ]]; then
+			### Fourth: If user 999 exists, change that user ID so that LiveCD works:
+			if [[ "$(id -u 999 >& /dev/null; echo $?)" -eq 0 ]]; then
+				uid_new=998
+				while [ "$(id -u ${uid_new} >& /dev/null; echo $?)" -eq 0 ]; do uid_new=$((uid_new-1)); done
+				_title "Changing user \"${uid_name}\" from UID 999 to ${uid_new} so LiveCD works..."
+				usermod -u ${uid_new} ${uid_name}
+				chown -Rhc --from=999 ${uid_new} / >& /dev/null
+			fi
 
-		### Fifth: If group 999 exists, change that group ID so that LiveCD works:
-		gid_line=$(getent group 999)
-		if [[ ! -z "${gid_line}" ]]; then
-			gid_name=$(echo $gid_line | cut -d":" -f 1)
-			gid_new=998
-			while [ "$(getent group ${gid_new} >& /dev/null; echo $?)" -eq 0 ]; do gid_new=$((gid_new-1)); done
-			_title "Changing group \"${gid_name}\" from GID 999 to ${gid_new} so LiveCD works..."
-			groupmod -g ${gid_new} ${gid_name}
-			chown -Rhc --from=:999 :${gid_new} / >& /dev/null
+			### Fifth: If group 999 exists, change that group ID so that LiveCD works:
+			gid_line=$(getent group 999)
+			if [[ ! -z "${gid_line}" ]]; then
+				gid_name=$(echo $gid_line | cut -d":" -f 1)
+				gid_new=998
+				while [ "$(getent group ${gid_new} >& /dev/null; echo $?)" -eq 0 ]; do gid_new=$((gid_new-1)); done
+				_title "Changing group \"${gid_name}\" from GID 999 to ${gid_new} so LiveCD works..."
+				groupmod -g ${gid_new} ${gid_name}
+				chown -Rhc --from=:999 :${gid_new} / >& /dev/null
+			fi
 		fi
 
 		### Sixth: Upgrade the installed GitHub repositories:
@@ -277,8 +326,9 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 		### Ninth: Purge older kernels from the image:
 		if [[ "${OLD_KERNEL}" -eq 1 ]]; then
 			_title "Removing any older kernels from the image..."
-			CUR=$(ls -l /boot/initrd.img | awk '{print $NF}' | sed "s|initrd.img-||" | sed "s|-generic||")
-			for VER in $(apt list linux-image-* --installed 2> /dev/null | grep linux-image | cut -d/ -f 1 | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*"); do
+			CUR=$(ls -l /boot/initrd.img 2> /dev/null | awk '{print $NF}' | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*")
+			[[ -z "${CUR}" ]] && CUR=$(ls /boot/initrd.img-* | tail -1 | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*")
+			for VER in $(apt list linux-image-* --installed 2> /dev/null | grep linux-image | cut -d/ -f 1 | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*" | sort | uniq); do
 				[[ "$VER" != "${CUR}" ]] && apt purge -y $(apt list --installed linux-*${VER}* 2> /dev/null | grep linux- | cut -d\/ -f 1)
 			done
 		fi
@@ -369,7 +419,7 @@ elif [[ "${ACTION}" == "unpack" ]]; then
 			exit 1
 		fi
 	fi
-	if [[ ! -f mnt/casper/filesystem.squashfs ]]; then
+	if [[ ! -f mnt/casper/filesystem.squashfs && ! -f mnt/live/filesystem.squashfs ]]; then
 		_ui_error "Cannot find a ${BLUE}filesystem.squashfs${GREEN} to extract!!!"
 		exit 1
 	fi
@@ -415,10 +465,11 @@ elif [[ "${ACTION}" =~ (pack|changes)(-xz|) ]]; then
 	# Second: Build the list of installed packages in unpacked filesystem:
 	cd ${UNPACK_DIR}
 	_title "Building list of installed packages...."
-	chmod +w extract/casper/filesystem.manifest >& /dev/null
-	chroot edit dpkg-query -W --showformat='${Package} ${Version}\n' | tee extract/casper/filesystem.manifest >& /dev/null
-	sed -i '/ubiquity/d' extract/casper/filesystem.manifest
-	sed -i '/casper/d' extract/casper/filesystem.manifest
+	if [[ -d extract/live ]]; then DIR=live; EXT=packages; else DIR=casper; EXT=manifest; fi 
+	chmod +w extract/${DIR}/filesystem.${EXT} >& /dev/null
+	chroot edit dpkg-query -W --showformat='${Package} ${Version}\n' | tee extract/${DIR}/filesystem.${EXT} >& /dev/null
+	sed -i '/ubiquity/d' extract/${DIR}/filesystem.${EXT}
+	sed -i '/casper/d' extract/${DIR}/filesystem.${EXT}
 
 	# Third: Set necessary flags for compression:
 	[[ "${ACTION}" =~ -xz$ ]] && FLAG_XZ=1
@@ -429,22 +480,23 @@ elif [[ "${ACTION}" =~ (pack|changes)(-xz|) ]]; then
 	FS=${FS}-$(( $(ls extract/casper/${FS}-* 2> /dev/null | sed "s|extract/casper/${FS}-||" | sed "s|\.squashfs||" | sort -n | tail -1) + 1 )).squashfs
 	_title "Building ${BLUE}${FS}${GREEN}...."
 	[[ "${ACTION}" == "pack" || "${ACTION}" == "pack-xz" ]] && SRC=edit || SRC=.upper
-	mksquashfs ${SRC} extract/casper/${FS} -b 1048576 ${XZ}
+	[[ -d extract/live ]] && DST=live || DST=casper 
+	mksquashfs ${SRC} extract/${DST}/${FS} -b 1048576 ${XZ}
 
 	# Fifth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
 	[[ "${KEEP_CIFS:-"0"}" == "1" && -f extract/casper/filesystem.manifest-remove ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
 
 	# Sixth: Create the "filesystem.size" file:
 	_title "Updating ${BLUE}filesystem.size${GREEN}...."
-	du -s --block-size=1 edit | cut -f1 > extract/casper/filesystem.size
+	du -s --block-size=1 edit | cut -f1 > extract/${DST}/filesystem.size
 
 	# Seventh: remove the overlay filesystem and upper layer of overlay, then create the "md5sum.txt" file:
 	_title "Removing the overlay filesystem and upper layer of overlay..."
 	umount -q ${UNPACK_DIR}/edit
 	for DIR in ${UNPACK_DIR}/.lower*; do umount -q ${DIR}; rmdir ${DIR}; done
 	if [[ "${ACTION}" == "pack" || "${ACTION}" == "pack-xz" ]]; then
-		mv ${UNPACK_DIR}/extract/casper/${FS} ${UNPACK_DIR}/extract/casper/filesystem.squashfs
-		rm ${UNPACK_DIR}/extract/casper/filesystem_*.squashfs 2> /dev/null
+		mv ${UNPACK_DIR}/extract/${DST}/${FS} ${UNPACK_DIR}/extract/${DST}/filesystem.squashfs
+		rm ${UNPACK_DIR}/extract/${DST}/filesystem_*.squashfs 2> /dev/null
 	fi
 	rm -rf .upper
 	[[ -f /tmp/exclude ]] && rm /tmp/exclude
@@ -466,7 +518,7 @@ elif [[ "${ACTION}" == "iso" ]]; then
 	elif [[ ! -d ${UNPACK_DIR}/extract ]]; then
 		_ui_error "No ISO structure copied!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 		exit 1
-	elif [[ ! -f ${UNPACK_DIR}/extract/casper/filesystem.squashfs ]]; then
+	elif [[ ! -f ${UNPACK_DIR}/extract/casper/filesystem.squashfs && ! -f ${UNPACK_DIR}/extract/live/filesystem.squashfs ]]; then
 		_ui_error "No packed filesystem!  Use ${BLUE}edit_chroot pack${GREEN} first!"
 		exit 1
 	fi
@@ -474,26 +526,23 @@ elif [[ "${ACTION}" == "iso" ]]; then
 	# First: Read either the OS's "build.txt" file OR the "os-release":
 	ISO_DIR=${UNPACK_DIR}
 	unset MUK_BUILD
-	if [[ -f ${UNPACK_DIR}/edit/etc/os-release ]]; then
+	[[ -d ${UNPACK_DIR}/extract/live ]] && DIR=live || DIR=casper
+	if [[ -f ${UNPACK_DIR}/extract/${DIR}/build.txt ]]; then
+		source ${UNPACK_DIR}/extract/${DIR}/build.txt
+	elif [[ -f ${UNPACK_DIR}/edit/etc/os-release ]]; then
 		source ${UNPACK_DIR}/edit/etc/os-release
-	elif [[ -f ${UNPACK_DIR}/extract/casper/build.txt ]]; then
-		if [[ $(${UNPACK_DIR}/extract/casper/build.txt | wc -l) -ge 1 ]]; then
-			source ${UNPACK_DIR}/extract/casper/build.txt
-		else
-			if [[ -f ${UNPACK_DIR}/edit/etc/os-release ]]; then
-				source ${UNPACK_DIR}/edit/etc/os-release
-			else
-				source /etc/os-release
-			fi
-			MUK_DIR=$(cat ${UNPACK_DIR}/extract/casper/build.txt)
-		fi 
 	else
 		source /etc/os-release
 	fi
 
 	# Second: Figure out what to name the ISO to avoid conflicts
 	_title "Determining ISO filename and patching \"grub.cfg\"...."
-	ISO_FILE=${ID}-${VERSION_ID}-${MUK_BUILD:-"desktop-amd64"}
+	if [[ "$(ls extract/live/vmlinuz[0-2] | wc -l)" -gt 1 ]]; then
+		ISO_FILE=$(date +"%Y-%m-%d")-raspios-${VERSION_CODENAME}-i386
+		FLAG_ADD_DATE=0
+	else
+		ISO_FILE=${ID}-$(grep VERSION= /etc/os-release | cut -d= -f 2 | sed "s|\"||" | awk '{print $1}')-${MUK_BUILD:-"desktop-amd64"}
+	fi
 	ISO_FILE=${ISO_FILE,,}
 	[[ "${FLAG_ADD_DATE}" == "1" ]] && ISO_FILE=${ISO_FILE}-$(date +"%Y%m%d")
 	if [[ -f "${ISO_DIR}/${ISO_FILE}.iso" ]]; then
@@ -507,9 +556,10 @@ elif [[ "${ACTION}" == "iso" ]]; then
 
 	# Fourth: Create the ISO
 	_title "Building ${BLUE}${ISO_FILE}.iso${GREEN}...."
-	source /etc/os-release
-	test -f ${UNPACK_DIR}/extract/casper/build.txt && source ${UNPACK_DIR}/extract/casper/build.txt
-	if [[ "${VERSION_ID/\./}" -lt 2204 ]]; then
+	OLD=N
+	[[ "${ID}" == "debian" && "${VERSION_ID/\./}" -lt 12 ]] && OLD=Y
+	[[ "${ID}" == "ubuntu" && "${VERSION_ID/\./}" -lt 2204 ]] && OLD=Y
+	if [[ "${OLD}" == "Y" ]]; then
 		# >>>> OLD WAY TO CREATE ISO: Not valid for Jammy and above <<<<<
 		# Create the ISO the old way:
 		cd ${UNPACK_DIR}/extract
@@ -529,8 +579,13 @@ elif [[ "${ACTION}" == "iso" ]]; then
 
 			# Extract the EFI partition image image for -append_partition:
 			INFO=($(fdisk -l ${ISO} | grep "EFI"))
-			if [[ "${INFO[5]} ${INFO[6]}" != "EFI System" ]]; then _ui_error "No EFI filesystem present in ISO!  Aborting!"; exit 1; fi
+			if [[ -z "${INFO}" ]]; then _ui_error "No EFI filesystem present in ISO!  Aborting!"; exit 1; fi
 			dd if=${ISO} bs=512 skip=${INFO[1]} count=${INFO[3]} of=${UNPACK_DIR}/boot_efi.img
+		fi
+		IMG=/boot/grub/i386-pc/eltorito.img
+		if [[ ! -f ${UNPACK_DIR}/extract/${IMG} ]]; then
+			IMG=/boot/grub/efi.img
+			if [[ ! -f ${UNPACK_DIR}/extract/${IMG} ]]; then _ui_error "No EFI image file found!  Aborting!"; exit 1; fi
 		fi
 
 		# Finally pack up an ISO the new way:
@@ -539,13 +594,14 @@ elif [[ "${ACTION}" == "iso" ]]; then
 			-J -joliet-long -iso-level 3 \
   			-o ${ISO_DIR}/${ISO_FILE}.iso \
   			--grub2-mbr ${UNPACK_DIR}/boot_hybrid.img \
+  			--rockridge no
   			-partition_offset 16 \
   			--mbr-force-bootable \
   			-append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b ${UNPACK_DIR}/boot_efi.img \
   			-appended_part_as_gpt \
   			-iso_mbr_part_type a2a0d0ebe5b9334487c068b6b72699c7 \
   			-c '/boot.catalog' \
-  			-b '/boot/grub/i386-pc/eltorito.img' \
+  			-b ${IMG} \
 				-no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info \
   			-eltorito-alt-boot \
   			-e '--interval:appended_partition_2:::' \
