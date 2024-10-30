@@ -199,10 +199,15 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 					cp ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/live/initrd
 				fi
 			fi
-			sed -i "s|initrd.gz|initrd|g" ${UNPACK_DIR}/extract/boot/grub/grub.cfg
 		fi
 
-		### Fourteenth: Copy the new VMLINUZ from the unpacked filesystem:
+		### Fourteenth: Modify "grub.cfg":
+		FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
+		test -f ${FILE} || FILE=${UNPACK_DIR}/extract/isolinux/grub.cfg
+		# NOTE: Rename "initrd.gz" entries only for Ubuntu (and maybe Debian), --NEVER-- Raspberry Pi OS:
+		test -f ${UNPACK_DIR}/extract/live/vmlinuz0 || sed -i "s|initrd.gz|initrd|g" ${FILE}
+
+		### Fifteenth: Copy the new VMLINUZ from the unpacked filesystem:
 		VMLINUZ=$(ls vmlinuz-* 2> /dev/null | tail -1)
 		[[ -z "${VMLINUZ}" ]] && VMLINUZ=$(ls boot/vmlinuz-* 2> /dev/null | tail -1)
 		if [[ ! -z "${VMLINUZ}" ]]; then
@@ -229,7 +234,7 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 			fi
 		fi
 
-		### Sixth: Remove mounts for CHROOT environment:
+		### Sixteenth: Remove mounts for CHROOT environment:
 		cd ${UNPACK_DIR}
 		$0 unmount
 		_title "Exited CHROOT environment"
@@ -243,7 +248,8 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 		mount -t devpts none /dev/pts
 		export HOME=/etc/skel
 		export LC_ALL=C
-		dbus-uuidgen > /var/lib/dbus/machine-id
+		dbus-uuidgen > /etc/machine-id
+		ln -fs /etc/machine-id /var/lib/dbus/machine-id
 		dpkg-divert --local --rename --add /sbin/initctl >& /dev/null
 		ln -sf /bin/true /sbin/initctl
 		export PASSWORD=xubuntu
@@ -284,7 +290,8 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 		# This only needs to happen in Ubuntu:
 		if [[ ! "$(grep -e "^ID=" /etc/os-release)" =~ ID=\"?debian\"? ]]; then
 			### Fourth: If user 999 exists, change that user ID so that LiveCD works:
-			if [[ "$(id -u 999 >& /dev/null; echo $?)" -eq 0 ]]; then
+			uid_name=$(grep ":999:" /etc/passwd | cut -d":" -f 1)
+			if [[ ! -z "${uid_name}"  ]]; then
 				uid_new=998
 				while [ "$(id -u ${uid_new} >& /dev/null; echo $?)" -eq 0 ]; do uid_new=$((uid_new-1)); done
 				_title "Changing user \"${uid_name}\" from UID 999 to ${uid_new} so LiveCD works..."
@@ -353,7 +360,7 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 		if apt-mark showhold | grep -q firefox; then apt list firefox 2> /dev/null | grep -q 1snap1 && apt-mark unhold firefox > /dev/null; fi
 		chmod 440 /etc/sudoers.d/*
 		rm -rf /tmp/* ~/.bash_history
-		rm /var/lib/dbus/machine-id
+		truncate -s 0 /etc/machine-id
 		rm /sbin/initctl
 		dpkg-divert --rename --remove /sbin/initctl >& /dev/null
 		umount -lfq /tmp 2> /dev/null
@@ -467,9 +474,12 @@ elif [[ "${ACTION}" =~ (pack|changes)(-xz|) ]]; then
 	_title "Building list of installed packages...."
 	if [[ -d extract/live ]]; then DIR=live; EXT=packages; else DIR=casper; EXT=manifest; fi 
 	chmod +w extract/${DIR}/filesystem.${EXT} >& /dev/null
-	chroot edit dpkg-query -W --showformat='${Package} ${Version}\n' | tee extract/${DIR}/filesystem.${EXT} >& /dev/null
-	sed -i '/ubiquity/d' extract/${DIR}/filesystem.${EXT}
-	sed -i '/casper/d' extract/${DIR}/filesystem.${EXT}
+	chroot edit dpkg-query -W --showformat='${Package} ${Version}\n' | tee extract/${DIR}/filesystem.${EXT} >& extract/${DIR}/filesystem.${EXT}-desktop
+	sed -i '/ubiquity/d' extract/${DIR}/filesystem.${EXT}-desktop
+	sed -i '/casper/d' extract/${DIR}/filesystem.${EXT}-desktop
+	sed -i '/discover/d' extract/${DIR}/filesystem.${EXT}-desktop
+	sed -i '/laptop-detect/d' extract/${DIR}/filesystem.${EXT}-desktop
+	sed -i '/os-prober/d' extract/${DIR}/filesystem.${EXT}-desktop
 
 	# Third: Set necessary flags for compression:
 	[[ "${ACTION}" =~ -xz$ ]] && FLAG_XZ=1
@@ -542,7 +552,7 @@ elif [[ "${ACTION}" == "iso" ]]; then
 		ISO_FILE=${NAME}-${VERSION_CODENAME}-i386-$(date +"%Y-%m-%d")
 		FLAG_ADD_DATE=0
 	else
-		ISO_FILE=${ID}-$(grep VERSION= /etc/os-release | cut -d= -f 2 | sed "s|\"||" | awk '{print $1}')-${MUK_BUILD:-"desktop-amd64"}
+		ISO_FILE=${ID}-$(echo ${VERSION} | cut -d" " -f 1)-${MUK_BUILD:-"desktop-amd64"}
 	fi
 	ISO_FILE=${ISO_FILE,,}
 	[[ "${FLAG_ADD_DATE}" == "1" ]] && ISO_FILE=${ISO_FILE}-$(date +"%Y%m%d")
@@ -555,7 +565,11 @@ elif [[ "${ACTION}" == "iso" ]]; then
 	sed -i "s|boot=casper ||g" ${FILE}
 	sed -i "s|file=|boot=casper file=|g" ${FILE}
 
-	# Fourth: Create the ISO
+	# Fourth: Fix the ISO identification for Casper Installer:
+	FILE=${UNPACK_DIR}/extract/.disk/info 
+	test -f ${FILE} && echo "${NAME} ${VERSION} - Release amd64 ($(date +"%Y%m%d"))" > ${FILE} 
+
+	# Fifth: Create the ISO
 	_title "Building ${BLUE}${ISO_FILE}.iso${GREEN}...."
 	OLD=N
 	[[ "${ID}" == "debian" && "${VERSION_ID/\./}" -lt 12 ]] && OLD=Y
@@ -572,6 +586,7 @@ elif [[ "${ACTION}" == "iso" ]]; then
 		fi
 	else
 		# >>>> NEW WAY TO CREATE ISO: Valid for Jammy and above <<<<<
+		NAME=${NAME,,}
 		if [[ ! -f ${UNPACK_DIR}/${NAME}_hybrid.img || ! -f ${UNPACK_DIR}/${NAME}_efi.img ]]; then
 			$0 efi_image $(ls ${UNPACK_DIR}/${NAME}-*.iso 2> /dev/null| head -1) || exit 1
 		fi
@@ -583,11 +598,10 @@ elif [[ "${ACTION}" == "iso" ]]; then
 
 		# Finally pack up an ISO the new way:
 		xorriso -as mkisofs -r \
-  			-V "Modded ${PRETTY_NAME}" \
+  			-V "${PRETTY_NAME}" \
 			-J -joliet-long -iso-level 3 \
   			-o ${ISO_DIR}/${ISO_FILE}.iso \
   			--grub2-mbr ${UNPACK_DIR}/${NAME}_hybrid.img \
-  			--rockridge no \
   			-partition_offset 16 \
   			--mbr-force-bootable \
   			-append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b ${UNPACK_DIR}/${NAME}_efi.img \
@@ -602,7 +616,7 @@ elif [[ "${ACTION}" == "iso" ]]; then
 			${UNPACK_DIR}/extract
 	fi
 
-	# Fifth: Tell user we done!
+	# Sixth: Tell user we done!
 	_ui_title "Done building ${BLUE}${ISO_DIR}/${ISO_FILE}.iso${GREEN}!"
 
 #==============================================================================
@@ -612,7 +626,8 @@ elif [[ "${ACTION}" == "efi_image" ]]; then
 	ISO=$2
 	if [[ -z "${ISO}" ]]; then _ui_error "No ISO specified!  Aborting!"; exit 1; fi
 	if [[ ! -f "${ISO}" ]]; then _ui_error "Specified ISO ${BLUE}${ISO}${NC} not found!  Aborting!"; exit 1; fi
-	NAME=$(basename $ISO | cut -d\- -f 1)
+	NAME=$3
+	NAME=${NAME:=$(basename $ISO | cut -d\- -f 1)}
 
 	# Extract the EFI partition image image for -append_partition:
 	INFO=($(fdisk -l ${ISO} | grep "EFI"))
