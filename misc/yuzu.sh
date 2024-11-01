@@ -12,11 +12,17 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
+# Find our local copy of the Yuzu emulator:
+#==============================================================================
+SRC=$(find ~ -maxdepth 2 -name *Yuzu*.AppImage)
+if [[ -z "${SRC}" ]]; then echo "ERROR: No local version of Yuzu found!  Aborting!"; exit 1; fi
+
+#==============================================================================
 _title "Installing Yuzu..."
 #==============================================================================
 # Download the AppImage and make executable:
 FILE=/usr/bin/Linux-Yuzu-EA-4176.AppImage
-wget https://github.com/pineappleEA/pineapple-src/releases/download/EA-4176/Linux-Yuzu-EA-4176.AppImage -O ${FILE}
+mv ${SRC} ${FILE}
 chmod +x ${FILE}
 cp ${MUK_DIR}/files/yuzu.png /usr/share/icons/
 

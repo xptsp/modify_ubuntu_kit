@@ -21,11 +21,21 @@ fi
 _title "Installing DEB-version installation of Mozilla Firefox..."
 #==============================================================================
 add-apt-repository -y ppa:mozillateam/ppa
-cat << EOF > /etc/apt/preferences.d/mozillateamppa
-Package: firefox*
+cat << EOF > /etc/apt/preferences.d/mozilla-team-ppa
+
+Package: *
 Pin: release o=LP-PPA-mozillateam
-Pin-Priority: 501
+Pin-Priority: 1001
+
+Package: firefox*
+Pin: version 1:1snap*
+Pin-Priority: -1
+
+Package: thunderbird*
+Pin: version 1:1snap*
+Pin-Priority: -1
 EOF
+apt update
 apt install -y firefox thunderbird
 
 #==============================================================================

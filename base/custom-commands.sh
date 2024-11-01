@@ -15,15 +15,6 @@ fi
 _title "Creating imitation DOS commands..."
 #==============================================================================
 DST=/usr/local/bin
-ln -sf /bin/cp ${DST}/copy
-ln -sf /bin/mv ${DST}/move
-ln -sf /bin/mv ${DST}/ren
-ln -sf /bin/mkdir ${DST}/md
-ln -sf /bin/rmdir ${DST}/rd
-ln -sf /bin/rm ${DST}/del
-ln -sf /bin/cat ${DST}/list
-ln -sf /bin/nano ${DST}/edit
-ln -sf /sbin/ifconfig ${DST}/ipconfig
 ln -sf /usr/bin/clear ${DST}/cls
 
 #==============================================================================

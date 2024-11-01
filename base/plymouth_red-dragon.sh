@@ -14,7 +14,7 @@ fi
 #==============================================================================
 _title "Customizing plymouth background..."
 #==============================================================================
-apt install -y plymouth-theme-xubuntu-logo
+apt install -y plymouth-theme-xubuntu-logo imagemagick
 ROOT=/usr/share/plymouth
 DIR=$ROOT/themes/xubuntu-logo/
 [[ ! -f ${DIR}/original-wallpaper.png ]] && mv ${DIR}/wallpaper.png ${DIR}/original-wallpaper.png

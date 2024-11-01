@@ -17,7 +17,7 @@ ln -sf /home/img /img
 ###############################################################################
 # Enable WOL (Wake On LAN) by default:
 ###############################################################################
-sed -i "s|^exit 0$|# Enable WOL capability on ethernet cards:\nfor DEV in \$(sudo lshw -c network -disable usb -short \| grep -i \"ethernet\" \| awk '{print \$2}'); do ethtool -s ${DEV} wol g; done\n\nexit 0|" /etc/rc.local
+sed -i "s|^exit 0$|# Enable WOL capability on ethernet cards:\nfor DEV in \$(sudo lshw -c network -disable usb -short \| grep -i \"ethernet\" \| awk '{print \$2}'); do ethtool -s \${DEV} wol g; done\n\nexit 0|" /etc/rc.local
 
 ###############################################################################
 # Execute any scripts under "/usr/local/finisher/tasks.d":

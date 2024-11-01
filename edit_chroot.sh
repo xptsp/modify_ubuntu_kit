@@ -4,7 +4,7 @@
 # Script settings and their defaults:
 #==============================================================================
 # If exists, load the user settings into the script:
-[[ -f /usr/local/finisher/settings.conf ]] && . /usr/local/finisher/settings.conf
+[[ -f /usr/local/finisher/settings.conf ]] && source /usr/local/finisher/settings.conf
 # Flag: Defaults to adding date ISO was generated to end of ISO name.  Set to 0 to prevent this.
 export FLAG_ADD_DATE=${FLAG_ADD_DATE:-"1"}
 # Flag: Use XZ (value: 1) instead of GZIP (value: 0) compression.  Defaults to 0:
@@ -33,6 +33,7 @@ echo ${USB_CASPER} | grep -q "=" && export USB_CASPER=$(echo ${USB_CASPER} | cut
 #==============================================================================
 [[ ! -e ${MUK_DIR}/files/includes.sh ]] && (echo Missing includes file!  Aborting!; exit 1)
 . ${MUK_DIR}/files/includes.sh
+[[ $(ischroot; echo $?) -ne 1 ]] || systemctl daemon-reload
 
 export UI=$([[ "$1" =~ -ui$ ]] && echo "Y" || echo "N")
 export ACTION=${1/-ui/}
@@ -43,7 +44,7 @@ function _ui_error() { if [[ "$UI" == "N" ]]; then _error $@; else dialog --msgb
 # If no help is requested, make sure script is running as root and needed
 # packages have been installed on this computer.
 #==============================================================================
-if [[ ! "${ACTION}" =~ (help|--help) ]]; then
+if [[ ! "${ACTION}" =~ (help|--help) && "${ACTION}" != "debootstrap" ]]; then
 	# Make sure we got everything we need to create a customized Ubuntu disc:
 	PKGS=()
 	whereis mksquashfs | grep -q "/mksquashfs" || PKGS+=( squashfs-tools )
@@ -114,7 +115,7 @@ elif [[ "${ACTION}" == "mount" ]]; then
 #==============================================================================
 # Are we changing the unpacked CHROOT environment?
 #==============================================================================
-elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "build" ]]; then
+elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap) ]]; then
 	#==========================================================================
 	# Determine if we are working inside or outside the CHROOT environment
 	#==========================================================================
@@ -123,6 +124,28 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 		# RESULT: We are outside the chroot environment:
 		#======================================================================
 		### First: Make sure that the CHROOT environment actually exists:
+		cd ${UNPACK_DIR}
+		if [[ "${ACTION}" == "debootstrap" ]]; then
+			### Remove current chroot environment, because we are going to start over again:
+			test -d ${UNPACK_DIR}/edit && rm -rf ${UNPACK_DIR}/edit 2> /dev/null
+			mkdir -p ${UNPACK_DIR}/edit
+			$0 remove || exit 1
+			mkdir -p ${UNPACK_DIR}/.upper
+			mount --bind ${UNPACK_DIR}/.upper ${UNPACK_DIR}/edit 
+			
+			### Create the chroot environment by debootstrapping it!  Install "debootstrap" if not already installed!
+			_title "Building debootstrapped chroot environment..."
+			whereis debootstrap | grep -q "/debootstrap" || apt install -y debootstrap
+			source /etc/os-release
+			DISTRO=${2:-${UBUNTU_CODENAME}}
+			ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')"
+			debootstrap --arch=${ARCH} --variant=minbase ${DISTRO:-"noble"} ${UNPACK_DIR}/edit || exit 1
+		else 
+			$0 unmount
+			$0 mount || exit 1
+		fi
+		
+		## Third: Are we building a particular combination of scripts we have?
 		if [[ "${ACTION}" == "build" ]]; then
 			valid=($(find ${MUK_DIR}/* -maxdepth 0 -type d | while read DIR; do basename $DIR; done))
 			if [[ "$2" != "misc" && ! -z "${valid[$2]}" ]]; then
@@ -140,22 +163,19 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 			fi
 		fi
 
-		### Second: Update MUK, then setup the CHROOT environment:
-		cd ${UNPACK_DIR}
-		$0 unmount
-		$0 mount || exit 1
+		### Third: Update MUK, then setup the CHROOT environment:
 		cp /etc/resolv.conf ${UNPACK_DIR}/edit/etc/
 		cp /etc/hosts ${UNPACK_DIR}/edit/etc/
 		mount --bind /run/ ${UNPACK_DIR}/edit/run
 		mount --bind /dev/ ${UNPACK_DIR}/edit/dev
 		mount -t tmpfs tmpfs ${UNPACK_DIR}/edit/tmp
 
-		### Third: Copy MUK into chroot environment:
+		### Fourth: Copy MUK into chroot environment:
 		rm -rf ${UNPACK_DIR}/edit/${MUK_DIR}
 		cp -aR ${MUK_DIR} ${UNPACK_DIR}/edit/${MUK_DIR}
 		chown root:root -R ${UNPACK_DIR}/edit/${MUK_DIR}
 
-		### Fourth: Enter the CHROOT environment:
+		### Fifth: Enter the CHROOT environment:
 		_title "Entering CHROOT environment"
 		chroot ${UNPACK_DIR}/edit ${MUK_DIR}/edit_chroot.sh $@
 		[[ -d ${UNPACK_DIR}/extract/live ]] && DIR=live || DIR=casper
@@ -165,7 +185,7 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 			cp ${UNPACK_DIR}/edit/etc/os-release ${UNPACK_DIR}/extract/${DIR}/build.txt
 		fi
 
-		### Fifth: Run required commands outside chroot commands:
+		### Sixth: Run required commands outside chroot commands:
 		if [[ -f ${UNPACK_DIR}/edit/usr/local/finisher/outside_chroot.list ]]; then
 			$0 docker_mount
 			_title "Executing scripts outside of CHROOT environment..."
@@ -173,7 +193,7 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 			$0 docker_umount
 		fi
 
-		### Thirteenth: Copy the new INITRD from the unpacked filesystem:
+		### Seventh: Copy the new INITRD from the unpacked filesystem:
 		cd ${UNPACK_DIR}/edit
 		INITRD=$(ls initrd.img-* 2> /dev/null | tail -1)
 		[[ -z "${INITRD}" ]] && INITRD_SRC=$(ls boot/initrd.img-* 2> /dev/null | tail -1)
@@ -201,13 +221,12 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 			fi
 		fi
 
-		### Fourteenth: Modify "grub.cfg":
-		FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
-		test -f ${FILE} || FILE=${UNPACK_DIR}/extract/isolinux/grub.cfg
+		### Eighth: Modify "grub.cfg":
+		FILE=$(find ${UNPACK_DIR}/extract -name grub.cfg  -print -quit) 
 		# NOTE: Rename "initrd.gz" entries only for Ubuntu (and maybe Debian), --NEVER-- Raspberry Pi OS:
 		test -f ${UNPACK_DIR}/extract/live/vmlinuz0 || sed -i "s|initrd.gz|initrd|g" ${FILE}
 
-		### Fifteenth: Copy the new VMLINUZ from the unpacked filesystem:
+		### Ninth: Copy the new VMLINUZ from the unpacked filesystem:
 		VMLINUZ=$(ls vmlinuz-* 2> /dev/null | tail -1)
 		[[ -z "${VMLINUZ}" ]] && VMLINUZ=$(ls boot/vmlinuz-* 2> /dev/null | tail -1)
 		if [[ ! -z "${VMLINUZ}" ]]; then
@@ -234,7 +253,7 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 			fi
 		fi
 
-		### Sixteenth: Remove mounts for CHROOT environment:
+		### Tenth: Remove mounts for CHROOT environment:
 		cd ${UNPACK_DIR}
 		$0 unmount
 		_title "Exited CHROOT environment"
@@ -248,10 +267,6 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 		mount -t devpts none /dev/pts
 		export HOME=/etc/skel
 		export LC_ALL=C
-		dbus-uuidgen > /etc/machine-id
-		ln -fs /etc/machine-id /var/lib/dbus/machine-id
-		dpkg-divert --local --rename --add /sbin/initctl >& /dev/null
-		ln -sf /bin/true /sbin/initctl
 		export PASSWORD=xubuntu
 		export DEBIAN_FRONTEND=noninteractive
 		export USER=root
@@ -260,14 +275,53 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 		export KODI_ADD=/etc/skel/.kodi/addons
 		export KODI_BASE=http://mirrors.kodi.tv/addons/leia/
 
-		### Second: Install the chroot tools if required, then put firefox on hold if it is still snap version:
+		### Second: Build debootstrap environment to start with:
+		#[[ "${ACTION}" == "debootstrap" ]] && ACTION=enter		## NOTE: Uncomment this line to skip installing all the packages...  
+		if [[ "${ACTION}" == "debootstrap" ]]; then
+			### Set a custom hostname and  configure apt sources.list:
+			echo "ubuntu-fs-live" > /etc/hostname
+			(
+				echo "deb http://us.archive.ubuntu.com/ubuntu/ noble main restricted universe multiverse"
+				echo "deb-src http://us.archive.ubuntu.com/ubuntu/ noble main restricted universe multiverse"
+				echo ""
+				echo "deb http://us.archive.ubuntu.com/ubuntu/ noble-security main restricted universe multiverse"
+				echo "deb-src http://us.archive.ubuntu.com/ubuntu/ noble-security main restricted universe multiverse"
+				echo ""
+				echo "deb http://us.archive.ubuntu.com/ubuntu/ noble-updates main restricted universe multiverse"
+				echo "deb-src http://us.archive.ubuntu.com/ubuntu/ noble-updates main restricted universe multiverse"
+			) > /etc/apt/sources.list
+
+			### Update package list, then install systemd packages:
+			apt-get update
+			apt-get install -y libterm-readline-gnu-perl systemd-sysv
+		fi
+
+		### Third: Configure machine-id and divert:
+		dbus-uuidgen > /etc/machine-id
+		ln -fs /etc/machine-id /var/lib/dbus/machine-id
+		dpkg-divert --local --rename --add /sbin/initctl >& /dev/null
+		ln -sf /bin/true /sbin/initctl
+
+		### Fourth: Continue building debootstrap environment:
+		if [[ "${ACTION}" == "debootstrap" ]]; then
+			### Install packages needed for Live System, as well as the kernel:
+			apt-get install -y sudo ubuntu-standard casper discover laptop-detect os-prober network-manager net-tools \
+					wireless-tools wpagui locales grub-common grub-gfxpayload-lists grub-pc grub-pc-bin grub2-common \
+					grub-efi-amd64-signed shim-signed mtools binutils tasksel
+   			apt-get install -y --no-install-recommends linux-generic
+
+			### Change "action" variable to "enter", so we can continue to modify the chroot environment:
+   			ACTION=enter
+   		fi
+
+		### Fifth: Install the chroot tools if required, then put firefox on hold if it is still snap version:
 		${MUK_DIR}/install.sh
 		if grep -q "ID=ubuntu" /etc/os-release; then
 			if ! apt-mark showhold | grep -q firefox; then apt list --installed firefox 2> /dev/null | grep -q 1snap1 && apt-mark hold firefox > /dev/null; fi
 		fi
 		test -e /usr/local/bin/cls || ln -sf /usr/bin/clear /usr/local/bin/cls
 
-		### Third: Next action depends on parameter passed....
+		### Sixth: Next action depends on parameter passed....
 		if [[ "${ACTION}" == "enter" ]]; then
 			### "enter": Create a bash shell for user to make alterations to chroot environment
 			clear
@@ -287,36 +341,33 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 			for file in *.sh; do ./$file; done
 		fi
 
-		# This only needs to happen in Ubuntu:
-		if [[ ! "$(grep -e "^ID=" /etc/os-release)" =~ ID=\"?debian\"? ]]; then
-			### Fourth: If user 999 exists, change that user ID so that LiveCD works:
-			uid_name=$(grep ":999:" /etc/passwd | cut -d":" -f 1)
-			if [[ ! -z "${uid_name}"  ]]; then
-				uid_new=998
-				while [ "$(id -u ${uid_new} >& /dev/null; echo $?)" -eq 0 ]; do uid_new=$((uid_new-1)); done
-				_title "Changing user \"${uid_name}\" from UID 999 to ${uid_new} so LiveCD works..."
-				usermod -u ${uid_new} ${uid_name}
-				chown -Rhc --from=999 ${uid_new} / >& /dev/null
-			fi
-
-			### Fifth: If group 999 exists, change that group ID so that LiveCD works:
-			gid_line=$(getent group 999)
-			if [[ ! -z "${gid_line}" ]]; then
-				gid_name=$(echo $gid_line | cut -d":" -f 1)
-				gid_new=998
-				while [ "$(getent group ${gid_new} >& /dev/null; echo $?)" -eq 0 ]; do gid_new=$((gid_new-1)); done
-				_title "Changing group \"${gid_name}\" from GID 999 to ${gid_new} so LiveCD works..."
-				groupmod -g ${gid_new} ${gid_name}
-				chown -Rhc --from=:999 :${gid_new} / >& /dev/null
-			fi
+		### Seventh: If user 999 exists, change that user ID so that LiveCD works:
+		uid_name=$(grep ":999:" /etc/passwd | cut -d":" -f 1)
+		if [[ ! -z "${uid_name}"  ]]; then
+			uid_new=998
+			while [ "$(id -u ${uid_new} >& /dev/null; echo $?)" -eq 0 ]; do uid_new=$((uid_new-1)); done
+			_title "Changing user \"${uid_name}\" from UID 999 to ${uid_new} so LiveCD works..."
+			usermod -u ${uid_new} ${uid_name}
+			chown -Rhc --from=999 ${uid_new} / >& /dev/null
 		fi
 
-		### Sixth: Upgrade the installed GitHub repositories:
+		### Eighth: If group 999 exists, change that group ID so that LiveCD works:
+		gid_line=$(getent group 999)
+		if [[ ! -z "${gid_line}" ]]; then
+			gid_name=$(echo $gid_line | cut -d":" -f 1)
+			gid_new=998
+			while [ "$(getent group ${gid_new} >& /dev/null; echo $?)" -eq 0 ]; do gid_new=$((gid_new-1)); done
+			_title "Changing group \"${gid_name}\" from GID 999 to ${gid_new} so LiveCD works..."
+			groupmod -g ${gid_new} ${gid_name}
+			chown -Rhc --from=:999 :${gid_new} / >& /dev/null
+		fi
+
+		### Ninth: Upgrade the installed GitHub repositories:
 		_title "Updating GitHub repositories in ${BLUE}/opt${GREEN}..."
 		cd /opt
 		(ls | while read p; do pushd $p; [ -d .git ] && git pull; popd; done) >& /dev/null
 
-		### Seventh: Upgrade the pre-installed Kodi addons via GitHub repositories:
+		### Tenth: Upgrade the pre-installed Kodi addons via GitHub repositories:
 		if [ -d /opt/kodi ]; then
 			_title "Updating Kodi addons from GitHub repositories in ${BLUE}/opt/kodi${GREEN}...."
 			pushd /opt/kodi >& /dev/null
@@ -324,13 +375,13 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 			popd >& /dev/null
 		fi
 
-		### Eighth: Update packages:
+		### Eleventh: Update packages:
 		_title "Updating repository lists...."
 		apt-get update >& /dev/null
 		_title "Upgrading any packages requiring upgrading..."
 		apt-get upgrade -y
 
-		### Ninth: Purge older kernels from the image:
+		### Twelveth: Purge older kernels from the image:
 		if [[ "${OLD_KERNEL}" -eq 1 ]]; then
 			_title "Removing any older kernels from the image..."
 			CUR=$(ls -l /boot/initrd.img 2> /dev/null | awk '{print $NF}' | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*")
@@ -340,25 +391,25 @@ elif [[ "${ACTION}" == "enter" || "${ACTION}" == "upgrade" || "${ACTION}" == "bu
 			done
 		fi
 
-		### Tenth: Remove any unnecessary packages and fix any broken packages:
+		### Fourteenth: Remove any unnecessary packages and fix any broken packages:
 		_title "Removing unnecessary packages and fixing any broken packages..."
 		apt-get install -f --autoremove --purge -y
 
-		### Eleventh: Remove any unnecessary packages:
+		### Fifteenth: Remove any unnecessary packages:
 		_title "Cleaning up cached packages..."
 		apt-get autoclean -y >& /dev/null
 		apt-get clean -y >& /dev/null
 
-		### Twelveth: Disable services not required during Live ISO:
+		### Sixteenth: Disable services not required during Live ISO:
 		if [[ -f /usr/local/finisher/disabled.list ]]; then
 			_title "Disabling unnecessary services for Live CD..."
 			(while read p r; do systemctl disable $p; done) < /usr/local/finisher/disabled.list >& /dev/null
 		fi
 
-		### Fifteenth: Clean up everything done to "chroot" into this ISO image:
+		### Seventeenth: Clean up everything done to "chroot" into this ISO image:
 		_title "Undoing CHROOT environment modifications..."
 		if apt-mark showhold | grep -q firefox; then apt list firefox 2> /dev/null | grep -q 1snap1 && apt-mark unhold firefox > /dev/null; fi
-		chmod 440 /etc/sudoers.d/*
+		test -d /etc/sudoers.d && chmod 440 /etc/sudoers.d/*
 		rm -rf /tmp/* ~/.bash_history
 		truncate -s 0 /etc/machine-id
 		rm /sbin/initctl
@@ -381,7 +432,7 @@ elif [[ "${ACTION}" == "unmount" ]]; then
 	_title "Unmounting filesystem mount points...."
 	umount -qlf ${UNPACK_DIR}/edit/tmp/host >& /dev/null
 	mount | grep "${UNPACK_DIR}/edit" | awk '{print $3}' | tac | while read DIR; do umount -qlf ${DIR}; done
-	mount | grep "${UNPACK_DIR}/.lower" | awk '{print $3}' | while read DIR; do umount -qlf ${DIR}; rmdir ${DIR}; done
+	mount | grep "${UNPACK_DIR}/.lower" | awk '{print $3}' | while read DIR; do umount -qlf ${DIR} 2> /dev/null; test -d ${DIR} && rmdir ${DIR}; done
 	$0 docker_umount -q
 	_ui_title "All filesystem mount points should be unmounted now."
 
@@ -399,7 +450,7 @@ elif [[ "${ACTION}" == "remove" ]]; then
 	$0 unmount
 	_title "Removing modifications to squashfs..."
 	umount -q ${UNPACK_DIR}/edit
-	rm -rf ${UNPACK_DIR}/.upper
+	test -d ${UNPACK_DIR}/.upper && rm -rf ${UNPACK_DIR}/.upper
 	_ui_title "Modifications to squashfs filesystem has been removed."
 
 #==============================================================================
@@ -546,7 +597,7 @@ elif [[ "${ACTION}" == "iso" ]]; then
 	fi
 
 	# Second: Figure out what to name the ISO to avoid conflicts
-	_title "Determining ISO filename and patching \"grub.cfg\"...."
+	_title "Determining ISO filename...."
 	if [[ -f ${UNPACK_DIR}/extract/live/vmlinuz0 ]]; then
 		NAME=raspios
 		ISO_FILE=${NAME}-${VERSION_CODENAME}-i386-$(date +"%Y-%m-%d")
@@ -561,7 +612,7 @@ elif [[ "${ACTION}" == "iso" ]]; then
 	fi
 
 	# Third: Try to patch grub.cfg for successful LiveCD boot.  Why this is necessary is beyond me.....
-	FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
+	FILE=$(find ${UNPACK_DIR}/extract -name grub.cfg  -print -quit)
 	sed -i "s|boot=casper ||g" ${FILE}
 	sed -i "s|file=|boot=casper file=|g" ${FILE}
 
@@ -721,7 +772,7 @@ elif [[ "${ACTION}" == "usb_load" ]]; then
 	if [[ -z "${DEV}" ]]; then $0 usb_mount || exit 1; fi
 	copy -R --verbose --update ${UNPACK_DIR}/extract/casper* ${UNPACK_DIR}/mnt/casper/
 	eval `blkid -o export ${DEV}`
-	FILE=${UNPACK_DIR}/mnt/boot/grub/grub.cfg
+	FILE=$(find ${UNPACK_DIR}/mnt -name grub.cfg  -print -quit)
 	sed -i "s| boot=casper||" ${FILE}
 	sed -i "s| live-media=/dev/disk/by-uuid/[0-9a-z\-]*||" ${FILE}
 	sed -i "s|vmlinuz |vmlinuz boot=casper live-media=/dev/disk/by-uuid/${UUID} |" ${FILE}
@@ -734,7 +785,7 @@ elif [[ "${ACTION}" == "usb_copy" ]]; then
 	DEV=$(mount | grep "${UNPACK_DIR}/usb_casper" | cut -d" " -f 1)
 	if [[ -z "${DEV}" ]]; then $0 usb_mount || exit 1; fi
 	copy -R --verbose --update ${UNPACK_DIR}/mnt/casper* ${UNPACK_DIR}/extract/casper
-	FILE=${UNPACK_DIR}/extract/boot/grub/grub.cfg
+	FILE=$(find ${UNPACK_DIR}/extract -name grub.cfg  -print -quit)
 	sed -i "s| live-media=/dev/disk/by-uuid/[0-9a-z\-]*||g" ${FILE}
 	_ui_title "File copy from split-partition USB stick completed!"
 
@@ -845,6 +896,7 @@ elif [[ ! -z "${ACTION}" ]]; then
 	echo -e "  ${GREEN}efi_image${NC}      Extracts EFI images necessary for ISO hybrid boot."
 	echo -e "  ${GREEN}remove${NC}         Safely removes the unpacked filesystem from the hard drive."
 	echo -e "  ${GREEN}update${NC}         Updates this script with the latest version."
+	echo -e "  ${GREEN}debootstrap${NC}    Build a new chroot environment using debootstrap tool."
 	echo -e "  ${GREEN}--help${NC}         This message"
 	echo -e ""
 	echo "Docker-related commands:"
@@ -878,6 +930,7 @@ else
 			upgrade     "Only upgrades Ubuntu packages with any updates available."
 			mount       "Mounts all unpacked filesystem mount points."
 			unmount     "Safely unmount all unpacked filesystem mount points."
+			debootstrap "Build a new chroot environment using debootstrap tool."
 		)
 		height=$(( ${#choices[@]} / 2 + 7 ))
 		unset option2

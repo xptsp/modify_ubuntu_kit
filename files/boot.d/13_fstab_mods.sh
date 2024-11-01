@@ -36,6 +36,10 @@ if [[ ! -z "$DEV" ]]; then
 	mount ${HOME}/Documents
 fi
 
+# Symbolic links to Yuzu in Public if they exist:
+test -d "${HOME}/Public/.yuzu/config" && mkdir -p ${HOME}/.config/yuzu && ln -sf ${HOME}/Public/.yuzu/config ${HOME}/.config/yuzu
+test -d "${HOME}/Public/.yuzu/data" && mkdir -p "${HOME}/.local/share/yuzu" && ln -sf ${HOME}/Public/.yuzu/data ${HOME}/.local/share/yuzu
+
 # Symbolic link to Mozilla Firefox, Thunderbird, and GitHub Desktop folders in Documents if they exist:
 mkdir -p ${HOME}/.config
 test -d "${HOME}/Documents/.mozilla" && ln -sf "${HOME}/Documents/.mozilla" "${HOME}/.mozilla"
@@ -55,10 +59,10 @@ fi
 if [[ -d ${HOME}/Public/Downloads ]]; then
 	sed -i "/\/home\/${USER}\/Public\/Downloads/d" $F
 	echo "${HOME}/Public/Downloads ${HOME}/Downloads none bind 0 0" >> $F
-	
 fi
 
 # Pretify the "/etc/fstab" file, then mount everything:
 cat $F | grep -v "^#" | column -t | tee $F >& /dev/null
-chown ${USER}:${USER} -R ${HOME}/*  
+chown ${USER}:${USER} -R ${HOME}/*
+systemctl daemon-reload
 mount -a
