@@ -19,7 +19,10 @@ apt purge -y gedit gnome-text-editor
 #==============================================================================
 _title "Installing Mousepad..."
 #==============================================================================
-apt install -y mousepad
+wget http://archive.ubuntu.com/ubuntu/pool/universe/m/mousepad/mousepad_0.5.8-1_amd64.deb -O /tmp/mousepad_0.5.8-1_amd64.deb
+apt install -y /tmp/mousepad_0.5.8-1_amd64.deb
+apt-mark hold mousepad
+rm /tmp/mousepad_0.5.8-1_amd64.deb
 
 #==============================================================================
 _title "Configuring Mousepad..."

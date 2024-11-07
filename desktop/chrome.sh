@@ -19,7 +19,11 @@ apt list --installed gnome-browser-connector 2>&1 | grep -q gnome-browser-connec
 #==============================================================================
 _title "Installing Google Chrome..."
 #==============================================================================
-wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -O /tmp/google-chrome-stable_current_amd64.deb
+wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
+echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
+apt-get update
+apt-get install google-chrome-stable
+
 wget http://archive.ubuntu.com/ubuntu/pool/universe/g/gnome-browser-connector/chrome-gnome-shell_42.1-4_all.deb -O /tmp/chrome-gnome-shell_42.1-4_all.deb
 apt install -y /tmp/google-chrome-stable_current_amd64.deb /tmp/chrome-gnome-shell_42.1-4_all.deb
 rm /tmp/google-chrome-stable_current_amd64.deb /tmp/chrome-gnome-shell_42.1-4_all.deb
