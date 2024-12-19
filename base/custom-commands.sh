@@ -21,5 +21,5 @@ ln -sf /usr/bin/clear ${DST}/cls
 _title "Getting other custom scripts..."
 #==============================================================================
 FILE=/usr/local/bin/peanut
-wget https://raw.githubusercontent.com/xptsp/bpiwrt-builder/master/files/usr/local/bin/peanut -O ${FILE}
+wget https://github.com/xptsp/openwrt-peanut/raw/refs/heads/main/files/peanut -O ${FILE}
 chmod +x ${FILE} 

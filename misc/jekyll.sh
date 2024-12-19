@@ -16,6 +16,7 @@ _title "Installing Jekyll dependencies..."
 #==============================================================================
 # First: Install dependencies:
 apt -y install make build-essential ruby ruby-dev
+
 # Second: Configure path of Ruby Gem's:
 echo "export GEM_HOME=\$HOME/gems" >> ~/.bashrc
 echo "export PATH=\$HOME/gems/bin:\$PATH" >> ~/.bashrc
@@ -25,20 +26,18 @@ source ~/.bashrc
 _title "Installing Ruby bundler..."
 #==============================================================================
 gem install bundler
+[[ -z "${CHROOT}" ]] && chown $USER:$USER -R ~/.bundle
 
 #==============================================================================
 _title "Installing Jekyll..."
 #==============================================================================
 gem install jekyll
 
-# Fifth: Change ownership if not in a CHROOT:
-[[ -z "${CHROOT}" ]] && chown $USER:$USER -R ~/.bundle
-
 #==============================================================================
 _title "Installing Jekyll systemd service..."
 #==============================================================================
 # Sixth: Create Jekyll systemd service file:
-cat << EOF > /etc/systemd/system/jekyll.service
+cat << EOF > /lib/systemd/system/jekyll.service
 [Unit]
 Description=Jekyll service
 After=syslog.target network.target
@@ -46,7 +45,8 @@ After=syslog.target network.target
 [Service]
 User=kodi
 Type=simple
-ExecStart=/usr/local/bin/run-jekyll
+WorkingDir=/home/kodi/Jekyll
+ExecStart=/usr/bin/bash -c \'export GEM_HOME=\$HOME/gems \&\& export PATH=\$HOME/gems/bin:\$PATH \&\& jekyll serve\'
 ExecStop=/usr/bin/pkill -f jekyll
 
 [Install]
@@ -54,17 +54,7 @@ WantedBy=multi-user.target network-online.target
 EOF
 if ischroot; then
 	systemctl disable jekyll
-	change_username /etc/systemd/system/jekyll.service
+	change_username /lib/systemd/system/jekyll.service
 else
 	systemctl enable jekyll
 fi
-# Seventh: Create "run-jekyll" command:
-cat << EOF > /usr/local/bin/run-jekyll
-#!/bin/bash
-export GEM_HOME=\$HOME/gems
-export PATH=\$HOME/gems/bin:\$PATH
-cd /home/kodi/GitHub/xptsp.github.io
-jekyll serve
-EOF
-chmod +x /usr/local/bin/run-jekyll
-ischroot || change_username /usr/local/bin/run-jekyll

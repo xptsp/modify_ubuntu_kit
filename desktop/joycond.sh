@@ -6,19 +6,12 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Compiles joycond for your computer."
+	echo -e "${RED}Purpose:${NC} Compiles JoyCon daemon for your computer."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Installing Wine..."
+_title "Installing JoyCon daemon..."
 #==============================================================================
-apt install -y libevdev-dev build-essential cmake libevdev-dev git pkg-config libudev-dev
-cd /tmp
-git clone https://github.com/DanielOgorchock/joycond
-cd joycond
-cmake .
-make
-make install
-systemctl enable joycond
+apt install -y libevdev-dev build-essential cmake libevdev-dev git pkg-config libudev-dev joycond

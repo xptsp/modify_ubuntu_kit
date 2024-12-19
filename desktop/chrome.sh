@@ -25,5 +25,5 @@ apt-get update
 apt-get install google-chrome-stable
 
 wget http://archive.ubuntu.com/ubuntu/pool/universe/g/gnome-browser-connector/chrome-gnome-shell_42.1-4_all.deb -O /tmp/chrome-gnome-shell_42.1-4_all.deb
-apt install -y /tmp/google-chrome-stable_current_amd64.deb /tmp/chrome-gnome-shell_42.1-4_all.deb
-rm /tmp/google-chrome-stable_current_amd64.deb /tmp/chrome-gnome-shell_42.1-4_all.deb
+apt install -y /tmp/chrome-gnome-shell_42.1-4_all.deb
+rm /tmp/chrome-gnome-shell_42.1-4_all.deb

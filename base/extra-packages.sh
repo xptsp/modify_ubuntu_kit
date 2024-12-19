@@ -16,6 +16,6 @@ _title "Installing some extra packages on your machine..."
 #==============================================================================
 source /etc/os-release
 [[ "${VERSION_ID/\./}" -lt 2204 ]] && apt install -y ttf-ubuntu-font-family
-apt install -y dh-modaliases build-essential dkms dpkg-dev debhelper checkinstall
+apt install -y dh-modaliases build-essential dkms dpkg-dev debhelper checkinstall meson
 apt install -y p7zip-full p7zip-rar rar unrar net-tools rename tree squashfs-tools git genisoimage dialog unionfs-fuse
 cc ${MUK_DIR}/files/usbreset.c -o /usr/local/bin/usbreset

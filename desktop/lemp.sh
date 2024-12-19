@@ -60,4 +60,3 @@ _title "Installing MariaSQL"
 #==============================================================================
 apt install -y mariadb-server
 ischroot && systemctl disable mysql
-

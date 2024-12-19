@@ -16,7 +16,6 @@ _title "Installing GIMP..."
 #==============================================================================
 add-apt-repository -y ppa:otto-kesselgulasch/gimp
 FILE=/etc/apt/sources.list.d/otto-kesselgulasch-ubuntu-gimp-*.list
-sed -i "s| impish | focal | g" $FILE
-sed -i "s| jammy | focal | g" $FILE
+sed -i "s| impish | jammy | g" $FILE
 apt update
 apt install -y gimp

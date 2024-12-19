@@ -36,7 +36,7 @@ Pin: version 1:1snap*
 Pin-Priority: -1
 EOF
 apt update
-apt install -y firefox thunderbird
+apt install --allow-downgrades -y firefox thunderbird 
 
 #==============================================================================
 _title "Copy launchers to the desktop and trust them..."

@@ -16,6 +16,6 @@ _title "Installing CPU-G (alternative for CPU-Z)..."
 #==============================================================================
 add-apt-repository -y ppa:atareao/atareao
 FILE=/etc/apt/sources.list.d/atareao-ubuntu-atareao-*.list
-sed -i "s| jammy | focal |g" ${FILE}
+#sed -i "s| jammy | focal |g" ${FILE}
 apt update
 apt install -y cpu-g

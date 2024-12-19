@@ -25,7 +25,7 @@ wget -O- https://www.virtualbox.org/download/oracle_vbox_2016.asc | sudo gpg --y
 apt update
 wget https://download.virtualbox.org/virtualbox/7.0.14/virtualbox-7.0_7.0.14-161095~Ubuntu~jammy_amd64.deb -O /tmp/virtualbox.deb
 apt install -y /tmp/virtualbox.deb
-apt-mark hold virtualbox
+apt-mark hold virtualbox-7.0
 
 #==============================================================================
 _title "Install VirtualBox 7.0.14 Extension Pack..."
