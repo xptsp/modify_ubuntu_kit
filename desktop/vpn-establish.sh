@@ -54,7 +54,7 @@ sed -i "s|#     foreign_option_3='dhcp-option DOMAIN be.bnc.ch'|foreign_option_3
 
 # Fourth: Configure Split Tunnel VPN Routing
 #==============================================================================
-echo "200     htpc" >> /etc/iproute2/rt_tables
+echo "200     vpn" >> /etc/iproute2/rt_tables
 
 # Fifth: Change Reverse Path Filtering
 #==============================================================================

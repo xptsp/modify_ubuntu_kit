@@ -3,7 +3,7 @@
 # Modified version by HTPC Guides  www.htpcguides.com
 
 # The user that the VPN is restricted to:
-export VPNUSER=htpc
+export VPNUSER=vpn
 
 # Get local ethernet name and IP address:
 ETHERNET=$(lshw -c network -disable usb -short | grep -i "ethernet")

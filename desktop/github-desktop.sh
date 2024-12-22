@@ -18,4 +18,6 @@ _title "Installing GitHub Desktop for Linux..."
 wget -qO - https://mirror.mwt.me/shiftkey-desktop/gpgkey | gpg --dearmor | tee /usr/share/keyrings/mwt-desktop.gpg > /dev/null
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/mwt-desktop.gpg] https://mirror.mwt.me/shiftkey-desktop/deb/ any main" > /etc/apt/sources.list.d/mwt-desktop.list
 apt update
-apt install -y github-desktop
+wget https://github.com/shiftkey/desktop/releases/download/release-3.4.8-linux1/GitHubDesktop-linux-amd64-3.4.8-linux1.deb -O /tmp/GitHubDesktop-linux-amd64-3.4.8-linux1.deb
+apt install -y /tmp/GitHubDesktop-linux-amd64-3.4.8-linux1.deb
+rm /tmp/GitHubDesktop-linux-amd64-3.4.8-linux1.deb 

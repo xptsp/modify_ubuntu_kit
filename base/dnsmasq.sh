@@ -16,12 +16,14 @@ _title "Installing DNSMasq..."
 #==============================================================================
 # Disable and stop systemd-resolved.  We don't want this service restarted after installation!
 $(whereis systemctl | awk '{print $2}') disable --now systemd-resolved
-systemctl mask systemd-resolved
 
-# Remove symlinked "/etc/resolv.conf" and recreate it pointing to Cloudflare: 
+# Remove symlinked "/etc/resolv.conf" and recreate it to local DNS server, then Cloudflare: 
 unlink /etc/resolv.conf
-echo "nameserver 1.1.1.1" > /etc/resolv.conf
-echo "nameserver 1.0.0.1" >> /etc/resolv.conf
+cat << EOF > /etc/resolv.conf
+nameserver 127.0.0.1
+nameserver 1.1.1.1
+nameserver 1.0.0.1
+EOF
 
 # Actually install the dnsmasq service:
 apt update
@@ -69,6 +71,3 @@ domain=example.com
 listen-address=127.0.0.1  # Set to Server IP for network responses
 EOF
 systemctl restart dnsmasq
-
-# Add the dnsmasq caching server to the resolver list:
-sed -i.bak '1s/^/nameserver 127.0.0.1\n/' /etc/resolv.conf
