@@ -200,8 +200,8 @@ elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap) ]]; then
 		if [[ ! -z "${INITRD_SRC}" ]]; then
 			# Is this Ubuntu?
 			if [[ -f ${UNPACK_DIR}/extract/casper/initrd ]]; then
-				_title "Moving INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
-				mv ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
+				_title "Copying INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
+				cp ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
 			# Or is this Debian?
 			elif [[ -d ${UNPACK_DIR}/extract/live ]]; then
 				# Is this the Raspberry Pi OS image?
@@ -232,8 +232,8 @@ elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap) ]]; then
 		if [[ ! -z "${VMLINUZ}" ]]; then
 			# Is this Ubuntu?
 			if [[ -f ${UNPACK_DIR}/extract/casper/initrd ]]; then	# Ubuntu:
-				_title "Moving VMLINUZ from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
-				mv ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
+				_title "Copying VMLINUZ from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
+				cp ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
 			# Or is this Debian?
 			elif [[ -d ${UNPACK_DIR}/extract/live ]]; then			
 				# Is this the Raspberry Pi OS image?
@@ -523,14 +523,15 @@ elif [[ "${ACTION}" =~ (pack|changes)(-xz|) ]]; then
 	# Second: Build the list of installed packages in unpacked filesystem:
 	cd ${UNPACK_DIR}
 	_title "Building list of installed packages...."
-	if [[ -d extract/live ]]; then DIR=live; EXT=packages; else DIR=casper; EXT=manifest; fi 
+	if [[ -d extract/live ]]; then DIR=live; EXT=packages; else DIR=casper; EXT=manifest; EXT2=-desktop; fi 
 	chmod +w extract/${DIR}/filesystem.${EXT} >& /dev/null
-	chroot edit dpkg-query -W --showformat='${Package} ${Version}\n' | tee extract/${DIR}/filesystem.${EXT} >& extract/${DIR}/filesystem.${EXT}-desktop
-	sed -i '/ubiquity/d' extract/${DIR}/filesystem.${EXT}-desktop
-	sed -i '/casper/d' extract/${DIR}/filesystem.${EXT}-desktop
-	sed -i '/discover/d' extract/${DIR}/filesystem.${EXT}-desktop
-	sed -i '/laptop-detect/d' extract/${DIR}/filesystem.${EXT}-desktop
-	sed -i '/os-prober/d' extract/${DIR}/filesystem.${EXT}-desktop
+	chroot edit dpkg-query -W --showformat='${Package} ${Version}\n' > extract/${DIR}/filesystem.${EXT}  
+	[[ -f extract/${DIR}/filesystem.${EXT}${EXT2} ]] && cp extract/${DIR}/filesystem.${EXT} extract/${DIR}/filesystem.${EXT}${EXT2} || EXT2=
+	sed -i '/ubiquity/d' extract/${DIR}/filesystem.${EXT}${EXT2}
+	sed -i '/casper/d' extract/${DIR}/filesystem.${EXT}${EXT2}
+	sed -i '/discover/d' extract/${DIR}/filesystem.${EXT}${EXT2}
+	sed -i '/laptop-detect/d' extract/${DIR}/filesystem.${EXT}${EXT2}
+	sed -i '/os-prober/d' extract/${DIR}/filesystem.${EXT}${EXT2}
 
 	# Third: Set necessary flags for compression:
 	[[ "${ACTION}" =~ -xz$ ]] && FLAG_XZ=1
@@ -544,7 +545,7 @@ elif [[ "${ACTION}" =~ (pack|changes)(-xz|) ]]; then
 	[[ ! -z "${2}" ]] && MUK_COMMENT=$2
 	[[ ! -z "${MUK_COMMENT}" ]] && FS=${FS}_${MUK_COMMENT}
 	
-	_title "Building ${BLUE}${FS}${GREEN}...."
+	_title "Building ${BLUE}${FS}.squashfs${GREEN}...."
 	[[ "${ACTION}" == "pack" || "${ACTION}" == "pack-xz" ]] && SRC=edit || SRC=.upper
 	[[ -d extract/live ]] && DST=live || DST=casper 
 	mksquashfs ${SRC} extract/${DST}/${FS}.squashfs -b 1048576 ${XZ}

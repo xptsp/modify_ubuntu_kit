@@ -1,1 +1,1 @@
-../base/custom-commands.sh
+../core/custom-commands.sh

@@ -1,1 +1,1 @@
-../base/ubuntu-restricted-extras.sh
+../core/ubuntu-restricted-extras.sh

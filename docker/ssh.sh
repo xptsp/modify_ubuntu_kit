@@ -1,1 +1,1 @@
-../base/ssh.sh
+../core/ssh.sh

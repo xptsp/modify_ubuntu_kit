@@ -1,1 +1,1 @@
-../base/truecrypt.sh
+../core/truecrypt.sh

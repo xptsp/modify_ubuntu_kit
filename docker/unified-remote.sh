@@ -1,1 +1,1 @@
-../base/unified-remote.sh
+../core/unified-remote.sh

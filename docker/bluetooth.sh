@@ -1,1 +1,1 @@
-../base/bluetooth.sh
+../core/bluetooth.sh
