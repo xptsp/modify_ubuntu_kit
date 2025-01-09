@@ -201,22 +201,22 @@ elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap) ]]; then
 			# Is this Ubuntu?
 			if [[ -f ${UNPACK_DIR}/extract/casper/initrd ]]; then
 				_title "Copying INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
-				cp ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
+				cp -au ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
 			# Or is this Debian?
 			elif [[ -d ${UNPACK_DIR}/extract/live ]]; then
 				# Is this the Raspberry Pi OS image?
 				if [[ -f ${UNPACK_DIR}/extract/live/vmlinuz0 ]]; then
 					VER=$(echo ${INITRD_SRC} | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*")
 					_title "Copying INITRD0.IMG from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-686${GREEN}..."
-					cp ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-686 ${UNPACK_DIR}/extract/live/initrd0.img
+					cp -au ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-686 ${UNPACK_DIR}/extract/live/initrd0.img
 					_title "Copying INITRD1.IMG from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-686-pae${GREEN}..."
-					cp ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-686-pae ${UNPACK_DIR}/extract/live/initrd1.img
+					cp -au ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-686-pae ${UNPACK_DIR}/extract/live/initrd1.img
 					_title "Copying INITRD2.IMG from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-amd64${GREEN}..."
-					cp ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-amd64 ${UNPACK_DIR}/extract/live/initrd2.img
+					cp -au ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-amd64 ${UNPACK_DIR}/extract/live/initrd2.img
 				else
 					# Must be just regular Debian:
 					_title "Copying INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
-					cp ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/live/initrd
+					cp -au ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/live/initrd
 				fi
 			fi
 		fi
@@ -233,22 +233,22 @@ elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap) ]]; then
 			# Is this Ubuntu?
 			if [[ -f ${UNPACK_DIR}/extract/casper/initrd ]]; then	# Ubuntu:
 				_title "Copying VMLINUZ from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
-				cp ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
+				cp -au ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
 			# Or is this Debian?
 			elif [[ -d ${UNPACK_DIR}/extract/live ]]; then			
 				# Is this the Raspberry Pi OS image?
 				if [[ -f ${UNPACK_DIR}/extract/live/vmlinuz0 ]]; then	
 					VER=$(echo ${INITRD_SRC} | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*")
 					_title "Copying VMLINUZ0 from unpacked filesystem from ${BLUE}vmlinuz-${VER}-686${GREEN}...."
-					cp ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-686 ${UNPACK_DIR}/extract/live/vmlinuz0
+					cp -au ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-686 ${UNPACK_DIR}/extract/live/vmlinuz0
 					_title "Copying VMLINUZ1 from unpacked filesystem from ${BLUE}vmlinuz-${VER}-686-pae${GREEN}...."
-					cp ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-686-pae ${UNPACK_DIR}/extract/live/vmlinuz1
+					cp -au ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-686-pae ${UNPACK_DIR}/extract/live/vmlinuz1
 					_title "Copying VMLINUZ2 from unpacked filesystem from ${BLUE}vmlinuz-${VER}-amd64${GREEN}...."
-					cp ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-amd64 ${UNPACK_DIR}/extract/live/vmlinuz2
+					cp -au ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-amd64 ${UNPACK_DIR}/extract/live/vmlinuz2
 				else
 					# Must be just regular Debian:
 					_title "Copying VMLINUZ from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
-					cp ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/live/vmlinuz
+					cp -au ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/live/vmlinuz
 				fi
 			fi
 		fi
@@ -539,7 +539,7 @@ elif [[ "${ACTION}" =~ (pack|changes)(-xz|) ]]; then
 
 	# Fourth: Pack the filesystem into squashfs if required:
 	FS=filesystem_$(date +"%Y%m%d")
-	FS=${FS}-$(( $(ls -r extract/casper/${FS}-* 2> /dev/null | grep -oe "$FS-[0-9]" | cut -d- -f 2 | cut -d_ -f 1) + 1 ))
+	FS=${FS}-$(( $(ls -r extract/casper/${FS}-* 2> /dev/null | grep -m 1 -oe "$FS-[0-9]" | cut -d- -f 2 | cut -d_ -f 1) + 1 ))
 	eval `grep -m 1 -e "^MUK_COMMENT=" edit/etc/os-release`
 	sed -i "/^MUK_COMMENT=/d" edit/etc/os-release
 	[[ ! -z "${2}" ]] && MUK_COMMENT=$2
