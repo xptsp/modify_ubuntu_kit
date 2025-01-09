@@ -541,6 +541,7 @@ elif [[ "${ACTION}" =~ (pack|changes)(-xz|) ]]; then
 	FS=${FS}-$(( $(ls -r extract/casper/${FS}-* 2> /dev/null | grep -oe "$FS-[0-9]" | cut -d- -f 2 | cut -d_ -f 1) + 1 ))
 	eval `grep -m 1 -e "^MUK_COMMENT=" edit/etc/os-release`
 	sed -i "/^MUK_COMMENT=/d" edit/etc/os-release
+	[[ ! -z "${2}" ]] && MUK_COMMENT=$2
 	[[ ! -z "${MUK_COMMENT}" ]] && FS=${FS}_${MUK_COMMENT}
 	
 	_title "Building ${BLUE}${FS}${GREEN}...."
