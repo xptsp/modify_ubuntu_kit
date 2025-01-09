@@ -538,17 +538,17 @@ elif [[ "${ACTION}" =~ (pack|changes)(-xz|) ]]; then
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 
 	# Fourth: Pack the filesystem into squashfs if required:
+	[[ "${ACTION}" == "pack" || "${ACTION}" == "pack-xz" ]] && SRC=edit || SRC=.upper
+	[[ -d extract/live ]] && DST=live || DST=casper 
 	FS=filesystem_$(date +"%Y%m%d")
-	FS=${FS}-$(( $(ls -r extract/casper/${FS}-* 2> /dev/null | grep -m 1 -oe "$FS-[0-9]" | cut -d- -f 2 | cut -d_ -f 1) + 1 ))
-	eval `grep -m 1 -e "^MUK_COMMENT=" edit/etc/os-release`
-	sed -i "/^MUK_COMMENT=/d" edit/etc/os-release
+	FS=${FS}-$(( $(ls -r extract/${DST}/${FS}-* 2> /dev/null | grep -m 1 -oe "$FS-[0-9]" | cut -d- -f 2 | cut -d_ -f 1) + 1 ))
+	eval `grep -m 1 -e "^MUK_COMMENT=" edit/etc/os-release && sed -i "/^MUK_COMMENT=/d" edit/etc/os-release`
 	[[ ! -z "${2}" ]] && MUK_COMMENT=$2
 	[[ ! -z "${MUK_COMMENT}" ]] && FS=${FS}_${MUK_COMMENT}
 	
-	_title "Building ${BLUE}${FS}.squashfs${GREEN}...."
-	[[ "${ACTION}" == "pack" || "${ACTION}" == "pack-xz" ]] && SRC=edit || SRC=.upper
-	[[ -d extract/live ]] && DST=live || DST=casper 
-	mksquashfs ${SRC} extract/${DST}/${FS}.squashfs -b 1048576 ${XZ}
+	_title "Building ${BLUE}${FS}${GREEN}...."
+	FS=${FS}.squashfs
+	mksquashfs ${SRC} extract/${DST}/${FS} -b 1048576 ${XZ}
 
 	# Fifth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
 	[[ "${KEEP_CIFS:-"0"}" == "1" && -f extract/casper/filesystem.manifest-remove ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
