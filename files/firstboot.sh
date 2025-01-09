@@ -8,6 +8,9 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 mount | grep " / " | grep -q "/cow " && exit 0
 
 # Execute any firstboot scripts in the "/usr/local/finisher/firstboot.d" directory:
-test -f /usr/local/finisher/boot.d/*.sh && ls /usr/local/finisher/boot.d/*.sh | while read FILE; do ${FILE}; rm ${FILE}; done
+DIR=/usr/local/finisher/boot.d/
+if [[ "$(ls ${DIR}/*.sh | wc -l)" -gt 0 ]]; then
+	ls ${DIR}/*.sh | while read FILE; do echo "Executing ${FILE}..."; ${FILE}; rm ${FILE}; done
+fi
 
 exit 0

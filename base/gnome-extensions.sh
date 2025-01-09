@@ -106,6 +106,12 @@ gnome-extensions install notification-banner-reloadedmarcinjakubowski.github.com
 dbus-launch --exit-with-session gnome-extensions enable notification-banner-reloaded@marcinjakubowski.github.com
 rm notification-banner-reloadedmarcinjakubowski.github.com.v8.shell-extension.zip
 
+# Fifteenth: Sound Input & Output Device Chooser >> https://extensions.gnome.org/extension/906/sound-output-device-chooser/
+wget https://extensions.gnome.org/extension-data/sound-output-device-chooserkgshank.net.v43.shell-extension.zip
+gnome-extensions install sound-output-device-chooserkgshank.net.v43.shell-extension.zip
+dbus-launch --exit-with-session gnome-extensions enable sound-output-device-chooser@kgshank.net
+rm sound-output-device-chooserkgshank.net.v43.shell-extension.zip
+
 #==============================================================================
 _title "Extracting and compiling custom schema files for extensions..."
 #==============================================================================

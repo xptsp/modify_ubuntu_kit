@@ -57,7 +57,7 @@ if [[ ! "${ACTION}" =~ (help|--help) && "${ACTION}" != "debootstrap" ]]; then
 	if [[ ! -z "${PKGS[@]}" ]]; then 
 		_title "Installing necessary packages"
 		apt update >& /dev/null
-		apt-get install -y ${PKGS[@]}
+		for PKG in ${PKGS[@]}; do apt-get install -y $PKG; done
 	fi
 fi
 
@@ -538,11 +538,15 @@ elif [[ "${ACTION}" =~ (pack|changes)(-xz|) ]]; then
 
 	# Fourth: Pack the filesystem into squashfs if required:
 	FS=filesystem_$(date +"%Y%m%d")
-	FS=${FS}-$(( $(ls extract/casper/${FS}-* 2> /dev/null | sed "s|extract/casper/${FS}-||" | sed "s|\.squashfs||" | sort -n | tail -1) + 1 )).squashfs
+	FS=${FS}-$(( $(ls -r extract/casper/${FS}-* 2> /dev/null | grep -oe "$FS-[0-9]" | cut -d- -f 2 | cut -d_ -f 1) + 1 ))
+	eval `grep -m 1 -e "^MUK_COMMENT=" edit/etc/os-release`
+	sed -i "/^MUK_COMMENT=/d" edit/etc/os-release
+	[[ ! -z "${MUK_COMMENT}" ]] && FS=${FS}_${MUK_COMMENT}
+	
 	_title "Building ${BLUE}${FS}${GREEN}...."
 	[[ "${ACTION}" == "pack" || "${ACTION}" == "pack-xz" ]] && SRC=edit || SRC=.upper
 	[[ -d extract/live ]] && DST=live || DST=casper 
-	mksquashfs ${SRC} extract/${DST}/${FS} -b 1048576 ${XZ}
+	mksquashfs ${SRC} extract/${DST}/${FS}.squashfs -b 1048576 ${XZ}
 
 	# Fifth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
 	[[ "${KEEP_CIFS:-"0"}" == "1" && -f extract/casper/filesystem.manifest-remove ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
