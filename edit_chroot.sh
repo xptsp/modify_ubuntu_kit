@@ -54,10 +54,16 @@ if [[ ! "${ACTION}" =~ (help|--help) && "${ACTION}" != "debootstrap" ]]; then
 	whereis dialog | grep -q "/dialog" || PKGS+=( dialog )
 
 	# Install any packages that we need for the script to run:
-	if [[ ! -z "${PKGS[@]}" ]]; then 
-		_title "Installing necessary packages"
+	if [[ ! -z "${PKGS[@]}" ]]; then
 		apt update >& /dev/null
-		for PKG in ${PKGS[@]}; do apt-get install -y $PKG; done
+		for PKG in ${PKGS[@]}; do
+			if apt list ${PKG} 2> /dev/null | grep -qe ${PKG}; then 
+				_title "Installing ${BLUE}${PKG} package..."
+				apt-get install -y $PKG
+			else
+				_title "${BLUE}${PKG} package not available to install..."
+			fi
+		done
 	fi
 fi
 
@@ -854,8 +860,6 @@ elif [[ "${ACTION}" == "snap" ]]; then
 	cp -aR /var/snap ${EDIT}/var/
 	rm -rf ${EDIT}/snap
 	cp -aR /snap ${EDIT}/
-	rm -rf ${EDIT}/etc/systemd/system/snap*
-	cp -aR /etc/systemd/system/snap* ${EDIT}/etc/systemd/system/ 2> /dev/null
 	for SNAP in /var/lib/snapd/snaps/*.snap; do 
 		ln ${SNAP} ${SNAP/snaps/seed\/snaps}
 		ln ${EDIT}/${SNAP} ${EDIT}/${SNAP/snaps/seed\/snaps}
@@ -865,6 +869,8 @@ elif [[ "${ACTION}" == "snap" ]]; then
 	systemctl unmask snapd
 	systemctl enable snapd
 	systemctl start snapd
+	rm -rf ${EDIT}/etc/systemd/system/snap*
+	cp -aR /etc/systemd/system/snap* ${EDIT}/etc/systemd/system/ 2> /dev/null
 	
 	# Tell user we're finished:
 	_ui_title "Completed rebuilding the snap configuration!"
