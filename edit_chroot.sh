@@ -552,8 +552,8 @@ elif [[ "${ACTION}" =~ (pack|changes)(-xz|) ]]; then
 	[[ ! -z "${2}" ]] && MUK_COMMENT=$2
 	[[ ! -z "${MUK_COMMENT}" ]] && FS=${FS}_${MUK_COMMENT}
 	
-	_title "Building ${BLUE}${FS}${GREEN}...."
 	FS=${FS}.squashfs
+	_title "Building ${BLUE}${FS}${GREEN}...."
 	mksquashfs ${SRC} extract/${DST}/${FS} -b 1048576 ${XZ}
 
 	# Fifth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
@@ -805,6 +805,9 @@ elif [[ "${ACTION}" == "usb_copy" ]]; then
 # Update snap configuration)
 #==============================================================================
 elif [[ "${ACTION}" == "snap" ]]; then
+	$0 unmount
+	$0 mount || exit 1 
+
 	_title "Disabling current snaps...."
 	SNAPS=($(snap list --all 2> /dev/null | awk '{print $1}' | sed "/^Name$/d"))
 	for SNAP in ${SNAPS[@]}; do snap disable ${SNAP}; done
