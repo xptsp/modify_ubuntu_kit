@@ -107,11 +107,12 @@ elif [[ "${ACTION}" == "mount" ]]; then
 		exit 1
 	fi
 	COUNT=0
-	TLOWER=${UNPACK_DIR}/.lower$(ls ${UNPACK_DIR}/extract/casper/filesystem_*.squashfs 2> /dev/null | while read FILE; do
+	cd ${UNPACK_DIR}
+	TLOWER=.lower$(ls ${UNPACK_DIR}/extract/casper/filesystem_*.squashfs 2> /dev/null | while read FILE; do
 		COUNT=$((COUNT + 1))
-		mkdir -p ${UNPACK_DIR}/.lower${COUNT}
-		mount ${FILE} ${UNPACK_DIR}/.lower${COUNT} || exit 1
-		echo -n ":${UNPACK_DIR}/.lower${COUNT}"
+		mkdir -p .lower${COUNT}
+		mount ${FILE} .lower${COUNT} || exit 1
+		echo -n ":.lower${COUNT}"
 	done)
 	TLOWER=($(echo $TLOWER | sed "s|\:|\n|g" | tac))
 	LOWER=$(echo ${TLOWER[@]} | sed "s| |:|g")

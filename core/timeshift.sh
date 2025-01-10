@@ -21,3 +21,4 @@ apt install -y timeshift
 # Second: Add the finisher script:
 #==============================================================================
 add_taskd 70_timeshift.sh
+add_bootd zz_timeshift.sh
