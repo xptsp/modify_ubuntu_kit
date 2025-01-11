@@ -22,10 +22,10 @@ export OLD_KERNEL=${OLD_KERNEL:-"1"}
 # MUK path:
 export MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 # Custom USB Stick partition #1 identification:
-export USB_LIVE=${USB_LIVE:-"LABEL=\"UBUNTU_LIVE\""}
+export USB_LIVE=${USB_LIVE:-"LABEL=\"UBUNTU_EFI\""}
 export USB_LIVE=$(echo ${USB_LIVE} | cut -d= -f 1)=\"$(echo ${USB_LIVE} | cut -d= -f 2 | sed "s|\"||g")\"
 # Custom USB Stick partition #2 identification:
-export USB_CASPER=${USB_CASPER:-"LABEL=\"UBUNTU_CASPER\""}
+export USB_CASPER=${USB_CASPER:-"LABEL=\"UBUNTU_\""}
 echo ${USB_CASPER} | grep -q "=" && export USB_CASPER=$(echo ${USB_CASPER} | cut -d= -f 1)=\"$(echo ${USB_CASPER} | cut -d= -f 2 | sed "s|\"||g")\"
 
 #==============================================================================
@@ -61,7 +61,7 @@ if [[ ! "${ACTION}" =~ (help|--help) && "${ACTION}" != "debootstrap" ]]; then
 				_title "Installing ${BLUE}${PKG} package..."
 				apt-get install -y $PKG
 			else
-				_title "${BLUE}${PKG} package not available to install..."
+				_title "${BLUE}${PKG}${GREEN} package not available to install..."
 			fi
 		done
 	fi
@@ -116,7 +116,7 @@ elif [[ "${ACTION}" == "mount" ]]; then
 	done)
 	TLOWER=($(echo $TLOWER | sed "s|\:|\n|g" | tac))
 	LOWER=$(echo ${TLOWER[@]} | sed "s| |:|g")
-	mount -t overlay -o lowerdir=${LOWER},upperdir=${UNPACK_DIR}/.upper,workdir=${UNPACK_DIR}/.work overlay ${UNPACK_DIR}/edit || exit 1
+	mount -t overlay -o lowerdir=${LOWER},upperdir=${UNPACK_DIR}/.upper,workdir=${UNPACK_DIR}/.work edit_chroot ${UNPACK_DIR}/edit || exit 1
 	_ui_title "Necessary chroot filesystem mount points have been mounted!"
 
 #==============================================================================
@@ -176,6 +176,7 @@ elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap) ]]; then
 		mount --bind /run/ ${UNPACK_DIR}/edit/run
 		mount --bind /dev/ ${UNPACK_DIR}/edit/dev
 		mount -t tmpfs tmpfs ${UNPACK_DIR}/edit/tmp
+		mount -t tmpfs tmpfs ${UNPACK_DIR}/edit/var/cache/apt
 
 		### Fourth: Copy MUK into chroot environment:
 		rm -rf ${UNPACK_DIR}/edit/${MUK_DIR}
@@ -203,26 +204,26 @@ elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap) ]]; then
 		### Seventh: Copy the new INITRD from the unpacked filesystem:
 		cd ${UNPACK_DIR}/edit
 		INITRD=$(ls initrd.img-* 2> /dev/null | tail -1)
-		[[ -z "${INITRD}" ]] && INITRD_SRC=$(ls boot/initrd.img-* 2> /dev/null | tail -1)
+		[[ -z "${INITRD}" ]] && ${BLUE}INITRD_SRC=$(ls boot/initrd.img-* 2> /dev/null | tail -1)
 		if [[ ! -z "${INITRD_SRC}" ]]; then
 			# Is this Ubuntu?
 			if [[ -f ${UNPACK_DIR}/extract/casper/initrd ]]; then
-				_title "Copying INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
+				_title "Refreshing ${BLUE}INITRD.IMG${GREEN} from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
 				cp -au ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
 			# Or is this Debian?
 			elif [[ -d ${UNPACK_DIR}/extract/live ]]; then
 				# Is this the Raspberry Pi OS image?
 				if [[ -f ${UNPACK_DIR}/extract/live/vmlinuz0 ]]; then
 					VER=$(echo ${INITRD_SRC} | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*")
-					_title "Copying INITRD0.IMG from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-686${GREEN}..."
+					_title "Refreshing ${BLUE}INITRD0.IMG${GREEN} from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-686${GREEN}..."
 					cp -au ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-686 ${UNPACK_DIR}/extract/live/initrd0.img
-					_title "Copying INITRD1.IMG from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-686-pae${GREEN}..."
+					_title "Refreshing ${BLUE}INITRD1.IMG${GREEN} from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-686-pae${GREEN}..."
 					cp -au ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-686-pae ${UNPACK_DIR}/extract/live/initrd1.img
-					_title "Copying INITRD2.IMG from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-amd64${GREEN}..."
+					_title "Refreshing ${BLUE}INITRD2.IMG${GREEN} from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-amd64${GREEN}..."
 					cp -au ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-amd64 ${UNPACK_DIR}/extract/live/initrd2.img
 				else
 					# Must be just regular Debian:
-					_title "Copying INITRD.IMG from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
+					_title "Refreshing ${BLUE}INITRD.IMG${GREEN} from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
 					cp -au ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/live/initrd
 				fi
 			fi
@@ -235,26 +236,26 @@ elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap) ]]; then
 
 		### Ninth: Copy the new VMLINUZ from the unpacked filesystem:
 		VMLINUZ=$(ls vmlinuz-* 2> /dev/null | tail -1)
-		[[ -z "${VMLINUZ}" ]] && VMLINUZ=$(ls boot/vmlinuz-* 2> /dev/null | tail -1)
+		[[ -z "${VMLINUZ}" ]] && ${BLUE}VMLINUZ${GREEN}=$(ls boot/vmlinuz-* 2> /dev/null | tail -1)
 		if [[ ! -z "${VMLINUZ}" ]]; then
 			# Is this Ubuntu?
 			if [[ -f ${UNPACK_DIR}/extract/casper/initrd ]]; then	# Ubuntu:
-				_title "Copying VMLINUZ from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
+				_title "Refreshing ${BLUE}VMLINUZ${GREEN} from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
 				cp -au ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
 			# Or is this Debian?
 			elif [[ -d ${UNPACK_DIR}/extract/live ]]; then			
 				# Is this the Raspberry Pi OS image?
 				if [[ -f ${UNPACK_DIR}/extract/live/vmlinuz0 ]]; then	
 					VER=$(echo ${INITRD_SRC} | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*")
-					_title "Copying VMLINUZ0 from unpacked filesystem from ${BLUE}vmlinuz-${VER}-686${GREEN}...."
+					_title "Refreshing ${BLUE}VMLINUZ0${GREEN} from unpacked filesystem from ${BLUE}vmlinuz-${VER}-686${GREEN}...."
 					cp -au ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-686 ${UNPACK_DIR}/extract/live/vmlinuz0
-					_title "Copying VMLINUZ1 from unpacked filesystem from ${BLUE}vmlinuz-${VER}-686-pae${GREEN}...."
+					_title "Refreshing ${BLUE}VMLINUZ1${GREEN} from unpacked filesystem from ${BLUE}vmlinuz-${VER}-686-pae${GREEN}...."
 					cp -au ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-686-pae ${UNPACK_DIR}/extract/live/vmlinuz1
-					_title "Copying VMLINUZ2 from unpacked filesystem from ${BLUE}vmlinuz-${VER}-amd64${GREEN}...."
+					_title "Refreshing ${BLUE}VMLINUZ2${GREEN} from unpacked filesystem from ${BLUE}vmlinuz-${VER}-amd64${GREEN}...."
 					cp -au ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-amd64 ${UNPACK_DIR}/extract/live/vmlinuz2
 				else
 					# Must be just regular Debian:
-					_title "Copying VMLINUZ from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
+					_title "Refreshing ${BLUE}VMLINUZ${GREEN} from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
 					cp -au ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/live/vmlinuz
 				fi
 			fi
@@ -716,12 +717,12 @@ elif [[ "${ACTION}" == "docker_mount" ]]; then
 	_title "Mounting chroot docker directory on live system:"
 
 	# Create the necessary directories:
-	[[ ! -d ${UNPACK_DIR}/edit/home/docker/.sys ]] && mkdir -p ${UNPACK_DIR}/edit/home/docker/.sys
+	[[ ! -d ${UNPACK_DIR}/edit/var/lib/docker ]] && mkdir -p ${UNPACK_DIR}/edit/var/lib/docker && chmod 722 ${UNPACK_DIR}/edit/var/lib/docker 
 	[[ ! -d /var/lib/docker ]] && mkdir -p /var/lib/docker
 
 	# Stop docker, mount docker directory inside chroot environment, then start docker:
 	systemctl stop docker
-	mount --bind $UNPACK_DIR/edit/home/docker/.sys /var/lib/docker
+	mount --bind $UNPACK_DIR/edit/var/lib/docker /var/lib/docker
 	systemctl start docker
 
 #==============================================================================
@@ -729,15 +730,15 @@ elif [[ "${ACTION}" == "docker_mount" ]]; then
 #==============================================================================
 elif [[ "${ACTION}" == "docker_umount" ]]; then
 	# If the docker folder doesn't exist, exit the script:
-	[[ ! -d ${UNPACK_DIR}/edit/home/docker/.sys ]] && exit
+	[[ ! -d ${UNPACK_DIR}/edit/var/lib/docker ]] && exit
 
 	# Generate a random file to check for mounted volume:
 	ID=$(cat /dev/urandom | tr -cd 'a-zA-Z0-9' | head -c 32)
-	touch ${UNPACK_DIR}/edit/home/docker/.sys/${ID} >& /dev/null
+	touch ${UNPACK_DIR}/edit/var/lib/docker/${ID} >& /dev/null
 
 	# Does our random file exist in both places?  If not, then it's not mounted:
 	MOUNT=$([[ -f /var/lib/docker/${ID} ]] && echo "Y")
-	[[ -f ${UNPACK_DIR}/edit/home/docker/.sys/${ID} ]] && rm ${UNPACK_DIR}/edit/home/docker/.sys/${ID}
+	[[ -f ${UNPACK_DIR}/edit/var/lib/docker/${ID} ]] && rm ${UNPACK_DIR}/edit/var/lib/docker/${ID}
 	if [[ -z "${MOUNT}" ]]; then
 		[[ ! "$2" == "-q" ]] && _ui_error "Docker directory in chroot environment is not mounted on host system!"
 		exit 2
@@ -759,12 +760,12 @@ elif [[ "${ACTION}" == "usb_mount" ]]; then
 	if [[ -z "${RO}" ]]; then _ui_error "No USB Casper partition 2 found! (Ref: \"$USB_CASPER\")"; exit 1; fi
 	if mount | grep -q ${UNPACK_DIR}/mnt; then umount -q ${UNPACK_DIR}/mnt || exit 1; fi
 	mount | grep -q ${UNPACK_DIR}/mnt && umount -lfq ${UNPACK_DIR}/mnt
-	mkdir -p ${UNPACK_DIR}/usb_{base,casper} ${UNPACK_DIR}/mnt
+	mkdir -p ${UNPACK_DIR}/usb_{efi,casper} ${UNPACK_DIR}/mnt
 	if mount | grep -q ${UB}; then umount -q ${UB} || exit 1; fi
-	mount ${UB} ${UNPACK_DIR}/usb_base -t vfat -o noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022 || exit 1
+	mount ${UB} ${UNPACK_DIR}/usb_efi -t vfat -o noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022 || exit 1
 	if mount | grep -q ${RO}; then umount -q ${RO} || exit 1; fi
 	mount ${RO} ${UNPACK_DIR}/usb_casper -t ext3 -o defaults,noatime || exit 1
-	mount | grep -q ${UNPACK_DIR}/mnt || unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_base=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid || exit 1
+	mount | grep -q ${UNPACK_DIR}/mnt || unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_efi=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid || exit 1
 	_ui_title "Finished mounting split-partition USB stick!"
 
 #==============================================================================
