@@ -204,27 +204,27 @@ elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap) ]]; then
 		### Seventh: Copy the new INITRD from the unpacked filesystem:
 		cd ${UNPACK_DIR}/edit
 		INITRD=$(ls initrd.img-* 2> /dev/null | tail -1)
-		[[ -z "${INITRD}" ]] && ${BLUE}INITRD_SRC=$(ls boot/initrd.img-* 2> /dev/null | tail -1)
+		[[ -z "${INITRD}" ]] && INITRD_SRC=$(ls boot/initrd.img-* 2> /dev/null | tail -1)
 		if [[ ! -z "${INITRD_SRC}" ]]; then
 			# Is this Ubuntu?
 			if [[ -f ${UNPACK_DIR}/extract/casper/initrd ]]; then
-				_title "Refreshing ${BLUE}INITRD.IMG${GREEN} from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
-				cp -au ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
+				_title "Moving ${BLUE}INITRD.IMG${GREEN} from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
+				mv ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
 			# Or is this Debian?
 			elif [[ -d ${UNPACK_DIR}/extract/live ]]; then
 				# Is this the Raspberry Pi OS image?
 				if [[ -f ${UNPACK_DIR}/extract/live/vmlinuz0 ]]; then
 					VER=$(echo ${INITRD_SRC} | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*")
-					_title "Refreshing ${BLUE}INITRD0.IMG${GREEN} from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-686${GREEN}..."
-					cp -au ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-686 ${UNPACK_DIR}/extract/live/initrd0.img
-					_title "Refreshing ${BLUE}INITRD1.IMG${GREEN} from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-686-pae${GREEN}..."
-					cp -au ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-686-pae ${UNPACK_DIR}/extract/live/initrd1.img
-					_title "Refreshing ${BLUE}INITRD2.IMG${GREEN} from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-amd64${GREEN}..."
-					cp -au ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-amd64 ${UNPACK_DIR}/extract/live/initrd2.img
+					_title "Moving ${BLUE}INITRD0.IMG${GREEN} from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-686${GREEN}..."
+					mv ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-686 ${UNPACK_DIR}/extract/live/initrd0.img
+					_title "Moving ${BLUE}INITRD1.IMG${GREEN} from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-686-pae${GREEN}..."
+					mv ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-686-pae ${UNPACK_DIR}/extract/live/initrd1.img
+					_title "Moving ${BLUE}INITRD2.IMG${GREEN} from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-amd64${GREEN}..."
+					mv ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-amd64 ${UNPACK_DIR}/extract/live/initrd2.img
 				else
 					# Must be just regular Debian:
-					_title "Refreshing ${BLUE}INITRD.IMG${GREEN} from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
-					cp -au ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/live/initrd
+					_title "Moving ${BLUE}INITRD.IMG${GREEN} from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
+					mv ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/live/initrd
 				fi
 			fi
 		fi
@@ -236,27 +236,27 @@ elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap) ]]; then
 
 		### Ninth: Copy the new VMLINUZ from the unpacked filesystem:
 		VMLINUZ=$(ls vmlinuz-* 2> /dev/null | tail -1)
-		[[ -z "${VMLINUZ}" ]] && ${BLUE}VMLINUZ${GREEN}=$(ls boot/vmlinuz-* 2> /dev/null | tail -1)
+		[[ -z "${VMLINUZ}" ]] && VMLINUZ=$(ls boot/vmlinuz-* 2> /dev/null | tail -1)
 		if [[ ! -z "${VMLINUZ}" ]]; then
 			# Is this Ubuntu?
 			if [[ -f ${UNPACK_DIR}/extract/casper/initrd ]]; then	# Ubuntu:
-				_title "Refreshing ${BLUE}VMLINUZ${GREEN} from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
-				cp -au ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
+				_title "Moving ${BLUE}VMLINUZ${GREEN} from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
+				mv ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
 			# Or is this Debian?
 			elif [[ -d ${UNPACK_DIR}/extract/live ]]; then			
 				# Is this the Raspberry Pi OS image?
 				if [[ -f ${UNPACK_DIR}/extract/live/vmlinuz0 ]]; then	
 					VER=$(echo ${INITRD_SRC} | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*")
-					_title "Refreshing ${BLUE}VMLINUZ0${GREEN} from unpacked filesystem from ${BLUE}vmlinuz-${VER}-686${GREEN}...."
-					cp -au ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-686 ${UNPACK_DIR}/extract/live/vmlinuz0
-					_title "Refreshing ${BLUE}VMLINUZ1${GREEN} from unpacked filesystem from ${BLUE}vmlinuz-${VER}-686-pae${GREEN}...."
-					cp -au ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-686-pae ${UNPACK_DIR}/extract/live/vmlinuz1
-					_title "Refreshing ${BLUE}VMLINUZ2${GREEN} from unpacked filesystem from ${BLUE}vmlinuz-${VER}-amd64${GREEN}...."
-					cp -au ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-amd64 ${UNPACK_DIR}/extract/live/vmlinuz2
+					_title "Moving ${BLUE}VMLINUZ0${GREEN} from unpacked filesystem from ${BLUE}vmlinuz-${VER}-686${GREEN}...."
+					mv ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-686 ${UNPACK_DIR}/extract/live/vmlinuz0
+					_title "Moving ${BLUE}VMLINUZ1${GREEN} from unpacked filesystem from ${BLUE}vmlinuz-${VER}-686-pae${GREEN}...."
+					mv ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-686-pae ${UNPACK_DIR}/extract/live/vmlinuz1
+					_title "Moving ${BLUE}VMLINUZ2${GREEN} from unpacked filesystem from ${BLUE}vmlinuz-${VER}-amd64${GREEN}...."
+					mv ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-amd64 ${UNPACK_DIR}/extract/live/vmlinuz2
 				else
 					# Must be just regular Debian:
-					_title "Refreshing ${BLUE}VMLINUZ${GREEN} from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
-					cp -au ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/live/vmlinuz
+					_title "Moving ${BLUE}VMLINUZ${GREEN} from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
+					mv ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/live/vmlinuz
 				fi
 			fi
 		fi
