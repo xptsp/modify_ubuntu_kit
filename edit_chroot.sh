@@ -25,7 +25,7 @@ export MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 export USB_LIVE=${USB_LIVE:-"LABEL=\"UBUNTU_EFI\""}
 export USB_LIVE=$(echo ${USB_LIVE} | cut -d= -f 1)=\"$(echo ${USB_LIVE} | cut -d= -f 2 | sed "s|\"||g")\"
 # Custom USB Stick partition #2 identification:
-export USB_CASPER=${USB_CASPER:-"LABEL=\"UBUNTU_\""}
+export USB_CASPER=${USB_CASPER:-"LABEL=\"UBUNTU_CASPER\""}
 echo ${USB_CASPER} | grep -q "=" && export USB_CASPER=$(echo ${USB_CASPER} | cut -d= -f 1)=\"$(echo ${USB_CASPER} | cut -d= -f 2 | sed "s|\"||g")\"
 
 #==============================================================================
@@ -764,18 +764,21 @@ elif [[ "${ACTION}" == "usb_mount" ]]; then
 	if mount | grep -q ${UB}; then umount -q ${UB} || exit 1; fi
 	mount ${UB} ${UNPACK_DIR}/usb_efi -t vfat -o noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=0022 || exit 1
 	if mount | grep -q ${RO}; then umount -q ${RO} || exit 1; fi
-	mount ${RO} ${UNPACK_DIR}/usb_casper -t ext3 -o defaults,noatime || exit 1
-	mount | grep -q ${UNPACK_DIR}/mnt || unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_efi=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid || exit 1
+	eval `blkid ${RO} -o export`
+	mount ${RO} ${UNPACK_DIR}/usb_casper -t ${TYPE} -o defaults,noatime || exit 1
+	if mount | grep -q ${UNPACK_DIR}/mnt; then
+		unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_efi=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid || exit 1
+	fi
 	_ui_title "Finished mounting split-partition USB stick!"
 
 #==============================================================================
 # Unmount my Ubuntu split-partition USB stick properly:
 #==============================================================================
 elif [[ "${ACTION}" == "usb_unmount" ]]; then
-	umount -q ${UNPACK_DIR}/mnt || exit 1
-	umount -q ${UNPACK_DIR}/usb_base || exit 1
-	umount -q ${UNPACK_DIR}/usb_casper || exit 1
-	rmdir ${UNPACK_DIR}/usb_{base,casper}
+	if mount | grep -q " ${UNPACK_DIR}/mnt "; then umount ${UNPACK_DIR}/mnt || exit 1; fi
+	if mount | grep -q " ${UNPACK_DIR}/usb_efi "; then umount ${UNPACK_DIR}/usb_efi || exit 1; fi
+	if mount | grep -q " ${UNPACK_DIR}/usb_casper "; then umount ${UNPACK_DIR}/usb_casper || exit 1; fi
+	rmdir ${UNPACK_DIR}/usb_{efi,casper} 2> /dev/null
 	_ui_title "Split-partition USB stick successfully unmounted!"
 
 #==============================================================================
@@ -878,7 +881,7 @@ elif [[ "${ACTION}" == "snap" ]]; then
 	cp -aR /etc/systemd/system/snap* ${EDIT}/etc/systemd/system/ 2> /dev/null
 	
 	# Tell user we're finished:
-	_ui_title "Completed rebuilding the snap configuration!"
+	_ui_title "Completed rebuilding chroot environment snap configuration!"
 
 #==============================================================================
 # Invalid parameter specified.  List available parameters:
