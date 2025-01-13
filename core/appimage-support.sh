@@ -6,12 +6,12 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs JoyCon daemon for your computer."
+	echo -e "${RED}Purpose:${NC} Installs AppImage support on your computer."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Installing JoyCon daemon..."
+_title "Installing AppImage support on your computer..."
 #==============================================================================
-apt install -y joycond
+apt install -y libfuse2

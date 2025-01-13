@@ -25,6 +25,7 @@ cp ${MUK_DIR}/files/e2b_red_dragon.png background.png
 cat << EOF >> /etc/default/grub
 GRUB_GFXMODE=1920x1080
 GRUB_THEME="/boot/grub/themes/red_dragon/theme.txt"
+GRUB_DISABLE_OS_PROBER=false
 EOF
 # Update grub configuration file:
 update-grub

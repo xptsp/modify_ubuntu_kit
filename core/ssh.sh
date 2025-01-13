@@ -28,6 +28,8 @@ add_taskd 12_ssh.sh
 
 # Third: Configure the SSH login screen:
 #==============================================================================
+_title "Configuring SSH login screen..."
+#==============================================================================
 test -e /etc/motd && rm /etc/motd
 ln -s /var/run/motd /etc/motd
 DIR=/etc/update-motd.d

@@ -15,6 +15,7 @@ fi
 _title "Installing ClamAV on your computer..."
 #==============================================================================
 apt install -y clamav clamtk clamav-daemon
+_ischroot && systemctl disable clamd
 
 #==============================================================================
 _title "Updating ClamAV virus definitions..."

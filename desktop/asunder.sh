@@ -6,12 +6,12 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs JoyCon daemon for your computer."
+	echo -e "${RED}Purpose:${NC} Installs Asunder on your computer."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Installing JoyCon daemon..."
+_title "Installing Asunder..."
 #==============================================================================
-apt install -y joycond
+apt -y install asunder

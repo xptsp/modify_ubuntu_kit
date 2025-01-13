@@ -756,7 +756,7 @@ elif [[ "${ACTION}" == "docker_umount" ]]; then
 elif [[ "${ACTION}" == "usb_mount" ]]; then
 	UB=$(blkid | grep "${USB_LIVE}" | cut -d: -f 1)
 	RO=$(blkid | grep "${USB_CASPER}" | cut -d: -f 1)
-	if [[ -z "${UB}" ]]; then _ui_error "No USB Live partition 1 found! (Ref: \"$USB_LIVE\")"; exit 1; fi
+	if [[ -z "${UB}" ]]; then _ui_error "No USB EFI partition 1 found! (Ref: \"$USB_LIVE\")"; exit 1; fi
 	if [[ -z "${RO}" ]]; then _ui_error "No USB Casper partition 2 found! (Ref: \"$USB_CASPER\")"; exit 1; fi
 	if mount | grep -q ${UNPACK_DIR}/mnt; then umount -q ${UNPACK_DIR}/mnt || exit 1; fi
 	mount | grep -q ${UNPACK_DIR}/mnt && umount -lfq ${UNPACK_DIR}/mnt
@@ -766,9 +766,7 @@ elif [[ "${ACTION}" == "usb_mount" ]]; then
 	if mount | grep -q ${RO}; then umount -q ${RO} || exit 1; fi
 	eval `blkid ${RO} -o export`
 	mount ${RO} ${UNPACK_DIR}/usb_casper -t ${TYPE} -o defaults,noatime || exit 1
-	if mount | grep -q ${UNPACK_DIR}/mnt; then
-		unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_efi=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid || exit 1
-	fi
+	unionfs ${UNPACK_DIR}/usb_casper=RW:${UNPACK_DIR}/usb_efi=RW ${UNPACK_DIR}/mnt -o default_permissions,allow_other,use_ino,nonempty,suid || exit 1
 	_ui_title "Finished mounting split-partition USB stick!"
 
 #==============================================================================
