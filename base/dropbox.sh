@@ -12,7 +12,7 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
-_title "Installing DropBox...."
+_title "Installing DropBox core software...."
 #==============================================================================
 # First: Get the software:
 #==============================================================================
@@ -34,8 +34,10 @@ wget https://www.dropbox.com/download?dl=packages/dropbox.py -O /usr/local/bin/d
 chmod 555 /usr/local/bin/dropbox
 ln -sf /opt/dropbox ~/.dropbox-dist
 
+#==============================================================================
 # Fourth: Get Dropbox integration with Thunar --ONLY-- if thunar is installed:
 #==============================================================================
-if apt list thunar 2> /dev/null | grep -q thunar; then
-	apt install -y python3 thunar-dropbox-plugin
-fi
+_title "Installing DropBox extension...."
+#==============================================================================
+apt list --list-installed thunar 2> /dev/null | grep -q thunar && apt install -y thunar-dropbox-plugin
+apt list --list-installed nautilus 2> /dev/null | grep -q nautilus && apt install -y nautilus-dropbox

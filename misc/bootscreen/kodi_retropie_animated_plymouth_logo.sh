@@ -12,13 +12,6 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
-# Install OpenBox for Kodi:
+# Install plymouth RetroPie-Kodi theme package:
 #==============================================================================
-### First: Compile the "kodi-openbox" package:
-git clone --depth=1 https://github.com/solbero/plymouth-theme-kodi-animated-logo /tmp/plymouth-theme-kodi-animated-logo
-cp /opt/modify_ubuntu_kit/files/kodi_text.png /tmp/plymouth-theme-kodi-animated-logo/plymouth-theme-kodi-animated-logo/usr/share/plymouth/themes/kodi-animated-logo/
-pushd /tmp/plymouth-theme-kodi-animated-logo
-./build.sh
-dpkg -i plymouth-theme-kodi-animated-logo.deb
-popd
-rm -rf /tmp/kodi-openbox
+apt install -y plymouth-theme-retropie-kodi-animated-logo
