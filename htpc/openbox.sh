@@ -20,12 +20,8 @@ apt -y install openbox unzip hsetroot gifsicle httping expect
 
 ### Second: Compile the "kodi-openbox" package:
 #==============================================================================
-git clone --depth=1 https://github.com/lufinkey/kodi-openbox /tmp/kodi-openbox
-pushd /tmp/kodi-openbox
-./build.sh
-apt install -y /tmp/kodi-openbox/kodi-openbox.deb
-popd
-rm -rf /tmp/kodi-openbox
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
+apt install -y kodi-openbox
 
 ### Third: Set up a few elements of Openbox:
 #==============================================================================
@@ -97,4 +93,3 @@ ln -sf ${MUK_DIR}/files/kodi-bind.sh /usr/local/bin/kodi-bind.sh
 ### Seventh: Create sudoers.d rule to run "kodi-bind.sh" as root:
 #==============================================================================
 echo "ALL ALL=(ALL) NOPASSWD:/usr/local/bin/kodi-bind.sh" >> /etc/sudoers.d/kodi-bind
-

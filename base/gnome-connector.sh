@@ -14,6 +14,5 @@ fi
 #==============================================================================
 _title "Install Gnome browser connector..."
 #==============================================================================
-wget http://archive.ubuntu.com/ubuntu/pool/universe/g/gnome-browser-connector/gnome-browser-connector_42.1-4_all.deb -O /tmp//gnome-browser-connector_42.1-4_all.deb
-apt install -y /tmp/gnome-browser-connector_42.1-4_all.deb
-rm /tmp/gnome-browser-connector_42.1-4_all.deb
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
+apt install -y gnome-browser-connector

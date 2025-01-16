@@ -14,4 +14,5 @@ fi
 #==============================================================================
 # Install plymouth Kodi theme package:
 #==============================================================================
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
 apt install -y plymouth-theme-kodi-animated-logo

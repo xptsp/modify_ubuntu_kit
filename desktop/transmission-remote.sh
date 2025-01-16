@@ -18,6 +18,6 @@ fi
 #==============================================================================
 _title "Installing Transmission Remote GTK..."
 #==============================================================================
-wget http://ftp.de.debian.org/debian/pool/main/t/transmission-remote-gtk/transmission-remote-gtk_1.5.1-1_amd64.deb -O /tmp/transmission-remote-gtk_1.5.1-1_amd64.deb
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
 apt purge -y --autoremove transmission*
-apt install -y /tmp/transmission-remote-gtk_1.5.1-1_amd64.deb
+apt install -y transmission-remote

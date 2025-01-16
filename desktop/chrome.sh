@@ -24,6 +24,9 @@ echo "deb http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources
 apt-get update
 apt-get install google-chrome-stable
 
-wget http://archive.ubuntu.com/ubuntu/pool/universe/g/gnome-browser-connector/chrome-gnome-shell_42.1-4_all.deb -O /tmp/chrome-gnome-shell_42.1-4_all.deb
-apt install -y /tmp/chrome-gnome-shell_42.1-4_all.deb
-rm /tmp/chrome-gnome-shell_42.1-4_all.deb
+#==============================================================================
+# Install the Chrome-to-Gnome shell package:
+#==============================================================================
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
+apt install -y chrome-gnome-shell
+

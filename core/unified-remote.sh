@@ -16,9 +16,8 @@ _title "Install Unified Remote..."
 #==============================================================================
 # First: Download and install the software:
 #==============================================================================
-wget https://www.unifiedremote.com/download/linux-x64-deb -O /tmp/urserver.deb
-apt install -y /tmp/urserver.deb
-rm /tmp/urserver.deb
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
+apt install -y urserver
 
 # Second: Make a custom remote that works with Ubuntu:
 #==============================================================================
@@ -30,4 +29,3 @@ tar xfvz ${MUK_DIR}/files/PiInput.tgz
 ln -sf ${MUK_DIR}/files/urserver.service /etc/systemd/system/urserver.service
 systemctl enable urserver
 ischroot || systemctl start urserver
-
