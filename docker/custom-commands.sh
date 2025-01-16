@@ -1,1 +1,0 @@
-../core/custom-commands.sh

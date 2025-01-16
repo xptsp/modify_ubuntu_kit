@@ -12,6 +12,11 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
+_title "Install Compilation Tools..."
+#==============================================================================
+apt install -y dh-modaliases build-essential dkms dpkg-dev debhelper checkinstall meson
+
+#==============================================================================
 _title "Install Cross-Compilation Tools..."
 #==============================================================================
 apt install -y gcc-arm-linux-gnueabihf libc6-armhf-cross u-boot-tools bc make gcc libc6-dev libncurses5-dev libssl-dev bison flex swig python3-dev ccache

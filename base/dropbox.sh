@@ -25,7 +25,8 @@ rm /tmp/dropbox-linux-x86_64.tar.gz
 #==============================================================================
 wget https://gist.githubusercontent.com/thisismitch/d0133d91452585ae2adc/raw/699e7909bdae922201b8069fde3011bbf2062048/dropbox -O /etc/init.d/dropbox
 chmod 755 /etc/init.d/dropbox
-echo 'DROPBOX_USERS="$(grep ":1000:" /etc/passwd | cut -d: -f 1)"' > /etc/default/dropbox
+DROPBOX_USERS=$(grep ":1000:" /etc/passwd | cut -d: -f 1)
+echo 'DROPBOX_USERS="${DROPBOX_USERS:-"kodi"}"' > /etc/default/dropbox
 change_username /etc/default/dropbox
 
 # Third: Get the dropbox binary:
@@ -37,7 +38,5 @@ ln -sf /opt/dropbox ~/.dropbox-dist
 #==============================================================================
 # Fourth: Get Dropbox integration with Thunar --ONLY-- if thunar is installed:
 #==============================================================================
-_title "Installing DropBox extension...."
-#==============================================================================
-apt list --list-installed thunar 2> /dev/null | grep -q thunar && apt install -y thunar-dropbox-plugin
-apt list --list-installed nautilus 2> /dev/null | grep -q nautilus && apt install -y nautilus-dropbox
+apt list --list-installed thunar 2> /dev/null | grep -q thunar && _title "Installing DropBox extension for Thunar...." && apt install -y thunar-dropbox-plugin
+apt list --list-installed nautilus 2> /dev/null | grep -q nautilus && _title "Installing DropBox extension for Nautilus...." && apt install -y nautilus-dropbox

@@ -12,14 +12,7 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
-_title "Creating imitation DOS commands..."
+_title "Installing peanut command..."
 #==============================================================================
-DST=/usr/local/bin
-ln -sf /usr/bin/clear ${DST}/cls
-
-#==============================================================================
-_title "Getting other custom scripts..."
-#==============================================================================
-FILE=/usr/local/bin/peanut
-wget https://gist.githubusercontent.com/xptsp/26e31b4ad66969f508d43353662821d9/raw/d6503520d618aa739ea5e843aa21ca1c281dcef2/peanut -O ${FILE}
-chmod +x ${FILE} 
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
+apt install -y peanut

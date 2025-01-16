@@ -26,6 +26,6 @@ tar xfvz ${MUK_DIR}/files/PiInput.tgz
 
 # Third: Adding Unified Remote systemd service:
 #==============================================================================
-ln -sf ${MUK_DIR}/files/urserver.service /etc/systemd/system/urserver.service
+ln -sf ${MUK_DIR}/files/urserver.service /lib/systemd/system/urserver.service
 systemctl enable urserver
 ischroot || systemctl start urserver
