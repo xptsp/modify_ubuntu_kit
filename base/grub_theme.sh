@@ -14,18 +14,14 @@ fi
 #==============================================================================
 _title "Installing Red Dragon Grub2 theme..."
 #==============================================================================
-# Extract archived copy of theme:
-cd /boot/grub
-mkdir -p themes/red_dragon
-cd themes/red_dragon
-tar xf ${MUK_DIR}/files/grub_theme.tar.xz
-# Copy E2B background to new theme:
-cp ${MUK_DIR}/files/e2b_red_dragon.png background.png
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
+apt install -y grub-theme-reddragon
+
 # Add necessary stuff to default grub settings:
+_title "Updating grub configuration file..."
 cat << EOF >> /etc/default/grub
 GRUB_GFXMODE=1920x1080
-GRUB_THEME="/boot/grub/themes/red_dragon/theme.txt"
+GRUB_THEME="/usr/share/grub/themes/reddragon/theme.txt"
 GRUB_DISABLE_OS_PROBER=false
 EOF
-# Update grub configuration file:
 update-grub

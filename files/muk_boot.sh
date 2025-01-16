@@ -7,6 +7,9 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 # If we are running off a live CD/USB, >>EXIT NOW<<!!!
 mount | grep " / " | grep -q "/cow " && exit 0
 
+# Enable WOL capability on ethernet cards:
+for DEV in $(sudo lshw -c network -disable usb -short | grep -i "ethernet" | awk '{print $2}'); do ethtool -s ${DEV} wol g; done
+
 # Execute any firstboot scripts in the "/usr/local/finisher/firstboot.d" directory:
 DIR=/usr/local/finisher/boot.d/
 if [[ "$(ls ${DIR}/*.sh | wc -l)" -gt 0 ]]; then

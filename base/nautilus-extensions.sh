@@ -20,12 +20,5 @@ dbus-launch --exit-with-session gsettings set org.gnome.nautilus.icon-view defau
 #==============================================================================
 _title "Installs Nautilus extensions available in Ubuntu repo..."
 #==============================================================================
-apt install -y nautilus-admin nautilus-extension-brasero nautilus-filename-repairer nautilus-gtkhash nautilus-image-converter nautilus-hide nautilus-wipe folder-color  
-
-# Install Nautilus Gnome Disks
-#==============================================================================
-DEST=/usr/share/nautilus-python/extensions/
-DIR=/tmp/nautilus-gnome-disks
-git clone https://github.com/thebitstick/nautilus-gnome-disks ${DIR}
-install --mode=644 ${DIR}/nautilus-gnome-disks.py ${DEST}/
-rm -rf ${DIR}
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
+apt install -y nautilus-admin nautilus-extension-brasero nautilus-filename-repairer nautilus-gtkhash nautilus-image-converter nautilus-hide nautilus-wipe folder-color nautilus-gnome-disks  

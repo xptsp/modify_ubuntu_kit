@@ -11,39 +11,18 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 	exit 0
 fi
 
-if [[ ${OS_VER} -lt 2004 ]]; then
-	#==============================================================================
-	_title "Get ScrCpy dependencies..."
-	#==============================================================================
-	apt install -y adb ffmpeg make gcc pkg-config meson ninja-build libavcodec-dev libavformat-dev libavutil-dev fastboot
-	libsdl2-dev libsdl2-2.0.0 
+if [[ ${OS_VER} -lt 2004 ]]; then echo -e "${RED}ERROR:${NC} Ubuntu versions below 20.04 not supported!"; exit 1; fi 
 
-	#==============================================================================
-	_title "Compile ScrCpy for Ubuntu..."
-	#==============================================================================
-	wget https://github.com/Genymobile/scrcpy/releases/download/v1.11/scrcpy-server-v1.11 -O /tmp/scrcpy-server-v1.11.jar
-	wget https://github.com/Genymobile/scrcpy/archive/v1.11.tar.gz -O /tmp/v1.11.tar.gz
-	pushd /tmp
-	tar xfv v1.11.tar.gz
-	rm v1.11.tar.gz
-	cd scrcpy-1.11
-	meson build --buildtype release --strip -Db_lto=true  -Dprebuilt_server=../scrcpy-server-v1.11.jar
-	cd build
-	ninja
-	ninja install
-	cd ../..
-	rm -rf scrcpy-1.11
-	rm scrcpy-server-v1.11.jar
-	popd
-	MORE=
-else
-	MORE=scrcpy
-fi
+#==============================================================================
+_title "Install ScrCpy for Ubuntu..."
+#==============================================================================
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
+apt install scrcpy
 
 #==============================================================================
 _title "Install ScrCpy GUI for Ubuntu..."
 #==============================================================================
 VER=1.5.1
 wget https://github.com/Tomotoes/scrcpy-gui/releases/download/${VER}/ScrcpyGui-${VER}.deb -O /tmp/ScrcpyGui.deb
-apt install -y ${MORE} /tmp/ScrcpyGui.deb
+apt install -y /tmp/ScrcpyGui.deb
 rm /tmp/ScrcpyGui.deb
