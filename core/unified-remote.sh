@@ -17,14 +17,9 @@ _title "Install Unified Remote..."
 # First: Download and install the software:
 #==============================================================================
 test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
-apt install -y urserver
+apt install -y urserver urserver-piinput
 
-# Second: Make a custom remote that works with Ubuntu:
-#==============================================================================
-cd /opt/urserver/remotes/Unified/Main/
-tar xfvz ${MUK_DIR}/files/PiInput.tgz
-
-# Third: Adding Unified Remote systemd service:
+# Second: Adding Unified Remote systemd service:
 #==============================================================================
 ln -sf ${MUK_DIR}/files/urserver.service /lib/systemd/system/urserver.service
 systemctl enable urserver

@@ -487,7 +487,7 @@ elif [[ "${ACTION}" == "unpack" ]]; then
 			exit 1
 		fi
 	else
-		if ! mount -o loop $ISO ${UNPACK_DIR}/mnt >& /dev/null; then
+		if ! mount -o loop -r $ISO ${UNPACK_DIR}/mnt >& /dev/null; then
 			_ui_error "Specified ISO unable to be mounted!"
 			exit 1
 		fi
@@ -558,8 +558,7 @@ elif [[ "${ACTION}" =~ (pack|changes)(-xz|) ]]; then
 
 	# Sixth: remove the overlay filesystem and upper layer of overlay, then create the "md5sum.txt" file:
 	_title "Removing the overlay filesystem and upper layer of overlay..."
-	umount -q ${UNPACK_DIR}/edit
-	for DIR in ${UNPACK_DIR}/.lower*; do umount -q ${DIR}; rmdir ${DIR}; done
+	$0 unmount
 	if [[ "${ACTION}" == "pack" || "${ACTION}" == "pack-xz" ]]; then
 		mv ${UNPACK_DIR}/extract/${DIR}/${FS} ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs
 		rm ${UNPACK_DIR}/extract/${DIR}/filesystem_*.squashfs 2> /dev/null
@@ -994,4 +993,4 @@ else
 	done
 	clear
 fi
-[[ "${ACTION}" =~ (usb_|docker_|)(un|)mount ]] || echo -e ""
+[[ "${ACTION}" =~ (usb_|docker_|)(un|)mount || "${ACTION}" =~ ^sub_ ]] || echo -e ""
