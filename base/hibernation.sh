@@ -30,10 +30,8 @@ EOF
 _title "Adding Gnome extension for Hibernate Status Button...."
 # Src: https://extensions.gnome.org/extension/755/hibernate-status-button/
 #==============================================================================
-wget https://extensions.gnome.org/extension-data/hibernate-statusdromi.v33.shell-extension.zip
-gnome-extensions install hibernate-statusdromi.v33.shell-extension.zip
-dbus-launch --exit-with-session gnome-extensions enable hibernate-status@dromi
-rm hibernate-statusdromi.v33.shell-extension.zip
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
+apt install -y gnome-shell-extension-hibernate-status-button
 
 #==============================================================================
 _title "Adding script to add hibernation support...."

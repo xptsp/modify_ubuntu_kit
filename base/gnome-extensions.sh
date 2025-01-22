@@ -36,6 +36,7 @@ _title "Installing compatible Gnome extensions..."
 #   14) Notification Banner Reloaded >> https://extensions.gnome.org/extension/4651/notification-banner-reloaded/ 
 #   15) Sound Input & Output Device Chooser >> https://extensions.gnome.org/extension/906/sound-output-device-chooser/
 #==============================================================================
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
 VER=$(apt list gnome-shell 2> /dev/null | grep -m 1 gnome | grep -m 1 -o -e '[0-9][0-9]\.' | cut -d. -f 1)
 PKGS=()
 [[ "${VER}" -ge 40 && "${VER}" -le 44 ]] && PKGS+=( gnome-shell-extension-grand-theft-focus )
