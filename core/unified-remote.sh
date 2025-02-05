@@ -17,10 +17,9 @@ _title "Install Unified Remote..."
 # First: Download and install the software:
 #==============================================================================
 test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
-apt install -y urserver urserver-piinput
+apt install -y urserver urserver-piinput urserver-yuzu
 
-# Second: Adding Unified Remote systemd service:
+# Second: Adding Unified Remote to autostarted applications:
 #==============================================================================
-ln -sf ${MUK_DIR}/files/urserver.service /lib/systemd/system/urserver.service
-systemctl enable urserver
-ischroot || systemctl start urserver
+mkdir -p /etc/xdg/autostart
+ln -sf /opt/urserver/urserver-autostart.desktop /etc/xdg/autostart

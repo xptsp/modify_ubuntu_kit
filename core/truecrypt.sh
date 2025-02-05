@@ -15,8 +15,14 @@ fi
 _title "Installing and Configuring TrueCrypt..."
 #==============================================================================
 # First: Install the software:
+apt install -y python3-launchpadlib software-properties-common
 add-apt-repository -y ppa:stefansundin/truecrypt
-apt install -y truecrypt
+if [[ -f /etc/apt/sources.list.d/stefansundin-ubuntu-truecrypt-bookworm.list ]]; then
+	mv /etc/apt/sources.list.d/stefansundin-ubuntu-truecrypt-{bookworm,jammy}.list
+	sed -i "s|bookworm|jammy|g" /etc/apt/sources.list.d/stefansundin-ubuntu-truecrypt-jammy.list
+	apt update
+fi 
+apt install -y truecrypt 
 
 # Second: Stop TrueCrypt from automatically starting without "xfce4-session" running:
 #==============================================================================

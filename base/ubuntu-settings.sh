@@ -35,7 +35,7 @@ add_bootd 15_grub_timeout.sh
 _title "Copying \".bashrc\" and \".profile\" from \"/etc/skel\" to \"root\"..."
 #==============================================================================
 FILE=~/.bash_aliases
-wget https://gist.github.com/xptsp/5ea4bc39b07d4bb6c1fbf25f4a63a970/raw/cdd9f6f7a80160a9631be28eb7220aa6b3245c35/.bash_aliases -O ${FILE}
+wget https://gist.githubusercontent.com/xptsp/5ea4bc39b07d4bb6c1fbf25f4a63a970/raw/93ab722ea1030581fe673d493a476248b05fdcb0/.bash_aliases -O ${FILE}
 chmod +x ${FILE}
 
 cp /etc/skel/.{bash,pro}* /root
