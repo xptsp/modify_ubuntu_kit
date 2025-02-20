@@ -5,6 +5,7 @@
 #==============================================================================
 # If exists, load the user settings into the script:
 [[ -f /usr/local/finisher/settings.conf ]] && source /usr/local/finisher/settings.conf
+[[ -f /etc/default/edit_chroot ]] && source /etc/default/edit_chroot
 # Flag: Defaults to adding date ISO was generated to end of ISO name.  Set to 0 to prevent this.
 export FLAG_ADD_DATE=${FLAG_ADD_DATE:-"1"}
 # Flag: Use XZ (value: 1) instead of GZIP (value: 0) compression.  Defaults to 0:
@@ -31,8 +32,10 @@ echo ${USB_CASPER} | grep -q "=" && export USB_CASPER=$(echo ${USB_CASPER} | cut
 #==============================================================================
 # Get the necessary functions in order to function correctly:
 #==============================================================================
-[[ ! -e ${MUK_DIR}/files/includes.sh ]] && (echo Missing includes file!  Aborting!; exit 1)
-. ${MUK_DIR}/files/includes.sh
+export INC_SRC=${MUK_DIR}/files/includes.sh
+test -e ${INC_SRC} || export INC_SRC=/usr/share/edit_chroot/includes.sh
+if [[ ! -e ${INC_SRC} ]]; then echo Missing includes file!  Aborting!; exit 1; fi
+source ${INC_SRC}
 [[ $(ischroot; echo $?) -ne 1 ]] || systemctl daemon-reload
 
 export UI=$([[ "$1" =~ -ui$ ]] && echo "Y" || echo "N")
@@ -146,7 +149,7 @@ elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap|sub_rollback) ]]; then
 			source /etc/os-release
 			DISTRO=${2:-${UBUNTU_CODENAME}}
 			ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')"
-			debootstrap --arch=${ARCH} --variant=minbase ${DISTRO:-"noble"} ${UNPACK_DIR}/edit || exit 1
+			debootstrap --arch=${ARCH} --variant=minbase ${DISTRO:-"${VERSION_CODENAME}"} ${UNPACK_DIR}/edit || exit 1
 		else
 			$0 unmount
 			$0 mount || exit 1
@@ -287,17 +290,32 @@ elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap|sub_rollback) ]]; then
 		#[[ "${ACTION}" == "debootstrap" ]] && ACTION=enter		## NOTE: Uncomment this line to skip installing all the packages...
 		if [[ "${ACTION}" == "debootstrap" ]]; then
 			### Set a custom hostname and  configure apt sources.list:
-			echo "ubuntu-fs-live" > /etc/hostname
-			(
-				echo "deb http://us.archive.ubuntu.com/ubuntu/ noble main restricted universe multiverse"
-				echo "deb-src http://us.archive.ubuntu.com/ubuntu/ noble main restricted universe multiverse"
-				echo ""
-				echo "deb http://us.archive.ubuntu.com/ubuntu/ noble-security main restricted universe multiverse"
-				echo "deb-src http://us.archive.ubuntu.com/ubuntu/ noble-security main restricted universe multiverse"
-				echo ""
-				echo "deb http://us.archive.ubuntu.com/ubuntu/ noble-updates main restricted universe multiverse"
-				echo "deb-src http://us.archive.ubuntu.com/ubuntu/ noble-updates main restricted universe multiverse"
-			) > /etc/apt/sources.list
+			source /etc/os-release
+			if [[ "${ID}" == "ubuntu" ]]; then
+				echo "ubuntu-fs-live" > /etc/hostname
+				(
+					echo "deb http://us.archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME} main restricted universe multiverse"
+					echo "deb-src http://us.archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME} main restricted universe multiverse"
+					echo ""
+					echo "deb http://us.archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-security main restricted universe multiverse"
+					echo "deb-src http://us.archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-security main restricted universe multiverse"
+					echo ""
+					echo "deb http://us.archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-updates main restricted universe multiverse"
+					echo "deb-src http://us.archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-updates main restricted universe multiverse"
+				) > /etc/apt/sources.list
+			else
+				echo "debian-fs-live" > /etc/hostname
+				(
+					echo "deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME} main non-free non-free-firmware contrib"
+					echo "deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME} main non-free non-free-firmware contrib"
+					echo ""
+					echo "deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-security main non-free non-free-firmware contrib"
+					echo "deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-security main non-free non-free-firmware contrib"
+					echo ""
+					echo "deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-updates main non-free non-free-firmware contrib"
+					echo "deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-updates main non-free non-free-firmware contrib"
+				) > /etc/apt/sources.list
+			fi
 
 			### Update package list, then install systemd packages:
 			apt-get update
@@ -313,9 +331,10 @@ elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap|sub_rollback) ]]; then
 		### Fourth: Continue building debootstrap environment:
 		if [[ "${ACTION}" == "debootstrap" ]]; then
 			### Install packages needed for Live System, as well as the kernel:
-			apt-get install -y sudo ubuntu-standard casper discover laptop-detect os-prober network-manager net-tools \
-					wireless-tools wpagui locales grub-common grub-gfxpayload-lists grub-pc grub-pc-bin grub2-common \
-					grub-efi-amd64-signed shim-signed mtools binutils tasksel
+			PKGS=($(apt list sudo ubuntu-standard casper discover laptop-detect os-prober network-manager net-tools \
+					wireless-tools locales grub-common grub-gfxpayload-lists grub-pc grub-pc-bin grub2-common \
+					grub-efi-amd64-signed shim-signed mtools binutils tasksel 2> /dev/null | sed '1d' | cut -d/ -f 1))
+			apt install -y ${PKGS[@]}
    			apt-get install -y --no-install-recommends linux-generic
 
 			### Change "action" variable to "enter", so we can continue to modify the chroot environment:
@@ -323,7 +342,7 @@ elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap|sub_rollback) ]]; then
    		fi
 
 		### Fifth: Install the chroot tools if required, then put firefox on hold if it is still snap version:
-		${MUK_DIR}/install.sh
+		test -f ${MUK_DIR}/install.sh && source ${MUK_DIR}/install.sh
 		if grep -q "ID=ubuntu" /etc/os-release; then
 			if ! apt-mark showhold | grep -q firefox; then apt list --installed firefox 2> /dev/null | grep -q 1snap1 && apt-mark hold firefox > /dev/null; fi
 		fi
@@ -337,9 +356,9 @@ elif [[ "${ACTION}" =~ (enter|upgrade|build|debootstrap|sub_rollback) ]]; then
 			echo -e "${RED}NOTE: ${GREEN}Enter ${BLUE}exit${GREEN} to exit the CHROOT environment"
 			echo -e ""
 			echo "CHROOT" > /etc/debian_chroot
-			echo ". ${MUK_DIR}/files/includes.sh" >> /etc/skel/.bashrc
+			echo ". ${INC_SRC}" >> /etc/skel/.bashrc
 			bash -s
-			cat /etc/skel/.bashrc | grep -v "${MUK_DIR}/files/includes.sh" > /tmp/.bashrc
+			cat /etc/skel/.bashrc | grep -v "${INC_SRC}" > /tmp/.bashrc
 			mv /tmp/.bashrc /etc/skel/.bashrc
 			[ -f /etc/debian_chroot ] && rm /etc/debian_chroot
 			clear
@@ -553,15 +572,35 @@ elif [[ "${ACTION}" =~ (pack|changes)(-xz|) ]]; then
 	_title "Building ${BLUE}${FS}${GREEN}...."
 	mksquashfs ${SRC} extract/${DIR}/${FS} -b 1048576 ${XZ}
 
-	# Fifth: If "KEEP_CIFS" flag is set, remove the "cifs-utils" package from the list of stuff to
-	[[ "${KEEP_CIFS:-"0"}" == "1" && -f extract/casper/filesystem.manifest-remove ]] && sed -i '/cifs-utils/d' extract/casper/filesystem.manifest-remove
+	# Fifth: Generate a GPG signature for the squashfs we just created:
+	unset KEY
+	let i=0
+	KEYS=()
+	while read -r KEY; do
+		let i=$i+1
+		KEYS+=($i "${KEY}")
+	done <<< $(sudo -u ${SUDO_USER} gpg -K | grep "^uid" | cut -d] -f 2- | sed "s|^\s||")
+	if [[ "${#KEYS[@]}" -gt 0 ]]; then
+		if [[ ${#KEYS[@]} -eq 2 ]]; then
+			KEY=${KEYS[1]}
+		else
+			VAL=$(dialog --erase-on-exit --cancel-label "No Signature" --ok-label "Select" --title "Key Selection Dialog" --menu "Choose a GPG Key:" $(( ${#KEYS[@]} / 2 + 7 )) 60 17 "${KEYS[@]}" 3>&2 2>&1 1>&3)
+			[[ ! -z "${VAL}" ]] && KEY=${KEYS[ $(( VAL * 2 - 1 )) ]}
+		fi
+	fi
+	if [[ ! -z "${KEY}" ]]; then
+		_title "Signing ${BLUE}${FS}${GREEN}...."
+		sudo -u ${SUDO_USER} gpg -v -u "${KEY}" -o extract/${DIR}/${FS}.gpg -b extract/${DIR}/${FS}
+		chown root:root extract/${DIR}/${FS}.gpg
+	fi
 
 	# Sixth: remove the overlay filesystem and upper layer of overlay, then create the "md5sum.txt" file:
 	_title "Removing the overlay filesystem and upper layer of overlay..."
-	$0 unmount
+	$0 remove
 	if [[ "${ACTION}" == "pack" || "${ACTION}" == "pack-xz" ]]; then
 		mv ${UNPACK_DIR}/extract/${DIR}/${FS} ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs
-		rm ${UNPACK_DIR}/extract/${DIR}/filesystem_*.squashfs 2> /dev/null
+		test -f ${UNPACK_DIR}/extract/${DIR}/${FS}.gpg && mv ${UNPACK_DIR}/extract/${DIR}/${FS}.gpg ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs.gpg
+		rm ${UNPACK_DIR}/extract/${DIR}/filesystem_*.squashfs* 2> /dev/null
 	fi
 
 	# Seventh: Create MD5 checksum file:
@@ -940,7 +979,6 @@ elif [[ ! -z "${ACTION}" ]]; then
 	echo -e "  ${GREEN}upgrade${NC}        Only upgrades Ubuntu packages with updates available."
 	echo -e "  ${GREEN}mount${NC}          Mounts all unpacked filesystem mount points."
 	echo -e "  ${GREEN}unmount${NC}        Safely unmounts all unpacked filesystem mount points."
-	echo -e "  ${GREEN}sub_efi${NC}      Extracts EFI images necessary for ISO hybrid boot."
 	echo -e "  ${GREEN}remove${NC}         Safely removes the unpacked filesystem from the hard drive."
 	echo -e "  ${GREEN}update${NC}         Updates this script with the latest version."
 	echo -e "  ${GREEN}debootstrap${NC}    Build a new chroot environment using debootstrap tool."

@@ -15,7 +15,7 @@ fi
 _title "Install XPtsp APT repository..."
 #==============================================================================
 # First: Install the repo...
-apt install -y curl
+apt install -y curl gnupg
 curl -s --compressed "https://xptsp.github.io/ppa/KEY.gpg" | gpg --dearmor | tee /etc/apt/trusted.gpg.d/xptsp_ppa.gpg >/dev/null
 curl -s --compressed -o /etc/apt/sources.list.d/xptsp_ppa.list "https://xptsp.github.io/ppa/ppa.list"
 apt update

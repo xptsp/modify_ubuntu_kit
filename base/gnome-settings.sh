@@ -14,19 +14,8 @@ fi
 #==============================================================================
 _title "Adding script to get changed Gnome settings..."
 #==============================================================================
-FILE=/usr/local/bin/gsettings-diff
-cat << EOF > ${FILE}
-#!/bin/sh
-BEFORE=\`mktemp /tmp/gsettings_XXXXX\`
-gsettings list-recursively > \$BEFORE
-echo -n "Ok, recorded current settings - now do the change and press enter ..."
-read ANS
-AFTER=\`mktemp /tmp/gsettings_XXXXX\`
-gsettings list-recursively > \$AFTER
-diff -u \$BEFORE \$AFTER
-rm \$BEFORE \$AFTER
-EOF
-chmod +x ${FILE}
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
+apt install -y reddragon-tools
 
 #==============================================================================
 _title "Setting custom Gnome settings..."

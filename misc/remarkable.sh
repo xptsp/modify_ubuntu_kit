@@ -14,6 +14,5 @@ fi
 #==============================================================================
 _title "Installing Remarkable for Linux..."
 #==============================================================================
-wget https://eric.seifert.casa/remarkable_1.87_all.deb -O /tmp/remarkable_1.87_all.deb
-apt install -y /tmp/remarkable_1.87_all.deb
-rm /tmp/remarkable_1.87_all.deb
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
+apt install -y remarkable
