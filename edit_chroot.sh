@@ -1,8 +1,8 @@
 #!/bin/bash
 
-#==============================================================================
+###############################################################################
 # Script settings and their defaults:
-#==============================================================================
+###############################################################################
 # If exists, load the user settings into the script:
 [[ -f /usr/local/finisher/settings.conf ]] && source /usr/local/finisher/settings.conf
 [[ -f /etc/default/edit_chroot ]] && source /etc/default/edit_chroot
@@ -19,7 +19,7 @@ ISO_DIR=${ISO_DIR:-"${UNPACK_DIR}"}
 # Default to removing old kernels from chroot environment.  Set to 0 to prevent this.
 OLD_KERNEL=${OLD_KERNEL:-"1"}
 # Determine ISO version number to use:
-[[ -f ${UNPACK_DIR}/edit/etc/os-release ]] && ISO_VERSION=$(cat ${UNPACK_DIR}/edit/etc/os-release | grep "VERSION=" | cut -d "\"" -f 2 | cut -d " " -f 1)
+[[ -f ${UNPACK_DIR}/edit/etc/os-release ]] && ISO_VERSION=$(grep "VERSION=" ${UNPACK_DIR}/edit/etc/os-release | cut -d "\"" -f 2 | cut -d " " -f 1)
 # MUK path:
 MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 # Custom USB Stick partition #1 identification:
@@ -29,9 +29,9 @@ USB_LIVE=$(echo ${USB_LIVE} | cut -d= -f 1)=\"$(echo ${USB_LIVE} | cut -d= -f 2 
 USB_CASPER=${USB_CASPER:-"LABEL=\"UBUNTU_CASPER\""}
 echo ${USB_CASPER} | grep -q "=" && USB_CASPER=$(echo ${USB_CASPER} | cut -d= -f 1)=\"$(echo ${USB_CASPER} | cut -d= -f 2 | sed "s|\"||g")\"
 
-#==============================================================================
+###############################################################################
 # Get the necessary functions in order to function correctly:
-#==============================================================================
+###############################################################################
 INC_SRC=${MUK_DIR}/files/includes.sh
 test -e ${INC_SRC} || INC_SRC=/usr/share/edit_chroot/includes.sh
 if [[ ! -e ${INC_SRC} ]]; then echo Missing includes file!  Aborting!; exit 1; fi
@@ -44,7 +44,33 @@ function _ui_title() { if [[ "$UI" == "N" ]]; then _title $@; else dialog --msgb
 function _ui_error() { if [[ "$UI" == "N" ]]; then _error $@; else dialog --msgbox "$@" 8 60; clear; fi }
 
 #==============================================================================
-# Did user request to safely unmount the filesystem mount points?
+# If no help is requested, make sure needed packages have been installed:
+#==============================================================================
+if [[ ! "${ACTION}" =~ (help|--help) && "${ACTION}" != "debootstrap" && "$(dirname $0)" != "/usr/bin" ]]; then
+	# Make sure we got everything we need to create a customized Ubuntu disc:
+	PKGS=()
+	whereis mksquashfs | grep -q "/mksquashfs" || PKGS+=( squashfs-tools )
+	whereis genisoimage | grep -q "/genisoimage" || PKGS+=( genisoimage )
+	whereis xorriso | grep -q "/xorriso" || PKGS+=( xorriso )
+	whereis git | grep -q "/git" || PKGS+=( git )
+	whereis dialog | grep -q "/dialog" || PKGS+=( dialog )
+
+	# Install any packages that we need for the script to run:
+	if [[ ! -z "${PKGS[@]}" ]]; then
+		apt update >& /dev/null
+		for PKG in ${PKGS[@]}; do
+			if apt list ${PKG} 2> /dev/null | grep -qe ${PKG}; then
+				_title "Installing ${BLUE}${PKG} package..."
+				apt install -y $PKG
+			else
+				_title "${BLUE}${PKG}${GREEN} package not available to install..."
+			fi
+		done
+	fi
+fi
+
+#==============================================================================
+# Function that safely unmount the chroot environment:
 #==============================================================================
 function ACTION_update()
 {
@@ -66,7 +92,7 @@ function ACTION_update()
 }
 
 #==============================================================================
-# Are we changing the unpacked CHROOT environment?
+# Function that mount the unpacked CHROOT environment:
 #==============================================================================
 function ACTION_mount()
 {
@@ -95,17 +121,13 @@ function ACTION_mount()
 }
 
 #==============================================================================
-# Are we changing the unpacked CHROOT environment?
+# Functions to change the unpacked CHROOT environment:
 #==============================================================================
 function ACTION_upgrade()
 {
 	ACTION_enter
 }
 function ACTION_build()
-{
-	ACTION_enter
-}
-function ACTION_debootstrap()
 {
 	ACTION_enter
 }
@@ -124,45 +146,33 @@ function ACTION_enter()
 		#======================================================================
 		### First: Make sure that the CHROOT environment actually exists:
 		cd ${UNPACK_DIR}
-		if [[ "${ACTION}" == "debootstrap" ]]; then
-			### Remove current chroot environment, because we are going to start over again:
-			test -d ${UNPACK_DIR}/edit && rm -rf ${UNPACK_DIR}/edit 2> /dev/null
-			mkdir -p ${UNPACK_DIR}/edit
-			ACTION_remove || exit 1
-			mkdir -p ${UNPACK_DIR}/.upper
-			mount --bind ${UNPACK_DIR}/.upper ${UNPACK_DIR}/edit
-
-			### Create the chroot environment by debootstrapping it!  Install "debootstrap" if not already installed!
-			_title "Building debootstrapped chroot environment..."
-			whereis debootstrap | grep -q "/debootstrap" || apt install -y debootstrap
-			source /etc/os-release
-			DISTRO=${2:-${UBUNTU_CODENAME}}
-			ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')"
-			debootstrap --arch=${ARCH} --variant=minbase ${DISTRO:-"${VERSION_CODENAME}"} ${UNPACK_DIR}/edit || exit 1
-		else
+		if [[ "${ACTION}" != "debootstrap" ]]; then
 			ACTION_unmount
 			ACTION_mount || exit 1
 		fi
 
-		## Third: Are we building a particular combination of scripts we have?
+		## Second: Are we building a particular combination of scripts we have?
 		if [[ "${ACTION}" == "build" ]]; then
-			valid=($(find ${MUK_DIR}/* -maxdepth 0 -type d | while read DIR; do basename $DIR; done))
-			if [[ "$2" != "misc" && ! -z "${valid[$2]}" ]]; then
+			option=$2
+			valid=($(find ${MUK_DIR}/* -maxdepth 0 -type d | while read DIR; do basename $DIR; done | grep -v misc | grep -v files))
+			if [[ -z "${valid[$option]}" ]]; then
 				# If the "build" choice was made, ask which directory to run through:
 				if [[ "${UI}" == "Y" ]]; then
-					choice2=(base "Base build" desktop "Desktop build" htpc "HTPC build" docker "Docker build" misc "Miscellaneous build")
+					choice2=()
+					for CHOICE in ${valid[@]}; do choice2+=(${CHOICE} ${CHOICE^}); done
 					height=$(( ${#choice2[@]} / 2 + 7 ))
-					option2=$(dialog --menu "Available Build Packages:" ${height} 40 16  "${choice2[@]}" 2>&1 >/dev/tty)
-					[[ -z "${option2}" ]] && clear && exit 1
+					option=$(dialog --menu "Available Builds:" ${height} 40 16  "${choice2[@]}" 2>&1 >/dev/tty)
+					[[ -z "${option}" ]] && clear && exit
+				else
+					valid="${valid[@]}"
+					valid=${valid// /${GREEN}, ${RED}}
+					_error "Invalid build specified!  Supported values are: ${RED}${valid}${GREEN}!"
+					exit 1
 				fi
-				valid="${valid[@]}"
-				valid=${valid// /${GREEN}, ${RED}}
-				_error "Invalid build specified!  Supported values are: ${RED}${valid}${GREEN}!"
-				exit 1
 			fi
 		fi
 
-		### Third: Update MUK, then setup the CHROOT environment:
+		### Third: Setup the CHROOT environment:
 		cp /etc/resolv.conf ${UNPACK_DIR}/edit/etc/
 		cp /etc/hosts ${UNPACK_DIR}/edit/etc/
 		mount --bind /run/ ${UNPACK_DIR}/edit/run
@@ -170,21 +180,31 @@ function ACTION_enter()
 		mount -t tmpfs tmpfs ${UNPACK_DIR}/edit/tmp
 		mount -t tmpfs tmpfs ${UNPACK_DIR}/edit/var/cache/apt
 
-		### Fourth: Copy MUK into chroot environment:
-		if [[ ! -d ${MUK_DIR} ]]; then
+		### Fourth: Copy the "edit_chroot" binary into the chroot environment:
+		if [[ "$(dirname $0)" == "/usr/local/bin" ]]; then
+			# Copy MUK into chroot environment
 			rm -rf ${UNPACK_DIR}/edit/${MUK_DIR}
 			cp -aR ${MUK_DIR} ${UNPACK_DIR}/edit/${MUK_DIR}
 			chown root:root -R ${UNPACK_DIR}/edit/${MUK_DIR}
 			chroot ${UNPACK_DIR}/edit ${MUK_DIR}/install.sh
-		else 
+		else
+			# Extract the "edit-chroot" package into the CHROOT environment, since APT may not work at this point:
 			cd ${UNPACK_DIR}/edit
-			apt download edit-chroot 2> /dev/null && chroot . apt install -y /edit-chroot_*.deb
-			rm edit-chroot_*.deb 2> /dev/null
+			PKG=${PWD}/edit-chroot_$(rm edit-chroot_*_all.deb; apt download edit-chroot 2>&1 | grep -oe "[0-9]*\.[0-9]*\-[0-9]*")_all.deb
+			dpkg-deb -x ${PKG} ${UNPACK_DIR}/edit
+			FILE=${UNPACK_DIR}/edit/etc/apt/sources.list
+			if grep "ubuntu" ${FILE}; then 
+				grep "universe" ${FILE} || sed -i "s|main restricted|main restricted universe multiverse|g" ${FILE}
+			fi  
 		fi
 
 		### Fifth: Enter the CHROOT environment:
 		_title "Entering CHROOT environment"
-		chroot ${UNPACK_DIR}/edit edit_chroot $@
+		if [[ "${ACTION}" == "build" ]]; then
+			chroot ${UNPACK_DIR}/edit edit_chroot build ${option}
+		else
+			chroot ${UNPACK_DIR}/edit edit_chroot $@
+		fi
 		[[ -d ${UNPACK_DIR}/extract/live ]] && DIR=live || DIR=casper
 		if [[ -f ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ]]; then
 			cp ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ${UNPACK_DIR}/extract/${DIR}/build.txt
@@ -211,27 +231,14 @@ function ACTION_enter()
 				mv ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
 			# Or is this Debian?
 			elif [[ -d ${UNPACK_DIR}/extract/live ]]; then
-				# Is this the Raspberry Pi OS image?
-				if [[ -f ${UNPACK_DIR}/extract/live/vmlinuz0 ]]; then
-					VER=$(echo ${INITRD_SRC} | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*")
-					_title "Moving ${BLUE}INITRD0.IMG${GREEN} from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-686${GREEN}..."
-					mv ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-686 ${UNPACK_DIR}/extract/live/initrd0.img
-					_title "Moving ${BLUE}INITRD1.IMG${GREEN} from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-686-pae${GREEN}..."
-					mv ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-686-pae ${UNPACK_DIR}/extract/live/initrd1.img
-					_title "Moving ${BLUE}INITRD2.IMG${GREEN} from unpacked filesystem from ${BLUE}boot/initrd.img-${VER}-amd64${GREEN}..."
-					mv ${UNPACK_DIR}/edit/boot/initrd.img-${VER}-amd64 ${UNPACK_DIR}/extract/live/initrd2.img
-				else
-					# Must be just regular Debian:
-					_title "Moving ${BLUE}INITRD.IMG${GREEN} from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
-					mv ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/live/initrd
-				fi
+				_title "Moving ${BLUE}INITRD.IMG${GREEN} from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
+				mv ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/live/initrd
 			fi
 		fi
 
-		### Eighth: Modify "grub.cfg":
+		### Eighth: Rename "initrd.gz" entries only for Ubuntu (and maybe Debian):
 		FILE=$(find ${UNPACK_DIR}/extract -name grub.cfg  -print -quit)
-		# NOTE: Rename "initrd.gz" entries only for Ubuntu (and maybe Debian), --NEVER-- Raspberry Pi OS:
-		test -f ${UNPACK_DIR}/extract/live/vmlinuz0 || sed -i "s|initrd.gz|initrd|g" ${FILE}
+		[[ -z "${FILE}" ]] && sed -i "s|initrd.gz|initrd|g" ${FILE}
 
 		### Ninth: Copy the new VMLINUZ from the unpacked filesystem:
 		VMLINUZ=$(ls vmlinuz-* 2> /dev/null | tail -1)
@@ -243,26 +250,13 @@ function ACTION_enter()
 				mv ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
 			# Or is this Debian?
 			elif [[ -d ${UNPACK_DIR}/extract/live ]]; then
-				# Is this the Raspberry Pi OS image?
-				if [[ -f ${UNPACK_DIR}/extract/live/vmlinuz0 ]]; then
-					VER=$(echo ${INITRD_SRC} | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*")
-					_title "Moving ${BLUE}VMLINUZ0${GREEN} from unpacked filesystem from ${BLUE}vmlinuz-${VER}-686${GREEN}...."
-					mv ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-686 ${UNPACK_DIR}/extract/live/vmlinuz0
-					_title "Moving ${BLUE}VMLINUZ1${GREEN} from unpacked filesystem from ${BLUE}vmlinuz-${VER}-686-pae${GREEN}...."
-					mv ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-686-pae ${UNPACK_DIR}/extract/live/vmlinuz1
-					_title "Moving ${BLUE}VMLINUZ2${GREEN} from unpacked filesystem from ${BLUE}vmlinuz-${VER}-amd64${GREEN}...."
-					mv ${UNPACK_DIR}/edit/boot/vmlinuz-${VER}-amd64 ${UNPACK_DIR}/extract/live/vmlinuz2
-				else
-					# Must be just regular Debian:
-					_title "Moving ${BLUE}VMLINUZ${GREEN} from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
-					mv ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/live/vmlinuz
-				fi
+				_title "Moving ${BLUE}VMLINUZ${GREEN} from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
+				mv ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/live/vmlinuz
 			fi
 		fi
 
 		### Tenth: Remove mounts for CHROOT environment:
 		cd ${UNPACK_DIR}
-		[[ "${ACTION}" != "sub_rollback" ]] && ACTION_unmount
 		_title "Exited CHROOT environment"
 	else
 		#======================================================================
@@ -284,38 +278,14 @@ function ACTION_enter()
 
 		### Second: Build debootstrap environment to start with:
 		#[[ "${ACTION}" == "debootstrap" ]] && ACTION=enter		## NOTE: Uncomment this line to skip installing all the packages...
+		apt update >& /dev/null
 		if [[ "${ACTION}" == "debootstrap" ]]; then
-			### Set a custom hostname and  configure apt sources.list:
-			source /etc/os-release
-			if [[ "${ID}" == "ubuntu" ]]; then
-				echo "ubuntu-fs-live" > /etc/hostname
-				(
-					echo "deb http://us.archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME} main restricted universe multiverse"
-					echo "deb-src http://us.archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME} main restricted universe multiverse"
-					echo ""
-					echo "deb http://us.archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-security main restricted universe multiverse"
-					echo "deb-src http://us.archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-security main restricted universe multiverse"
-					echo ""
-					echo "deb http://us.archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-updates main restricted universe multiverse"
-					echo "deb-src http://us.archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-updates main restricted universe multiverse"
-				) > /etc/apt/sources.list
-			else
-				echo "debian-fs-live" > /etc/hostname
-				(
-					echo "deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME} main non-free non-free-firmware contrib"
-					echo "deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME} main non-free non-free-firmware contrib"
-					echo ""
-					echo "deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-security main non-free non-free-firmware contrib"
-					echo "deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-security main non-free non-free-firmware contrib"
-					echo ""
-					echo "deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-updates main non-free non-free-firmware contrib"
-					echo "deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-updates main non-free non-free-firmware contrib"
-				) > /etc/apt/sources.list
-			fi
-
 			### Update package list, then install systemd packages:
-			apt-get update
-			apt-get install -y libterm-readline-gnu-perl systemd-sysv
+			apt install -y libterm-readline-gnu-perl systemd-sysv
+		fi
+		if [[ -f /edit-chroot_*_all.deb ]]; then
+			apt install -y /edit-chroot_*_all.deb
+			rm /edit-chroot_*_all.deb
 		fi
 
 		### Third: Configure machine-id and divert:
@@ -325,26 +295,28 @@ function ACTION_enter()
 		ln -sf /bin/true /sbin/initctl
 
 		### Fourth: Continue building debootstrap environment:
+		source /etc/os-release
 		if [[ "${ACTION}" == "debootstrap" ]]; then
 			### Install packages needed for Live System, as well as the kernel:
 			PKGS=($(apt list sudo ubuntu-standard casper discover laptop-detect os-prober network-manager net-tools \
 					wireless-tools locales grub-common grub-gfxpayload-lists grub-pc grub-pc-bin grub2-common \
-					grub-efi-amd64-signed shim-signed mtools binutils tasksel 2> /dev/null | sed '1d' | cut -d/ -f 1))
+					efibootmgr initramfs-tools linux-firmware bash nano \
+					ubiquity ubiquity-casper ubiquity-frontend-gtk ubiquity-slideshow-ubuntu ubiquity-ubuntu-artwork \
+					grub-efi-amd64-signed shim-signed mtools binutils tasksel 2> /dev/null | grep "/" | cut -d/ -f 1))
 			apt install -y ${PKGS[@]}
-   			apt-get install -y --no-install-recommends linux-generic
+			apt install -y --no-install-recommends $([[ "${ID}" == "ubuntu" ]] && echo "linux-generic-hwe-${VERSION_ID}" || echo "linux-image-amd64")
 
 			### Change "action" variable to "enter", so we can continue to modify the chroot environment:
    			ACTION=enter
    		fi
 
-		### Fifth: Install the chroot tools if required, then put firefox on hold if it is still snap version:
-		if grep -q "ID=ubuntu" /etc/os-release; then
-			if ! apt-mark showhold | grep -q firefox; then apt list --installed firefox 2> /dev/null | grep -q 1snap1 && apt-mark hold firefox > /dev/null; fi
-		fi
+		### Fifth: Put snap version firefox on hold if it is installed!
+		### <<--- FYI --->> Snap packages CANNOT be updated inside the chroot environment!
+		apt-mark hold firefox=*snap* 2> /dev/null > /dev/null
 		test -e /usr/local/bin/cls || ln -sf /usr/bin/clear /usr/local/bin/cls
 
 		### Sixth: Next action depends on parameter passed....
-		if [[ "${ACTION}" == "enter" ]]; then
+		if [[ "${ACTION}" =~ (enter|debootstrap) ]]; then
 			### "enter": Create a bash shell for user to make alterations to chroot environment
 			clear
 			_title "Ready to modify CHROOT environment!"
@@ -370,7 +342,10 @@ function ACTION_enter()
 			update-initramfs -c -k ${KERNEL/linux-image-/}
 		fi
 
-		### Seventh: If user 999 exists, change that user ID so that LiveCD works:
+		### Seventh: Finish the debootstrap procedure:
+		[[ "${ACTION}" == "debootstrap" ]] && CHROOT_dobootstrap
+
+		### Eighth: If user 999 exists, change that user ID so that LiveCD works:
 		uid_name=$(grep ":999:" /etc/passwd | cut -d":" -f 1)
 		if [[ ! -z "${uid_name}"  ]]; then
 			uid_new=998
@@ -380,7 +355,7 @@ function ACTION_enter()
 			chown -Rhc --from=999 ${uid_new} / >& /dev/null
 		fi
 
-		### Eighth: If group 999 exists, change that group ID so that LiveCD works:
+		### Ninth: If group 999 exists, change that group ID so that LiveCD works:
 		gid_line=$(getent group 999)
 		if [[ ! -z "${gid_line}" ]]; then
 			gid_name=$(echo $gid_line | cut -d":" -f 1)
@@ -391,12 +366,12 @@ function ACTION_enter()
 			chown -Rhc --from=:999 :${gid_new} / >& /dev/null
 		fi
 
-		### Ninth: Upgrade the installed GitHub repositories:
+		### Tenth: Upgrade the installed GitHub repositories:
 		_title "Updating GitHub repositories in ${BLUE}/opt${GREEN}..."
 		cd /opt
 		(ls | while read p; do pushd $p; [ -d .git ] && git pull; popd; done) >& /dev/null
 
-		### Tenth: Upgrade the pre-installed Kodi addons via GitHub repositories:
+		### Eleventh: Upgrade the pre-installed Kodi addons via GitHub repositories:
 		if [ -d /opt/kodi ]; then
 			_title "Updating Kodi addons from GitHub repositories in ${BLUE}/opt/kodi${GREEN}...."
 			pushd /opt/kodi >& /dev/null
@@ -404,13 +379,13 @@ function ACTION_enter()
 			popd >& /dev/null
 		fi
 
-		### Eleventh: Update packages:
+		### Twelveth: Update packages:
 		_title "Updating repository lists...."
-		apt-get update >& /dev/null
+		apt update >& /dev/null
 		_title "Upgrading any packages requiring upgrading..."
-		apt-get upgrade -y
+		apt upgrade -y
 
-		### Twelveth: Purge older kernels from the image:
+		### Thirteenth: Purge older kernels from the image:
 		if [[ "${OLD_KERNEL}" -eq 1 ]]; then
 			_title "Removing any older kernels from the image..."
 			CUR=$(ls -l /boot/initrd.img 2> /dev/null | awk '{print $NF}' | grep -o -e "[0-9]*\.[0-9]*\.[0-9]*\-[0-9]*")
@@ -422,12 +397,12 @@ function ACTION_enter()
 
 		### Fourteenth: Remove any unnecessary packages and fix any broken packages:
 		_title "Removing unnecessary packages and fixing any broken packages..."
-		apt-get install -f --autoremove --purge -y
+		apt install -f --autoremove --purge -y
 
 		### Fifteenth: Remove any unnecessary packages:
 		_title "Cleaning up cached packages..."
-		apt-get autoclean -y >& /dev/null
-		apt-get clean -y >& /dev/null
+		apt autoclean -y >& /dev/null
+		apt clean -y >& /dev/null
 
 		### Sixteenth: Disable services not required during Live ISO:
 		if [[ -f /usr/local/finisher/disabled.list ]]; then
@@ -437,7 +412,7 @@ function ACTION_enter()
 
 		### Seventeenth: Clean up everything done to "chroot" into this ISO image:
 		_title "Undoing CHROOT environment modifications..."
-		if apt-mark showhold | grep -q firefox; then apt list firefox 2> /dev/null | grep -q 1snap1 && apt-mark unhold firefox > /dev/null; fi
+		apt-mark unhold firefox=*snap* 2> /dev/null > /dev/null
 		test -d /etc/sudoers.d && chmod 440 /etc/sudoers.d/*
 		rm -rf /tmp/* ~/.bash_history
 		truncate -s 0 /etc/machine-id
@@ -452,7 +427,68 @@ function ACTION_enter()
 }
 
 #==============================================================================
-# Did user request to safely unmount the filesystem mount points?
+# Functions to debootstrap an Debian/Ubuntu installation:
+#==============================================================================
+function ACTION_debootstrap()
+{
+	if [[ $(ischroot; echo $?) -eq 1 ]]; then
+		### Remove current chroot environment, because we are going to start over again:
+		ACTION_remove || exit 1
+		test -d ${UNPACK_DIR}/edit && rm -rf ${UNPACK_DIR}/edit 2> /dev/null
+		mkdir -p ${UNPACK_DIR}/{edit,.upper}
+		mount --bind ${UNPACK_DIR}/.upper ${UNPACK_DIR}/edit
+
+		### Create the chroot environment by debootstrapping it!  Install "debootstrap" if not already installed!
+		_title "Building debootstrapped chroot environment..."
+		whereis debootstrap | grep -q "/debootstrap" || apt install -y debootstrap
+		DISTRO=${2}
+		[[ -z "${DISTRO}" ]] && DISTRO=$(grep UBUNTU_CODENAME= /etc/os-release | cut -d= -f 2)
+		ARCH="${3}"
+		[[ -z "${ARCH}" ]] && ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')"
+		debootstrap --arch=${ARCH} --variant=minbase ${DISTRO:-"${VERSION_CODENAME}"} ${UNPACK_DIR}/edit || exit 1
+
+		### Set the APT repositories:
+		source ${UNPACK_DIR}/edit/etc/os-release
+		if [[ "${ID}" == "ubuntu" ]]; then
+			echo "ubuntu-fs-live" > ${UNPACK_DIR}/edit/etc/hostname
+			(
+				echo "deb http://ubuntu.securedservers.com/ ${VERSION_CODENAME} main restricted universe multiverse"
+				echo "deb-src http://ubuntu.securedservers.com/ ${VERSION_CODENAME} main restricted universe multiverse"
+				echo ""
+				echo "deb http://ubuntu.securedservers.com/ ${VERSION_CODENAME}-security main restricted universe multiverse"
+				echo "deb-src http://ubuntu.securedservers.com/ ${VERSION_CODENAME}-security main restricted universe multiverse"
+				echo ""
+				echo "deb http://ubuntu.securedservers.com/ ${VERSION_CODENAME}-updates main restricted universe multiverse"
+				echo "deb-src http://ubuntu.securedservers.com/ ${VERSION_CODENAME}-updates main restricted universe multiverse"
+				echo ""
+				echo "deb http://ubuntu.securedservers.com/ ${VERSION_CODENAME}-backports main restricted universe multiverse"
+				echo "deb-src http://ubuntu.securedservers.com/ ${VERSION_CODENAME}-backports main restricted universe multiverse"
+			) > ${UNPACK_DIR}/edit/etc/apt/sources.list
+		else
+			echo "debian-fs-live" > ${UNPACK_DIR}/edit/etc/hostname
+			(
+				echo "deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME} main non-free non-free-firmware contrib"
+				echo "deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME} main non-free non-free-firmware contrib"
+				echo ""
+				echo "deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-security main non-free non-free-firmware contrib"
+				echo "deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-security main non-free non-free-firmware contrib"
+				echo ""
+				echo "deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-updates main non-free non-free-firmware contrib"
+				echo "deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-updates main non-free non-free-firmware contrib"
+				echo ""
+				echo "deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-backports main non-free non-free-firmware contrib"
+				echo "deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-backports main non-free non-free-firmware contrib"
+			) > ${UNPACK_DIR}/edit/etc/apt/sources.list
+		fi
+	fi
+	ACTION_enter
+}
+function CHROOT_dobootstrap()
+{
+}
+
+#==============================================================================
+# Function that safely unmount the filesystem mount points:
 #==============================================================================
 function ACTION_unmount()
 {
@@ -469,7 +505,7 @@ function ACTION_unmount()
 }
 
 #==============================================================================
-# Did user request to safely remove the unpacked filesystem?
+# Function that remove the unpacked filesystem:
 #==============================================================================
 function ACTION_remove()
 {
@@ -488,7 +524,7 @@ function ACTION_remove()
 }
 
 #==============================================================================
-# Did user request to unpack the ISO?
+# Function that unpack the ISO:
 #==============================================================================
 function ACTION_unpack()
 {
@@ -534,10 +570,19 @@ function ACTION_unpack()
 }
 
 #==============================================================================
-# Did user request to pack the chroot environment?
+# Function that pack the CHROOT environment:
 #==============================================================================
-#elif [[ "${ACTION}" =~ (pack|changes)(-xz|) ]]; then
+function ACTION_changes()
+{
+	SRC=.upper
+	FUNC_pack
+}
 function ACTION_pack()
+{
+	SRC=edit
+	FUNC_pack
+}
+function FUNC_pack()
 {
 	if [[ $(ischroot; echo $?) -ne 1 ]]; then
 		_ui_error "Cannot use ${BLUE}pack${GREEN} inside chroot environment!"
@@ -556,15 +601,13 @@ function ACTION_pack()
 	ACTION_mount || exit 1
 	[ -f ${UNPACK_DIR}/edit/etc/debian_chroot ] && rm ${UNPACK_DIR}/edit/etc/debian_chroot
 
-	# Second: Call "sub_manifest" routine to build particular files required:
-	sub_manifest
+	# Second: Call "FUNC_manifest" routine to build particular files required:
+	FUNC_manifest
 
 	# Third: Set necessary flags for compression:
-	[[ "${ACTION}" =~ -xz$ ]] && FLAG_XZ=1
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 
 	# Fourth: Pack the filesystem into squashfs if required:
-	[[ "${ACTION}" == "pack" || "${ACTION}" == "pack-xz" ]] && SRC=edit || SRC=.upper
 	FS=filesystem_$(date +"%Y%m%d")
 	FS=${FS}-$(( $(ls -r extract/${DIR}/${FS}-* 2> /dev/null | grep -m 1 -oe "$FS-[0-9]" | cut -d- -f 2 | cut -d_ -f 1) + 1 ))
 	eval `grep -m 1 -e "^MUK_COMMENT=" edit/etc/os-release && sed -i "/^MUK_COMMENT=/d" edit/etc/os-release`
@@ -608,7 +651,7 @@ function ACTION_pack()
 	fi
 
 	# Seventh: Create MD5 checksum file:
-	sub_md5sum
+	FUNC_md5sum
 
 	# Eighth: Tell user we done!
 	_ui_title "Done packing and preparing extracted filesystem!"
@@ -617,7 +660,7 @@ function ACTION_pack()
 #==============================================================================
 # Pack subroutine: Create manifest and filesystem size files:
 #==============================================================================
-function sub_manifest()
+function FUNC_manifest()
 {
 	# First, build the list of installed packages in unpacked filesystem:
 	cd ${UNPACK_DIR}
@@ -640,7 +683,7 @@ function sub_manifest()
 #==============================================================================
 # Pack subroutine: Create md5 checksum file:
 #==============================================================================
-function sub_md5sum()
+function FUNC_md5sum()
 {
 	_title "Creating the \"md5sum.txt\" file..."
 	cd ${UNPACK_DIR}/extract
@@ -649,7 +692,7 @@ function sub_md5sum()
 }
 
 #==============================================================================
-# Did user request to create the ISO?
+# Function that create the ISO:
 #==============================================================================
 function ACTION_iso()
 {
@@ -678,13 +721,7 @@ function ACTION_iso()
 
 	# Second: Figure out what to name the ISO to avoid conflicts
 	_title "Determining ISO filename...."
-	if [[ -f ${UNPACK_DIR}/extract/live/vmlinuz0 ]]; then
-		NAME=raspios
-		ISO_FILE=${NAME}-${VERSION_CODENAME}-i386-$(date +"%Y-%m-%d")
-		FLAG_ADD_DATE=0
-	else
-		ISO_FILE=${ID}-$(echo ${VERSION} | cut -d" " -f 1)-${MUK_BUILD:-"desktop-amd64"}
-	fi
+	ISO_FILE=${ID}-$(echo ${VERSION} | cut -d" " -f 1)-${MUK_BUILD:-"desktop-amd64"}
 	ISO_FILE=${ISO_FILE,,}
 	[[ "${FLAG_ADD_DATE}" == "1" ]] && ISO_FILE=${ISO_FILE}-$(date +"%Y%m%d")
 	if [[ -f "${ISO_DIR}/${ISO_FILE}.iso" ]]; then
@@ -718,13 +755,36 @@ function ACTION_iso()
 	else
 		# >>>> NEW WAY TO CREATE ISO: Valid for Jammy and above <<<<<
 		NAME=${NAME,,}
-		if [[ ! -f ${UNPACK_DIR}/${NAME}_hybrid.img || ! -f ${UNPACK_DIR}/${NAME}_efi.img ]]; then
-			sub_efi $(ls ${UNPACK_DIR}/${NAME}-*.iso 2> /dev/null| head -1) || exit 1
+		if [[ ! -f ${UNPACK_DIR}/${NAME}_efi.img ]]; then
+			# Copy the files we need for the EFI partition to a temporary directory:
+			EFI=/tmp/efi_tmp
+			mkdir -p ${EFI}
+			cp /usr/lib/shim/shimx64.efi.signed ${EFI}/bootx64.efi || exit 1
+			cp /usr/lib/shim/mmx64.efi ${EFI}/mmx64.efi || exit 1
+			cp /usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed ${EFI}/grubx64.efi || exit 1
+
+			# Actually create our EFI partition:
+			DIR=${UNPACK_DIR}/mnt
+			FILE=${UNPACK_DIR}/${NAME}-${VERSION_ID}_efi.img
+			truncate -s $(( $(du -BK -s ${EFI} | awk '{print $1}' | sed 's|K||') + 128 ))K ${FILE}
+			mkfs.vfat ${FILE}
+			mount ${FILE} ${DIR}
+			mkdir -p ${DIR}/efi/boot
+			cp -R ${EFI}/* ${DIR}/efi/boot/
+			umount ${DIR}
+			rm -rf ${EFI}
 		fi
+
+		# If necessary, create the hybrid MBR code file we need from the GRUB directory:
+		if [[ ! -f ${UNPACK_DIR}/${NAME}_hybrid.img ]]; then
+			dd if=/usr/lib/grub/i386-pc/boot_hybrid.img of=${UNPACK_DIR}/${NAME}-${VERSION_ID}_hybrid.img bs=1 count=432 || exit 1
+		fi
+
+		# Figure out where the "eltorito.img" file is on the system:
 		IMG=/boot/grub/i386-pc/eltorito.img
 		if [[ ! -f ${UNPACK_DIR}/extract/${IMG} ]]; then
 			IMG=/boot/grub/efi.img
-			if [[ ! -f ${UNPACK_DIR}/extract/${IMG} ]]; then _ui_error "No EFI image file found!  Aborting!"; exit 1; fi
+			if [[ ! -f ${UNPACK_DIR}/extract/${IMG} ]]; then _ui_error "No Eltorito image file found!  Aborting!"; exit 1; fi
 		fi
 
 		# Finally pack up an ISO the new way:
@@ -732,10 +792,10 @@ function ACTION_iso()
   			-V "${PRETTY_NAME}" \
 			-J -joliet-long -iso-level 3 \
   			-o ${ISO_DIR}/${ISO_FILE}.iso \
-  			--grub2-mbr ${UNPACK_DIR}/${NAME}_hybrid.img \
+  			--grub2-mbr ${UNPACK_DIR}/${NAME}-${VERSION_ID}_hybrid.img \
   			-partition_offset 16 \
   			--mbr-force-bootable \
-  			-append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b ${UNPACK_DIR}/${NAME}_efi.img \
+  			-append_partition 2 28732ac11ff8d211ba4b00a0c93ec93b ${UNPACK_DIR}/${NAME}-${VERSION_ID}_efi.img \
   			-appended_part_as_gpt \
   			-iso_mbr_part_type a2a0d0ebe5b9334487c068b6b72699c7 \
   			-c '/boot.catalog' \
@@ -752,27 +812,7 @@ function ACTION_iso()
 }
 
 #==============================================================================
-# Did user request to rebuild the filesystem.squashfs and the ISO together?
-#==============================================================================
-function sub_efi()
-{
-	ISO=$2
-	if [[ -z "${ISO}" ]]; then _ui_error "No ISO specified!  Aborting!"; exit 1; fi
-	if [[ ! -f "${ISO}" ]]; then _ui_error "Specified ISO ${BLUE}${ISO}${NC} not found!  Aborting!"; exit 1; fi
-	NAME=$3
-	NAME=${NAME:=$(basename $ISO | cut -d\- -f 1)}
-
-	# Extract the EFI partition image image for -append_partition:
-	INFO=($(fdisk -l ${ISO} | grep "EFI"))
-	if [[ -z "${INFO}" ]]; then _ui_error "No EFI filesystem present in ISO!  Aborting!"; exit 1; fi
-	dd if=${ISO} bs=512 skip=${INFO[1]} count=${INFO[3]} of=${UNPACK_DIR}/${NAME}_efi.img
-
-	# Extract hybrid MBR code:
-	dd if=${ISO} bs=1 count=432 of=${UNPACK_DIR}/${NAME}_hybrid.img
-}
-
-#==============================================================================
-# Did user request to rebuild the filesystem.squashfs and the ISO together?
+# Function that rebuild the filesystem.squashfs and the ISO together:
 #==============================================================================
 function ACTION_rebuild()
 {
@@ -785,7 +825,7 @@ function ACTION_rebuild()
 }
 
 #==============================================================================
-# Did user request to mount chroot environment docker folder to host machine?
+# Function that mount chroot environment docker folder to host machine:
 #==============================================================================
 function ACTION_docker_mount()
 {
@@ -802,7 +842,7 @@ function ACTION_docker_mount()
 }
 
 #==============================================================================
-# Did user request to unmount chroot environment docker folder from host machine?
+# Function that unmount chroot environment docker folder from host machine?
 #==============================================================================
 function ACTION_docker_umount()
 {
@@ -829,7 +869,7 @@ function ACTION_docker_umount()
 }
 
 #==============================================================================
-# Mount my Ubuntu split-partition USB stick properly:
+# Function that mount my Ubuntu split-partition USB stick properly:
 #==============================================================================
 function ACTION_usb_mount()
 {
@@ -850,7 +890,7 @@ function ACTION_usb_mount()
 }
 
 #==============================================================================
-# Unmount my Ubuntu split-partition USB stick properly:
+# Function that unmounts my Ubuntu split-partition USB stick properly:
 #==============================================================================
 function ACTION_usb_unmount()
 {
@@ -862,7 +902,7 @@ function ACTION_usb_unmount()
 }
 
 #==============================================================================
-# Copy "extract" folder <<TO>> my Ubuntu split-partition USB stick:
+# Function to copy "extract" folder <<TO>> my Ubuntu split-partition USB stick:
 #==============================================================================
 function ACTION_usb_load()
 {
@@ -878,7 +918,7 @@ function ACTION_usb_load()
 }
 
 #==============================================================================
-# Copy <<FROM>> my Ubuntu split-partition USB stick to "extract" folder:
+# Function that copy <<FROM>> my Ubuntu split-partition USB stick to "extract" folder:
 #==============================================================================
 function ACTION_usb_copy()
 {
@@ -891,7 +931,7 @@ function ACTION_usb_copy()
 }
 
 #==============================================================================
-# Update snap configuration)
+# Function that updates snap configuration in the CHROOT environment:
 #==============================================================================
 function ACTION_snap()
 {
@@ -899,7 +939,7 @@ function ACTION_snap()
 	ACTION_mount || exit 1
 
 	_title "Disabling current snaps...."
-	SNAPS=($(snap list --all 2> /dev/null | awk '{print $1}' | sed "/^Name$/d"))
+	SNAPS=($(snap list --all 2> /dev/null | grep -ve "disabled$" | awk '{print $1}' | sed "/^Name$/d"))
 	for SNAP in ${SNAPS[@]}; do snap disable ${SNAP}; done
 
 	_title "Unmounting snap-related directories..."
@@ -968,8 +1008,9 @@ function ACTION_snap()
 	# Tell user we're finished:
 	_ui_title "Completed rebuilding chroot environment snap configuration!"
 }
+
 #==============================================================================
-# Revert chroot environment back one squashfs package:
+# Function that reverts chroot environment back one squashfs package:
 # NOTE: Requires multiple squashfs files in the "casper" directory!
 #==============================================================================
 function ACTION_rollback()
@@ -985,27 +1026,29 @@ function ACTION_rollback()
 	ACTION_unmount
 	rm ${LAST} || exit 1
 	ACTION_sub_rollback
-	sub_manifest
-	sub_md5sum
+	FUNC_manifest
+	FUNC_md5sum
 	ACTION_remove
 	_title "Rolled back ${BLUE}$(basename ${FILE})${GREEN} from chroot environment!"
 }
 
-#==============================================================================
+###############################################################################
 # Call requested function starting ACTION_, if it exists:
-#==============================================================================
+###############################################################################
+[[ "${ACTION}" =~ -xz$ ]] && FLAG_XZ=1 && ACTION=${ACTION/-xz/}
 if declare -F "ACTION_${ACTION}" > /dev/null; then
 	ACTION_${ACTION} $@
+	echo ""
 
-#==============================================================================
+###############################################################################
 # Invalid parameter specified.  List available parameters:
-#==============================================================================
-elif [[ ! -z "${ACTION}" ]]; then
+###############################################################################
+elif [[ ! -z "${ACTION}" || "${ACTION}" =~ (--|)help ]]; then
 	[[ ! "${ACTION}" == "--help" ]] && echo "Invalid parameter specified!"
 	echo "Usage: edit_chroot [OPTION]"
 	echo ""
 	echo "Available commands:"
-	echo -e "  ${GREEN}unpack${NC}         Copies the Ubuntu installer files from DVD or ISO on hard drive."
+	echo -e "  ${GREEN}unpack${NC}         Copies the Debian-based installer files from DVD or ISO on hard drive."
 	echo -e "  ${GREEN}pack${NC}           Packs the unpacked filesystem into ${BLUE}filesystem.squashfs${NC}."
 	echo -e "  ${GREEN}pack-xz${NC}        Packs the unpacked filesystem using XZ compression into ${BLUE}filesystem.squashfs${NC}."
 	echo -e "  ${GREEN}changes${NC}        Packs changes to ${BLUE}filesystem.squashfs${NC} into it's own squashfs file."
@@ -1035,15 +1078,15 @@ elif [[ ! -z "${ACTION}" ]]; then
 	echo -e "  ${GREEN}usb_load${NC}       Copy hard drive edition to my custom split-partition USB drive."
 	echo -e "  ${GREEN}usb_copy${NC}       Copy custom split-partition USB drive to hard drive edition."
 
-#==============================================================================
+###############################################################################
 # No command-line option specified!  Show the menu:
-#==============================================================================
+###############################################################################
 else
 	while true; do
 		# Present the available options to the user.  Exit if no choice made:
 		choices=(
 			enter       "Enter the unpacked filesystem environment to make changes."
-			unpack      "Copies the Ububuntu installer files from DVD/ISO on hard drive"
+			unpack      "Copies the Debian-based installer files from DVD/ISO on hard drive"
 			pack        "Packs the unpacked filesystem."
 			changes     "Packs the CHANGES to the unpacked filesystem ."
 			iso         "Builds an ISO containing the packed filesystem."
@@ -1070,4 +1113,3 @@ else
 	done
 	clear
 fi
-[[ "${ACTION}" =~ (usb_|docker_|)(un|)mount || "${ACTION}" =~ ^sub_ ]] || echo -e ""

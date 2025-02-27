@@ -49,7 +49,7 @@ function __remove_from() {
 	shift
 	[ ! -d /usr/local/finisher ] && mkdir -p /usr/local/finisher
 	if [ -f /usr/local/finisher/${FILE}.list ]; then
-		cat /usr/local/finisher/${FILE}.list | grep -v "$1 " > /tmp/${FILE}.list
+		grep -v "$1 " /usr/local/finisher/${FILE}.list > /tmp/${FILE}.list
 		mv /tmp/${FILE}.list /usr/local/finisher/${FILE}.list
 	fi
 }
@@ -79,7 +79,7 @@ function add_outside() {
 function del_outside() {
 	P="$(echo $@ | sed "s|\"||g")"
 	if [ -f /usr/local/finisher/outside_chroot.list ]; then
-		cat /usr/local/finisher/outside_chroot.list | grep -v "$P" > /tmp/outside_chroot.list
+		grep -v "$P" /usr/local/finisher/outside_chroot.list > /tmp/outside_chroot.list
 		mv /tmp/outside_chroot.list /usr/local/finisher/outside_chroot.list
 	fi
 }
@@ -168,8 +168,8 @@ NC='\033[0m'
 CHECK="\xE2\x9C\x94"
 
 # What version of the Ubuntu OS are we running?
-OS_VER=$(cat /etc/os-release | grep "VERSION_ID" | cut -d"\"" -f 2 | sed "s|\.||g")
-OS_NAME=$(cat /etc/os-release  | grep VERSION_CODENAME | cut -d"=" -f 2)
+OS_VER=$(grep "VERSION_ID" /etc/os-release | cut -d"\"" -f 2 | sed "s|\.||g")
+OS_NAME=$(grep VERSION_CODENAME /etc/os-release | cut -d"=" -f 2)
 
 # Store any flags passed to the script for later processing:
 for opt in "$@"; do
