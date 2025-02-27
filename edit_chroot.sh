@@ -40,6 +40,7 @@ source ${INC_SRC}
 
 UI=$([[ "$1" =~ -ui$ ]] && echo "Y" || echo "N")
 ACTION=${1/-ui/}
+PARAMS="$@"
 function _ui_title() { if [[ "$UI" == "N" ]]; then _title $@; else dialog --msgbox "$@" 8 60; clear; fi }
 function _ui_error() { if [[ "$UI" == "N" ]]; then _error $@; else dialog --msgbox "$@" 8 60; clear; fi }
 
@@ -183,8 +184,7 @@ function ACTION_enter()
 		### Fourth: Copy the "edit_chroot" binary into the chroot environment:
 		if [[ "$(dirname $0)" == "/usr/local/bin" ]]; then
 			# Copy MUK into chroot environment
-			rm -rf ${UNPACK_DIR}/edit/${MUK_DIR}
-			cp -aR ${MUK_DIR} ${UNPACK_DIR}/edit/${MUK_DIR}
+			rsync -a --delete ${MUK_DIR}/ ${UNPACK_DIR}/edit/${MUK_DIR}/
 			chown root:root -R ${UNPACK_DIR}/edit/${MUK_DIR}
 			chroot ${UNPACK_DIR}/edit ${MUK_DIR}/install.sh
 		else
@@ -203,7 +203,7 @@ function ACTION_enter()
 		if [[ "${ACTION}" == "build" ]]; then
 			chroot ${UNPACK_DIR}/edit edit_chroot build ${option}
 		else
-			chroot ${UNPACK_DIR}/edit edit_chroot $@
+			chroot ${UNPACK_DIR}/edit edit_chroot ${PARAMS}
 		fi
 		[[ -d ${UNPACK_DIR}/extract/live ]] && DIR=live || DIR=casper
 		if [[ -f ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ]]; then
@@ -272,13 +272,11 @@ function ACTION_enter()
 		export DEBIAN_FRONTEND=noninteractive
 		export USER=root
 		export SUDO_USER=root
-		export KODI_OPT=/opt/kodi
-		export KODI_ADD=/etc/skel/.kodi/addons
-		export KODI_BASE=http://mirrors.kodi.tv/addons/leia/
 
 		### Second: Build debootstrap environment to start with:
 		#[[ "${ACTION}" == "debootstrap" ]] && ACTION=enter		## NOTE: Uncomment this line to skip installing all the packages...
-		apt update >& /dev/null
+		_title "Updating APT repositories..."
+		apt update
 		if [[ "${ACTION}" == "debootstrap" ]]; then
 			### Update package list, then install systemd packages:
 			apt install -y libterm-readline-gnu-perl systemd-sysv
@@ -305,9 +303,6 @@ function ACTION_enter()
 					grub-efi-amd64-signed shim-signed mtools binutils tasksel 2> /dev/null | grep "/" | cut -d/ -f 1))
 			apt install -y ${PKGS[@]}
 			apt install -y --no-install-recommends $([[ "${ID}" == "ubuntu" ]] && echo "linux-generic-hwe-${VERSION_ID}" || echo "linux-image-amd64")
-
-			### Change "action" variable to "enter", so we can continue to modify the chroot environment:
-   			ACTION=enter
    		fi
 
 		### Fifth: Put snap version firefox on hold if it is installed!
@@ -325,8 +320,7 @@ function ACTION_enter()
 			echo "CHROOT" > /etc/debian_chroot
 			echo ". ${INC_SRC}" >> /etc/skel/.bashrc
 			bash -s
-			cat /etc/skel/.bashrc | grep -v "${INC_SRC}" > /tmp/.bashrc
-			mv /tmp/.bashrc /etc/skel/.bashrc
+			sed -i "/${INC_SRC//\//\\\/}/d" /etc/skel/.bashrc
 			[ -f /etc/debian_chroot ] && rm /etc/debian_chroot
 			clear
 		elif [[ "${ACTION}" == "build" ]]; then
@@ -367,9 +361,11 @@ function ACTION_enter()
 		fi
 
 		### Tenth: Upgrade the installed GitHub repositories:
-		_title "Updating GitHub repositories in ${BLUE}/opt${GREEN}..."
-		cd /opt
-		(ls | while read p; do pushd $p; [ -d .git ] && git pull; popd; done) >& /dev/null
+		if whereis git | grep -q "/git"; then
+			_title "Updating GitHub repositories in ${BLUE}/opt${GREEN}..."
+			cd /opt
+		 	(ls | while read p; do pushd $p; [ -d .git ] && git pull; popd; done) >& /dev/null
+		fi
 
 		### Eleventh: Upgrade the pre-installed Kodi addons via GitHub repositories:
 		if [ -d /opt/kodi ]; then
@@ -445,7 +441,7 @@ function ACTION_debootstrap()
 		[[ -z "${DISTRO}" ]] && DISTRO=$(grep UBUNTU_CODENAME= /etc/os-release | cut -d= -f 2)
 		ARCH=${3}
 		[[ -z "${ARCH}" ]] && ARCH=$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')
-		debootstrap --arch=${ARCH} --variant=minbase ${DISTRO:-"${VERSION_CODENAME}"} ${UNPACK_DIR}/edit || exit 1
+		debootstrap --arch=${ARCH} ${DISTRO:-"${VERSION_CODENAME}"} ${UNPACK_DIR}/edit || exit 1
 
 		### Set the APT repositories:
 		source ${UNPACK_DIR}/edit/etc/os-release

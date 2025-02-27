@@ -9,13 +9,11 @@ fi
 # Create the finisher and the tasks.d directory:
 mkdir -p /usr/local/finisher/tasks.d
 
-# Copy the default settings file to the finisher directory:
-test -f /usr/local/finisher/settings.conf || cp ${MUK_DIR}/files/settings.conf /usr/local/finisher/settings.conf
-
 # Determine the toolkit's directory name and save it to the configuration file:
+FILE=/usr/local/finisher/settings.conf
+test -f ${FILE} || cp ${MUK_DIR}/files/settings.conf ${FILE}
 MUK_DIR=$(cd $(dirname $0); pwd)
-. ${MUK_DIR}/files/includes.sh
-grep -q "${MUK_DIR}" /usr/local/finisher/settings.conf || sed -i "s|MUK_DIR=.*|MUK_DIR="${MUK_DIR}"|g" /usr/local/finisher/settings.conf
+grep -q "${MUK_DIR}" ${FILE} || sed -i "s|MUK_DIR=.*|MUK_DIR="${MUK_DIR}"|g" ${FILE}
 
 # Copy the default tcmount config file to the finisher directory:
 test -f /usr/local/finisher/tcmount.ini || cp ${MUK_DIR}/files/tcmount.ini /usr/local/finisher/tcmount.ini
@@ -35,4 +33,5 @@ fi
 test -e /usr/local/bin/edit_chroot || ln -sf ${MUK_DIR}/edit_chroot.sh /usr/local/bin/edit_chroot
 
 # Don't require password for the "edit_chroot" command: 
+mkdir -p /etc/sudoers.d
 test -f /etc/sudoers.d/edit_chroot || echo "ALL ALL=(ALL) NOPASSWD:/usr/local/bin/edit_chroot" > /etc/sudoers.d/edit_chroot
