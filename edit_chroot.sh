@@ -443,14 +443,14 @@ function ACTION_debootstrap()
 		whereis debootstrap | grep -q "/debootstrap" || apt install -y debootstrap
 		DISTRO=${2}
 		[[ -z "${DISTRO}" ]] && DISTRO=$(grep UBUNTU_CODENAME= /etc/os-release | cut -d= -f 2)
-		ARCH="${3}"
-		[[ -z "${ARCH}" ]] && ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')"
+		ARCH=${3}
+		[[ -z "${ARCH}" ]] && ARCH=$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')
 		debootstrap --arch=${ARCH} --variant=minbase ${DISTRO:-"${VERSION_CODENAME}"} ${UNPACK_DIR}/edit || exit 1
 
 		### Set the APT repositories:
 		source ${UNPACK_DIR}/edit/etc/os-release
+		echo "${NAME}-fs-live" > ${UNPACK_DIR}/edit/etc/hostname
 		if [[ "${ID}" == "ubuntu" ]]; then
-			echo "ubuntu-fs-live" > ${UNPACK_DIR}/edit/etc/hostname
 			(
 				echo "deb http://ubuntu.securedservers.com/ ${VERSION_CODENAME} main restricted universe multiverse"
 				echo "deb-src http://ubuntu.securedservers.com/ ${VERSION_CODENAME} main restricted universe multiverse"
@@ -465,7 +465,6 @@ function ACTION_debootstrap()
 				echo "deb-src http://ubuntu.securedservers.com/ ${VERSION_CODENAME}-backports main restricted universe multiverse"
 			) > ${UNPACK_DIR}/edit/etc/apt/sources.list
 		else
-			echo "debian-fs-live" > ${UNPACK_DIR}/edit/etc/hostname
 			(
 				echo "deb http://ftp.de.debian.org/debian/ ${VERSION_CODENAME} main non-free non-free-firmware contrib"
 				echo "deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME} main non-free non-free-firmware contrib"
@@ -485,6 +484,7 @@ function ACTION_debootstrap()
 }
 function CHROOT_dobootstrap()
 {
+	true
 }
 
 #==============================================================================
