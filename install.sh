@@ -11,9 +11,9 @@ mkdir -p /usr/local/finisher/tasks.d
 
 # Determine the toolkit's directory name and save it to the configuration file:
 FILE=/usr/local/finisher/settings.conf
+MUK_DIR=$(dirname $0)
 test -f ${FILE} || cp ${MUK_DIR}/files/settings.conf ${FILE}
-MUK_DIR=$(cd $(dirname $0); pwd)
-grep -q "${MUK_DIR}" ${FILE} || sed -i "s|MUK_DIR=.*|MUK_DIR="${MUK_DIR}"|g" ${FILE}
+grep -q "${MUK_DIR}" ${FILE} || sed -i "s|MUK_DIR=.*|MUK_DIR=\"${MUK_DIR}\"|g" ${FILE}
 
 # Copy the default tcmount config file to the finisher directory:
 test -f /usr/local/finisher/tcmount.ini || cp ${MUK_DIR}/files/tcmount.ini /usr/local/finisher/tcmount.ini

@@ -202,6 +202,8 @@ function ACTION_enter()
 		_title "Entering CHROOT environment"
 		if [[ "${ACTION}" == "build" ]]; then
 			chroot ${UNPACK_DIR}/edit edit_chroot build ${option}
+		elif [[ "${ACTION}" == "debootstrap" ]]; then
+			chroot ${UNPACK_DIR}/edit edit_chroot debootstrap ${DISTRO} ${ARCH}
 		else
 			chroot ${UNPACK_DIR}/edit edit_chroot ${PARAMS}
 		fi
@@ -278,7 +280,8 @@ function ACTION_enter()
 		_title "Updating APT repositories..."
 		apt update
 		if [[ "${ACTION}" == "debootstrap" ]]; then
-			### Update package list, then install systemd packages:
+			### Install systemd packages:
+			_title "Installing systemd packages..."
 			apt install -y libterm-readline-gnu-perl systemd-sysv
 		fi
 		if [[ -f /edit-chroot_*_all.deb ]]; then
@@ -293,17 +296,9 @@ function ACTION_enter()
 		ln -sf /bin/true /sbin/initctl
 
 		### Fourth: Continue building debootstrap environment:
+		### Source Instructions: https://mvallim.github.io/live-custom-ubuntu-from-scratch/
 		source /etc/os-release
-		if [[ "${ACTION}" == "debootstrap" ]]; then
-			### Install packages needed for Live System, as well as the kernel:
-			PKGS=($(apt list sudo ubuntu-standard casper discover laptop-detect os-prober network-manager net-tools \
-					wireless-tools locales grub-common grub-gfxpayload-lists grub-pc grub-pc-bin grub2-common \
-					efibootmgr initramfs-tools linux-firmware bash nano \
-					ubiquity ubiquity-casper ubiquity-frontend-gtk ubiquity-slideshow-ubuntu ubiquity-ubuntu-artwork \
-					grub-efi-amd64-signed shim-signed mtools binutils tasksel 2> /dev/null | grep "/" | cut -d/ -f 1))
-			apt install -y ${PKGS[@]}
-			apt install -y --no-install-recommends $([[ "${ID}" == "ubuntu" ]] && echo "linux-generic-hwe-${VERSION_ID}" || echo "linux-image-amd64")
-   		fi
+		[[ "${ACTION}" == "debootstrap" ]] && CHROOT_debootstrap
 
 		### Fifth: Put snap version firefox on hold if it is installed!
 		### <<--- FYI --->> Snap packages CANNOT be updated inside the chroot environment!
@@ -337,7 +332,6 @@ function ACTION_enter()
 		fi
 
 		### Seventh: Finish the debootstrap procedure:
-		[[ "${ACTION}" == "debootstrap" ]] && CHROOT_dobootstrap
 
 		### Eighth: If user 999 exists, change that user ID so that LiveCD works:
 		uid_name=$(grep ":999:" /etc/passwd | cut -d":" -f 1)
@@ -428,6 +422,12 @@ function ACTION_enter()
 function ACTION_debootstrap()
 {
 	if [[ $(ischroot; echo $?) -eq 1 ]]; then
+		### Remove unpacked ISO image:
+		_title "Removing unpacked ISO image..."
+		mount | grep -q "${UNPACK_DIR}/edit/image" && umount -lqf ${UNPACK_DIR}/edit/image
+		test -d ${UNPACK_DIR}/extract && rm -rf ${UNPACK_DIR}/extract
+		mkdir ${UNPACK_DIR}/extract
+
 		### Remove current chroot environment, because we are going to start over again:
 		ACTION_remove || exit 1
 		test -d ${UNPACK_DIR}/edit && rm -rf ${UNPACK_DIR}/edit 2> /dev/null
@@ -439,8 +439,8 @@ function ACTION_debootstrap()
 		whereis debootstrap | grep -q "/debootstrap" || apt install -y debootstrap
 		DISTRO=${2}
 		[[ -z "${DISTRO}" ]] && DISTRO=$(grep UBUNTU_CODENAME= /etc/os-release | cut -d= -f 2)
-		ARCH=${3}
-		[[ -z "${ARCH}" ]] && ARCH=$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')
+		CUR_ARCH=$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')
+		ARCH=${3:-"${CUR_ARCH}"}
 		debootstrap --arch=${ARCH} ${DISTRO:-"${VERSION_CODENAME}"} ${UNPACK_DIR}/edit || exit 1
 
 		### Set the APT repositories:
@@ -475,12 +475,157 @@ function ACTION_debootstrap()
 				echo "deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-backports main non-free non-free-firmware contrib"
 			) > ${UNPACK_DIR}/edit/etc/apt/sources.list
 		fi
+		
+		### Mount the now-empty ISO directory at "edit/image":
+		mkdir -p ${UNPACK_DIR}/edit/image
+		mount --bind ${UNPACK_DIR}/extract ${UNPACK_DIR}/edit/image  
 	fi
+
+	### Enter the chroot environment we just created:
 	ACTION_enter
+	
+	### We need to pack the chroot environment so that we can re-enter it again using this script:
+	if [[ $(ischroot; echo $?) -eq 1 ]]; then
+		ACTION_changes
+		mv ${UNPACK_DIR}/extract/casper/filesystem{*,}.squashfs
+		mv ${UNPACK_DIR}/extract/casper/filesystem{*,}.squashfs.gpg
+	fi
 }
-function CHROOT_dobootstrap()
+function CHROOT_debootstrap()
 {
-	true
+	### Install packages needed for Live System.  Note that certain packages may not be available on Debian!
+	_title "Installing packages needed for Live System..."
+	PKGS=($(apt list sudo ubuntu-standard casper discover laptop-detect os-prober network-manager net-tools \
+			wireless-tools locales grub-common grub-gfxpayload-lists grub-pc grub-pc-bin grub2-common \
+			efibootmgr initramfs-tools linux-firmware bash nano \
+			ubiquity ubiquity-casper ubiquity-frontend-gtk ubiquity-slideshow-ubuntu ubiquity-ubuntu-artwork \
+			grub-efi-amd64-signed shim-signed mtools binutils tasksel 2> /dev/null | grep "/" | cut -d/ -f 1))
+	apt install -y ${PKGS[@]}
+
+	### Install the kernel.  Note that package names differ between Ubuntu and Debian!
+	_title "Installing the kernel..."
+	apt install -y --no-install-recommends $([[ "${ID}" == "ubuntu" ]] && echo "linux-generic-hwe-${VERSION_ID}" || echo "linux-image-amd64")
+	
+	### Install pre-defined packages per user selection: 
+	sudo tasksel
+	
+	### Pre-configure locales.  Defaults to "en_US.UTF-8":
+	sed -i "s|# ${LOCALE:-"en_US.UTF-8"}|${LOCALE:-"en_US.UTF-8"}|g" /etc/locale.gen
+	locale-gen
+	
+	### Presets timezone.  Defaults to "America/Chicago":
+	rm /etc/localtime
+	ln -s /usr/share/zoneinfo/${TIMEZONE:-"America/Chicago"} /etc/localtime
+
+	### Configure network-manager:
+	(
+		echo "[main]"
+		echo "rc-manager=none"
+		echo "plugins=ifupdown,keyfile"
+		echo "dns=systemd-resolved"
+		echo ""
+		echo "[ifupdown]"
+		echo "managed=false"
+	) > /etc/NetworkManager/NetworkManager.conf
+	dpkg-reconfigure network-manager
+
+	### Start creating the "extract" folder for outside CHROOT:
+	mkdir -p /image/{EFI/boot,casper,install,boot/grub}
+	touch /image/ubuntu
+	
+	### Create our "grub.cfg" file:
+	(
+		echo "search --set=root --file /ubuntu"
+		echo "insmod all_video"
+		echo "set default=\"0\""
+		echo "set timeout=30"
+		echo ""
+		echo "menuentry \"Try Ubuntu FS without installing\" {"
+   		echo "	linux /casper/vmlinuz boot=casper nopersistent toram quiet splash ---"
+   		echo "	initrd /casper/initrd"
+		echo "}"
+		echo ""
+		echo "menuentry \"Install Ubuntu FS\" {"
+   		echo "	linux /casper/vmlinuz boot=casper only-ubiquity quiet splash ---"
+   		echo "	initrd /casper/initrd"
+		echo "}"
+		echo ""
+		echo "menuentry \"Check disc for defects\" {"
+   		echo "	linux /casper/vmlinuz boot=casper integrity-check quiet splash ---"
+   		echo "	initrd /casper/initrd"
+		echo "}"
+		echo ""
+		echo "grub_platform"
+		echo "if [ \"\$grub_platform\" = \"efi\" ]; then"
+		echo "	menuentry \"UEFI Firmware Settings\" {"
+   		echo "		fwsetup"
+		echo "	}"
+		echo "	menuentry \"Test memory Memtest86+ (UEFI)\" {"
+   		echo "		linux /install/memtest86+.efi"
+		echo "	}"
+		echo "else"
+		echo "	menuentry \"Test memory Memtest86+ (BIOS)\" {"
+   		echo "		linux16 /install/memtest86+.bin"
+		echo "	}"
+		echo "fi"
+	) > /image/boot/grub/grub.cfg
+
+	### Copy GRUB mod files to "/image/boot/grub/" directory:
+	mkdir -p /image/boot/grub/{fonts,i386-pc,x86_64-efi}
+	cp /lib/grub/i386-pc/*.mod /image/boot/grub/i386-pc/
+	cp /lib/grub/x86_64-efi/*.mod /image/boot/grub/x86_64-efi/
+
+	### Create file /image/README.diskdefines:
+	(
+		echo "#define DISKNAME  Ubuntu from scratch"
+		echo "#define TYPE  binary"
+		echo "#define TYPEbinary  1"
+		echo "#define ARCH  amd64"
+		echo "#define ARCHamd64  1"
+		echo "#define DISKNUM  1"
+		echo "#define DISKNUM1  1"
+		echo "#define TOTALNUM  0"
+		echo "#define TOTALNUM0  1"
+	) > /image/README.diskdefines
+
+	### Copy memtest86+ binary (BIOS and UEFI):
+	_title "Retrieving memtest86+ for both BIOS and UEFI..."
+	wget --progress=dot https://memtest.org/download/v7.00/mt86plus_7.00.binaries.zip -O /image/boot/memtest86.zip
+	unzip -p /image/install/memtest86.zip memtest64.bin > /image/boot/memtest86+.bin
+	unzip -p /image/install/memtest86.zip memtest64.efi > /image/boot/memtest86+.efi
+	rm -f /image/boot/memtest86.zip
+
+	### Create the EFI directory:
+	_title "Building EFI directories, as well as UEFI boot image..." 	
+	cp /usr/lib/shim/shimx64.efi.signed.previous /image/EFI/boot/bootx64.efi
+	cp /usr/lib/shim/mmx64.efi /image/EFI/boot/mmx64.efi
+	cp /usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed /image/EFI/boot/grubx64.efi
+
+	### Create a FAT16 UEFI boot disk image containing the EFI bootloaders:
+	source /etc/os-release
+	(
+		cd image/boot && \
+		dd if=/dev/zero of=${NAME}_efi.img bs=1K count=$(( $(du -BK -s ../EFI/boot | awk '{print $1}' | sed 's|K||') + 128 )) && \
+		mkfs.vfat -F 16 efiboot.img && \
+		LC_CTYPE=C mmd -i ${NAME}_efi.img efi efi/ubuntu efi/boot && \
+		LC_CTYPE=C mcopy -i ${NAME}_efi.img ./bootx64.efi ::efi/boot/bootx64.efi && \
+		LC_CTYPE=C mcopy -i ${NAME}_efi.img ./mmx64.efi ::efi/boot/mmx64.efi && \
+		LC_CTYPE=C mcopy -i ${NAME}_efi.img ./grubx64.efi ::efi/boot/grubx64.efi
+	)
+
+	### Create a grub BIOS image:
+	grub-mkstandalone \
+		--format=i386-pc \
+		--output=/tmp/core.img \
+		--install-modules="linux16 linux normal iso9660 biosdisk memdisk search tar ls" \
+		--modules="linux16 linux normal iso9660 biosdisk search" \
+		--locales="" \
+		--fonts=""
+	cat /usr/lib/grub/i386-pc/cdboot.img /tmp/core.img > /image/boot/grub/i386-pc/eltorito.img
+	
+	## Unmount and remove the ISO image directory:
+	umount /image
+	rmdir /image
 }
 
 #==============================================================================
@@ -509,8 +654,7 @@ function ACTION_remove()
 		_ui_error "Cannot use ${BLUE}remove${GREEN} inside chroot environment!"
 		exit 1
 	elif [[ ! -d ${UNPACK_DIR}/edit ]]; then
-		_ui_error "No unpacked filesystem!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
-		exit 1
+		return
 	fi
 	ACTION_unmount
 	_title "Removing modifications to squashfs..."
@@ -570,12 +714,16 @@ function ACTION_unpack()
 #==============================================================================
 function ACTION_changes()
 {
-	SRC=.upper
+	export SRC=.upper
+	ACTION_unmount
+	mount --bind ${UNPACK_DIR}/.upper ${UNPACK_DIR}/edit
 	FUNC_pack
 }
 function ACTION_pack()
 {
-	SRC=edit
+	export SRC=edit
+	ACTION_unmount
+	ACTION_mount || exit 1
 	FUNC_pack
 }
 function FUNC_pack()
@@ -593,8 +741,6 @@ function FUNC_pack()
 
 	# First: Prep the unpacked filesystem to be packaged:
 	cd ${UNPACK_DIR}
-	ACTION_unmount
-	ACTION_mount || exit 1
 	[ -f ${UNPACK_DIR}/edit/etc/debian_chroot ] && rm ${UNPACK_DIR}/edit/etc/debian_chroot
 
 	# Second: Call "FUNC_manifest" routine to build particular files required:
@@ -772,9 +918,8 @@ function ACTION_iso()
 		fi
 
 		# If necessary, create the hybrid MBR code file we need from the GRUB directory:
-		if [[ ! -f ${UNPACK_DIR}/${NAME}_hybrid.img ]]; then
-			dd if=/usr/lib/grub/i386-pc/boot_hybrid.img of=${UNPACK_DIR}/${NAME}-${VERSION_ID}_hybrid.img bs=1 count=432 || exit 1
-		fi
+		FILE=${UNPACK_DIR}/${NAME}-${VERSION_ID}_hybrid.img
+		[[ ! -f ${FILE} ]] && dd if=/usr/lib/grub/i386-pc/boot_hybrid.img of=${FILE} bs=1 count=432 || exit 1
 
 		# Figure out where the "eltorito.img" file is on the system:
 		IMG=/boot/grub/i386-pc/eltorito.img
