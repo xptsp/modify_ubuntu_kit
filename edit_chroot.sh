@@ -40,7 +40,7 @@ source ${INC_SRC}
 
 UI=$([[ "$1" =~ -ui$ ]] && echo "Y" || echo "N")
 ACTION=${1/-ui/}
-PARAMS="$@"
+PARAMS=($@)
 function _ui_title() { if [[ "$UI" == "N" ]]; then _title $@; else dialog --msgbox "$@" 8 60; clear; fi }
 function _ui_error() { if [[ "$UI" == "N" ]]; then _error $@; else dialog --msgbox "$@" 8 60; clear; fi }
 
@@ -205,7 +205,7 @@ function ACTION_enter()
 		elif [[ "${ACTION}" == "debootstrap" ]]; then
 			chroot ${UNPACK_DIR}/edit edit_chroot debootstrap ${DISTRO} ${ARCH}
 		else
-			chroot ${UNPACK_DIR}/edit edit_chroot ${PARAMS}
+			chroot ${UNPACK_DIR}/edit edit_chroot ${PARAMS[@]}
 		fi
 		[[ -d ${UNPACK_DIR}/extract/live ]] && DIR=live || DIR=casper
 		if [[ -f ${UNPACK_DIR}/edit/usr/local/finisher/build.txt ]]; then
@@ -425,8 +425,10 @@ function ACTION_debootstrap()
 		### Remove unpacked ISO image:
 		_title "Removing unpacked ISO image..."
 		mount | grep -q "${UNPACK_DIR}/edit/image" && umount -lqf ${UNPACK_DIR}/edit/image
+		mount | grep -q "${UNPACK_DIR}/edit" && umount -lqf ${UNPACK_DIR}/edit
 		test -d ${UNPACK_DIR}/extract && rm -rf ${UNPACK_DIR}/extract
 		mkdir ${UNPACK_DIR}/extract
+		chown -R ${SUDO_USER}:${SUDO_USER} ${UNPACK_DIR}/extract 
 
 		### Remove current chroot environment, because we are going to start over again:
 		ACTION_remove || exit 1
@@ -487,17 +489,22 @@ function ACTION_debootstrap()
 	### If we are outside chroot, repack newly created chroot, then move files around properly:
 	if [[ $(ischroot; echo $?) -eq 1 ]]; then
 		ACTION_changes
-		mv ${UNPACK_DIR}/extract/casper/filesystem{*,}.squashfs
-		mv ${UNPACK_DIR}/extract/casper/filesystem{*,}.squashfs.gpg
+		FILE=$(ls ${UNPACK_DIR}/extract/casper/filesystem-*.squashfs)
+		mv ${FILE} ${UNPACK_DIR}/extract/casper/filesystem.squashfs
+		mv ${FILE}.gpg ${UNPACK_DIR}/extract/casper/filesystem.squashfs.gpg
 	fi
 }
 function CHROOT_debootstrap()
 {
+	### Upgrade packages first:
+	_title "Upgrading packages..."
+	apt upgrade -y
+
 	### Install packages needed for Live System.  Note that certain packages may not be available on Debian!
 	_title "Installing packages needed for Live System..."
 	PKGS=($(apt list sudo ubuntu-standard casper discover laptop-detect os-prober network-manager net-tools \
 			wireless-tools locales grub-common grub-gfxpayload-lists grub-pc grub-pc-bin grub2-common \
-			efibootmgr initramfs-tools linux-firmware bash nano \
+			efibootmgr initramfs-tools linux-firmware bash nano live-boot \
 			ubiquity ubiquity-casper ubiquity-frontend-gtk ubiquity-slideshow-ubuntu ubiquity-ubuntu-artwork \
 			grub-efi-amd64-signed shim-signed mtools binutils tasksel 2> /dev/null | grep "/" | cut -d/ -f 1))
 	apt install -y ${PKGS[@]}
@@ -573,10 +580,10 @@ function CHROOT_debootstrap()
 
 	### Create file /image/README.diskdefines:
 	(
-		echo "#define DISKNAME  Ubuntu from scratch"
+		echo "#define DISKNAME  ${PRETTY_NAME}"
 		echo "#define TYPE  binary"
 		echo "#define TYPEbinary  1"
-		echo "#define ARCH  amd64"
+		echo "#define ARCH  ${PARAM[1]}"
 		echo "#define ARCHamd64  1"
 		echo "#define DISKNUM  1"
 		echo "#define DISKNUM1  1"
