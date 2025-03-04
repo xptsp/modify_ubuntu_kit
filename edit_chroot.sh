@@ -61,7 +61,7 @@ if [[ ! "${ACTION}" =~ (help|--help) && "${ACTION}" != "debootstrap" && "$(dirna
 		apt update >& /dev/null
 		for PKG in ${PKGS[@]}; do
 			if apt list ${PKG} 2> /dev/null | grep -qe ${PKG}; then
-				_title "Installing ${BLUE}${PKG} package..."
+				_title "Installing ${BLUE}${PKG}${NC} package..."
 				apt install -y $PKG
 			else
 				_title "${BLUE}${PKG}${GREEN} package not available to install..."
@@ -193,9 +193,9 @@ function ACTION_enter()
 			PKG=${PWD}/edit-chroot_$(rm edit-chroot_*_all.deb; apt download edit-chroot 2>&1 | grep -oe "[0-9]*\.[0-9]*\-[0-9]*")_all.deb
 			dpkg-deb -x ${PKG} ${UNPACK_DIR}/edit
 			FILE=${UNPACK_DIR}/edit/etc/apt/sources.list
-			if grep "ubuntu" ${FILE}; then 
+			if grep "ubuntu" ${FILE}; then
 				grep "universe" ${FILE} || sed -i "s|main restricted|main restricted universe multiverse|g" ${FILE}
-			fi  
+			fi
 		fi
 
 		### Fifth: Enter the CHROOT environment:
@@ -225,16 +225,16 @@ function ACTION_enter()
 		### Seventh: Copy the new INITRD from the unpacked filesystem:
 		cd ${UNPACK_DIR}/edit
 		INITRD=$(ls initrd.img-* 2> /dev/null | tail -1)
-		[[ -z "${INITRD}" ]] && INITRD_SRC=$(ls boot/initrd.img-* 2> /dev/null | tail -1)
-		if [[ ! -z "${INITRD_SRC}" ]]; then
+		[[ -z "${INITRD}" ]] && INITRD=$(ls boot/initrd.img-* 2> /dev/null | tail -1)
+		if [[ ! -z "${INITRD}" ]]; then
 			# Is this Ubuntu?
-			if [[ -f ${UNPACK_DIR}/extract/casper/initrd ]]; then
-				_title "Moving ${BLUE}INITRD.IMG${GREEN} from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
-				mv ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/casper/initrd
+			if [[ -d ${UNPACK_DIR}/extract/casper ]]; then
+				_title "Moving ${BLUE}INITRD.IMG${GREEN} from unpacked filesystem from ${BLUE}${INITRD}${GREEN}..."
+				mv ${UNPACK_DIR}/edit/${INITRD} ${UNPACK_DIR}/extract/casper/initrd
 			# Or is this Debian?
 			elif [[ -d ${UNPACK_DIR}/extract/live ]]; then
-				_title "Moving ${BLUE}INITRD.IMG${GREEN} from unpacked filesystem from ${BLUE}${INITRD_SRC}${GREEN}..."
-				mv ${UNPACK_DIR}/edit/${INITRD_SRC} ${UNPACK_DIR}/extract/live/initrd
+				_title "Moving ${BLUE}INITRD.IMG${GREEN} from unpacked filesystem from ${BLUE}${INITRD}${GREEN}..."
+				mv ${UNPACK_DIR}/edit/${INITRD} ${UNPACK_DIR}/extract/live/initrd
 			fi
 		fi
 
@@ -247,7 +247,7 @@ function ACTION_enter()
 		[[ -z "${VMLINUZ}" ]] && VMLINUZ=$(ls boot/vmlinuz-* 2> /dev/null | tail -1)
 		if [[ ! -z "${VMLINUZ}" ]]; then
 			# Is this Ubuntu?
-			if [[ -f ${UNPACK_DIR}/extract/casper/initrd ]]; then	# Ubuntu:
+			if [[ -d ${UNPACK_DIR}/extract/casper ]]; then
 				_title "Moving ${BLUE}VMLINUZ${GREEN} from unpacked filesystem from ${BLUE}${VMLINUZ}${GREEN}...."
 				mv ${UNPACK_DIR}/edit/${VMLINUZ} ${UNPACK_DIR}/extract/casper/vmlinuz
 			# Or is this Debian?
@@ -475,16 +475,16 @@ function ACTION_debootstrap()
 				echo "deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-backports main non-free non-free-firmware contrib"
 			) > ${UNPACK_DIR}/edit/etc/apt/sources.list
 		fi
-		
+
 		### Mount the now-empty ISO directory at "edit/image":
 		mkdir -p ${UNPACK_DIR}/edit/image
-		mount --bind ${UNPACK_DIR}/extract ${UNPACK_DIR}/edit/image  
+		mount --bind ${UNPACK_DIR}/extract ${UNPACK_DIR}/edit/image
 	fi
 
 	### Enter the chroot environment we just created:
 	ACTION_enter
-	
-	### We need to pack the chroot environment so that we can re-enter it again using this script:
+
+	### If we are outside chroot, repack newly created chroot, then move files around properly:
 	if [[ $(ischroot; echo $?) -eq 1 ]]; then
 		ACTION_changes
 		mv ${UNPACK_DIR}/extract/casper/filesystem{*,}.squashfs
@@ -505,14 +505,14 @@ function CHROOT_debootstrap()
 	### Install the kernel.  Note that package names differ between Ubuntu and Debian!
 	_title "Installing the kernel..."
 	apt install -y --no-install-recommends $([[ "${ID}" == "ubuntu" ]] && echo "linux-generic-hwe-${VERSION_ID}" || echo "linux-image-amd64")
-	
-	### Install pre-defined packages per user selection: 
+
+	### Install pre-defined packages per user selection:
 	sudo tasksel
-	
+
 	### Pre-configure locales.  Defaults to "en_US.UTF-8":
 	sed -i "s|# ${LOCALE:-"en_US.UTF-8"}|${LOCALE:-"en_US.UTF-8"}|g" /etc/locale.gen
 	locale-gen
-	
+
 	### Presets timezone.  Defaults to "America/Chicago":
 	rm /etc/localtime
 	ln -s /usr/share/zoneinfo/${TIMEZONE:-"America/Chicago"} /etc/localtime
@@ -530,22 +530,23 @@ function CHROOT_debootstrap()
 	dpkg-reconfigure network-manager
 
 	### Start creating the "extract" folder for outside CHROOT:
-	mkdir -p /image/{EFI/boot,casper,install,boot/grub}
+	mkdir -p /image/{casper,isolinux,install}
 	touch /image/ubuntu
-	
+
 	### Create our "grub.cfg" file:
+	source /etc/os-release
 	(
 		echo "search --set=root --file /ubuntu"
 		echo "insmod all_video"
 		echo "set default=\"0\""
 		echo "set timeout=30"
 		echo ""
-		echo "menuentry \"Try Ubuntu FS without installing\" {"
+		echo "menuentry \"Try ${PRETTY_NAME} without installing\" {"
    		echo "	linux /casper/vmlinuz boot=casper nopersistent toram quiet splash ---"
    		echo "	initrd /casper/initrd"
 		echo "}"
 		echo ""
-		echo "menuentry \"Install Ubuntu FS\" {"
+		echo "menuentry \"Install ${PRETTY_NAME}\" {"
    		echo "	linux /casper/vmlinuz boot=casper only-ubiquity quiet splash ---"
    		echo "	initrd /casper/initrd"
 		echo "}"
@@ -568,12 +569,7 @@ function CHROOT_debootstrap()
    		echo "		linux16 /install/memtest86+.bin"
 		echo "	}"
 		echo "fi"
-	) > /image/boot/grub/grub.cfg
-
-	### Copy GRUB mod files to "/image/boot/grub/" directory:
-	mkdir -p /image/boot/grub/{fonts,i386-pc,x86_64-efi}
-	cp /lib/grub/i386-pc/*.mod /image/boot/grub/i386-pc/
-	cp /lib/grub/x86_64-efi/*.mod /image/boot/grub/x86_64-efi/
+	) > /image/isolinux/grub.cfg
 
 	### Create file /image/README.diskdefines:
 	(
@@ -591,38 +587,42 @@ function CHROOT_debootstrap()
 	### Copy memtest86+ binary (BIOS and UEFI):
 	_title "Retrieving memtest86+ for both BIOS and UEFI..."
 	wget --progress=dot https://memtest.org/download/v7.00/mt86plus_7.00.binaries.zip -O /image/boot/memtest86.zip
-	unzip -p /image/install/memtest86.zip memtest64.bin > /image/boot/memtest86+.bin
-	unzip -p /image/install/memtest86.zip memtest64.efi > /image/boot/memtest86+.efi
+	unzip -p /image/install/memtest86.zip memtest64.bin > /image/install/memtest86+.bin
+	unzip -p /image/install/memtest86.zip memtest64.efi > /image/install/memtest86+.efi
 	rm -f /image/boot/memtest86.zip
 
 	### Create the EFI directory:
-	_title "Building EFI directories, as well as UEFI boot image..." 	
-	cp /usr/lib/shim/shimx64.efi.signed.previous /image/EFI/boot/bootx64.efi
-	cp /usr/lib/shim/mmx64.efi /image/EFI/boot/mmx64.efi
-	cp /usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed /image/EFI/boot/grubx64.efi
+	_title "Building EFI directories, as well as UEFI boot image..."
+	cd /image
+	cp /usr/lib/shim/shimx64.efi.signed.previous /image/isolinux/bootx64.efi
+	cp /usr/lib/shim/mmx64.efi /image/isolinux/mmx64.efi
+	cp /usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed /image/isolinux/grubx64.efi
 
 	### Create a FAT16 UEFI boot disk image containing the EFI bootloaders:
-	source /etc/os-release
 	(
-		cd image/boot && \
-		dd if=/dev/zero of=${NAME}_efi.img bs=1K count=$(( $(du -BK -s ../EFI/boot | awk '{print $1}' | sed 's|K||') + 128 )) && \
-		mkfs.vfat -F 16 efiboot.img && \
-		LC_CTYPE=C mmd -i ${NAME}_efi.img efi efi/ubuntu efi/boot && \
-		LC_CTYPE=C mcopy -i ${NAME}_efi.img ./bootx64.efi ::efi/boot/bootx64.efi && \
-		LC_CTYPE=C mcopy -i ${NAME}_efi.img ./mmx64.efi ::efi/boot/mmx64.efi && \
-		LC_CTYPE=C mcopy -i ${NAME}_efi.img ./grubx64.efi ::efi/boot/grubx64.efi
+		source /etc/os-release
+		FILE=${NAME,,}-${VERSION_ID}_efi.img
+		cd isolinux && \
+		dd if=/dev/zero of=${FILE} bs=1K count=$(( $(du -BK -s ../EFI/boot | awk '{print $1}' | sed 's|K||') + 128 )) && \
+		mkfs.vfat -F 16 ${FILE} && \
+		LC_CTYPE=C mmd -i ${FILE} efi efi/ubuntu efi/boot && \
+		LC_CTYPE=C mcopy -i ${FILE} ./bootx64.efi ::efi/boot/bootx64.efi && \
+		LC_CTYPE=C mcopy -i ${FILE} ./mmx64.efi ::efi/boot/mmx64.efi && \
+		LC_CTYPE=C mcopy -i ${FILE} ./grubx64.efi ::efi/boot/grubx64.efi && \
+		LC_CTYPE=C mcopy -i ${FILE} ./grub.cfg ::efi/ubuntu/grub.cfg
 	)
 
 	### Create a grub BIOS image:
 	grub-mkstandalone \
 		--format=i386-pc \
-		--output=/tmp/core.img \
+		--output=isolinux/core.img \
 		--install-modules="linux16 linux normal iso9660 biosdisk memdisk search tar ls" \
 		--modules="linux16 linux normal iso9660 biosdisk search" \
 		--locales="" \
-		--fonts=""
-	cat /usr/lib/grub/i386-pc/cdboot.img /tmp/core.img > /image/boot/grub/i386-pc/eltorito.img
-	
+		--fonts="" \
+		"boot/grub/grub.cfg=isolinux/grub.cfg"
+	cat /usr/lib/grub/i386-pc/cdboot.img isolinux/core.img > /image/boot/grub/i386-pc/eltorito.img
+
 	## Unmount and remove the ISO image directory:
 	umount /image
 	rmdir /image
@@ -716,7 +716,8 @@ function ACTION_changes()
 {
 	export SRC=.upper
 	ACTION_unmount
-	mount --bind ${UNPACK_DIR}/.upper ${UNPACK_DIR}/edit
+	mkdir -p ${UNPACK_DIR}/edit
+	mount --bind ${UNPACK_DIR}/.upper ${UNPACK_DIR}/edit || exit 1
 	FUNC_pack
 }
 function ACTION_pack()
@@ -897,7 +898,8 @@ function ACTION_iso()
 	else
 		# >>>> NEW WAY TO CREATE ISO: Valid for Jammy and above <<<<<
 		NAME=${NAME,,}
-		if [[ ! -f ${UNPACK_DIR}/${NAME}_efi.img ]]; then
+		FILE=${UNPACK_DIR}/${NAME}-${VERSION_ID}_efi.img
+		if [[ ! -f ${FILE} ]]; then
 			# Copy the files we need for the EFI partition to a temporary directory:
 			EFI=/tmp/efi_tmp
 			mkdir -p ${EFI}
@@ -907,7 +909,6 @@ function ACTION_iso()
 
 			# Actually create our EFI partition:
 			DIR=${UNPACK_DIR}/mnt
-			FILE=${UNPACK_DIR}/${NAME}-${VERSION_ID}_efi.img
 			truncate -s $(( $(du -BK -s ${EFI} | awk '{print $1}' | sed 's|K||') + 128 ))K ${FILE}
 			mkfs.vfat ${FILE}
 			mount ${FILE} ${DIR}
@@ -919,7 +920,7 @@ function ACTION_iso()
 
 		# If necessary, create the hybrid MBR code file we need from the GRUB directory:
 		FILE=${UNPACK_DIR}/${NAME}-${VERSION_ID}_hybrid.img
-		[[ ! -f ${FILE} ]] && dd if=/usr/lib/grub/i386-pc/boot_hybrid.img of=${FILE} bs=1 count=432 || exit 1
+		if [[ ! -f ${FILE} ]]; then dd if=/usr/lib/grub/i386-pc/boot_hybrid.img of=${FILE} bs=1 count=432 || exit 1; fi
 
 		# Figure out where the "eltorito.img" file is on the system:
 		IMG=/boot/grub/i386-pc/eltorito.img
