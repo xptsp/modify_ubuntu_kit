@@ -58,7 +58,7 @@ if [[ ! "${ACTION}" =~ (help|--help) && "${ACTION}" != "debootstrap" && "$(dirna
 
 	# Install any packages that we need for the script to run:
 	if [[ ! -z "${PKGS[@]}" ]]; then
-		apt update >& /dev/null
+		apt update &> /dev/null
 		for PKG in ${PKGS[@]}; do
 			if apt list ${PKG} 2> /dev/null | grep -qe ${PKG}; then
 				_title "Installing ${BLUE}${PKG}${NC} package..."
@@ -98,7 +98,10 @@ function ACTION_update()
 function ACTION_mount()
 {
 	mount | grep -q "${UNPACK_DIR}/edit " && umount ${UNPACK_DIR}/edit
-	mount | grep "${UNPACK}/.lower" | awk '{print $3}' | while read DIR; do umount -lfq ${DIR}; rmdir ${DIR}; done
+	mount | grep "${UNPACK}/.lower" | awk '{print $3" "$4}' | while read DIR1 DIR2; do 
+		if [[ "$DIR1" =~ ^/ ]]; then umount -lfq ${DIR1}; rmdir ${DIR1}; fi
+		if [[ "$DIR2" =~ ^/ ]]; then umount -lfq ${DIR2}; rmdir ${DIR2}; fi
+	done
 	mkdir -p ${UNPACK_DIR}/{.lower,.upper,.work,edit}
 	test -d ${UNPACK_DIR}/extract/live && DIR=live || DIR=casper
 	if [[ -f ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs ]]; then
@@ -278,15 +281,11 @@ function ACTION_enter()
 		### Second: Build debootstrap environment to start with:
 		#[[ "${ACTION}" == "debootstrap" ]] && ACTION=enter		## NOTE: Uncomment this line to skip installing all the packages...
 		_title "Updating APT repositories..."
-		apt update
+		apt update &> /dev/null
 		if [[ "${ACTION}" == "debootstrap" ]]; then
 			### Install systemd packages:
 			_title "Installing systemd packages..."
 			apt install -y libterm-readline-gnu-perl systemd-sysv
-		fi
-		if [[ -f /edit-chroot_*_all.deb ]]; then
-			apt install -y /edit-chroot_*_all.deb
-			rm /edit-chroot_*_all.deb
 		fi
 
 		### Third: Configure machine-id and divert:
@@ -298,7 +297,7 @@ function ACTION_enter()
 		### Fourth: Continue building debootstrap environment:
 		### Source Instructions: https://mvallim.github.io/live-custom-ubuntu-from-scratch/
 		source /etc/os-release
-		[[ "${ACTION}" == "debootstrap" ]] && CHROOT_debootstrap
+		[[ "${ACTION}" == "debootstrap" ]] && CHROOT_debootstrap_stage_2
 
 		### Fifth: Put snap version firefox on hold if it is installed!
 		### <<--- FYI --->> Snap packages CANNOT be updated inside the chroot environment!
@@ -332,6 +331,7 @@ function ACTION_enter()
 		fi
 
 		### Seventh: Finish the debootstrap procedure:
+		[[ "${ACTION}" == "debootstrap" ]] && CHROOT_debootstrap_stage_3
 
 		### Eighth: If user 999 exists, change that user ID so that LiveCD works:
 		uid_name=$(grep ":999:" /etc/passwd | cut -d":" -f 1)
@@ -371,7 +371,7 @@ function ACTION_enter()
 
 		### Twelveth: Update packages:
 		_title "Updating repository lists...."
-		apt update >& /dev/null
+		apt update &> /dev/null
 		_title "Upgrading any packages requiring upgrading..."
 		apt upgrade -y
 
@@ -450,17 +450,17 @@ function ACTION_debootstrap()
 		echo "${NAME}-fs-live" > ${UNPACK_DIR}/edit/etc/hostname
 		if [[ "${ID}" == "ubuntu" ]]; then
 			(
-				echo "deb http://ubuntu.securedservers.com/ ${VERSION_CODENAME} main restricted universe multiverse"
-				echo "deb-src http://ubuntu.securedservers.com/ ${VERSION_CODENAME} main restricted universe multiverse"
+				echo "deb http://archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME} main restricted universe multiverse"
+				echo "deb-src http://archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME} main restricted universe multiverse"
 				echo ""
-				echo "deb http://ubuntu.securedservers.com/ ${VERSION_CODENAME}-security main restricted universe multiverse"
-				echo "deb-src http://ubuntu.securedservers.com/ ${VERSION_CODENAME}-security main restricted universe multiverse"
+				echo "deb http://archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-security main restricted universe multiverse"
+				echo "deb-src http://archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-security main restricted universe multiverse"
 				echo ""
-				echo "deb http://ubuntu.securedservers.com/ ${VERSION_CODENAME}-updates main restricted universe multiverse"
-				echo "deb-src http://ubuntu.securedservers.com/ ${VERSION_CODENAME}-updates main restricted universe multiverse"
+				echo "deb http://archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-updates main restricted universe multiverse"
+				echo "deb-src http://archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-updates main restricted universe multiverse"
 				echo ""
-				echo "deb http://ubuntu.securedservers.com/ ${VERSION_CODENAME}-backports main restricted universe multiverse"
-				echo "deb-src http://ubuntu.securedservers.com/ ${VERSION_CODENAME}-backports main restricted universe multiverse"
+				echo "deb http://archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-backports main restricted universe multiverse"
+				echo "deb-src http://archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME}-backports main restricted universe multiverse"
 			) > ${UNPACK_DIR}/edit/etc/apt/sources.list
 		else
 			(
@@ -478,9 +478,12 @@ function ACTION_debootstrap()
 			) > ${UNPACK_DIR}/edit/etc/apt/sources.list
 		fi
 
-		### Mount the now-empty ISO directory at "edit/image":
+		### Mount the now-empty ISO directory at "edit/image" and create a few directories:
 		mkdir -p ${UNPACK_DIR}/edit/image
 		mount --bind ${UNPACK_DIR}/extract ${UNPACK_DIR}/edit/image
+		mkdir -p /image/{casper,isolinux,install}
+		touch /image/ubuntu
+		chown -R ${SUDO_USER}:${SUDO_USER} ${UNPACK_DIR}/edit/image
 	fi
 
 	### Enter the chroot environment we just created:
@@ -494,35 +497,32 @@ function ACTION_debootstrap()
 		mv ${FILE}.gpg ${UNPACK_DIR}/extract/casper/filesystem.squashfs.gpg
 	fi
 }
-function CHROOT_debootstrap()
+function CHROOT_debootstrap_stage_2()
 {
+	### Officially install the "edit-chroot" package if found in root:
+	if [[ -f /edit-chroot_*_all.deb ]]; then
+		apt install -y /edit-chroot_*_all.deb
+		rm /edit-chroot_*_all.deb
+	fi
+
 	### Upgrade packages first:
 	_title "Upgrading packages..."
 	apt upgrade -y
 
 	### Install packages needed for Live System.  Note that certain packages may not be available on Debian!
 	_title "Installing packages needed for Live System..."
-	PKGS=($(apt list sudo ubuntu-standard casper discover laptop-detect os-prober network-manager net-tools \
-			wireless-tools locales grub-common grub-gfxpayload-lists grub-pc grub-pc-bin grub2-common \
-			efibootmgr initramfs-tools linux-firmware bash nano live-boot \
-			ubiquity ubiquity-casper ubiquity-frontend-gtk ubiquity-slideshow-ubuntu ubiquity-ubuntu-artwork \
-			grub-efi-amd64-signed shim-signed mtools binutils tasksel 2> /dev/null | grep "/" | cut -d/ -f 1))
-	apt install -y ${PKGS[@]}
+	apt install -y sudo ubuntu-standard casper discover laptop-detect os-prober network-manager net-tools wireless-tools tasksel \
+		locales grub-common grub-gfxpayload-lists grub-pc grub-pc-bin grub2-common grub-efi-amd64-signed shim-signed mtools binutils
 
 	### Install the kernel.  Note that package names differ between Ubuntu and Debian!
 	_title "Installing the kernel..."
 	apt install -y --no-install-recommends $([[ "${ID}" == "ubuntu" ]] && echo "linux-generic-hwe-${VERSION_ID}" || echo "linux-image-amd64")
 
-	### Install pre-defined packages per user selection:
+	### Install packages regarding Graphical installer:
+	apt-get install -y ubiquity ubiquity-casper ubiquity-frontend-gtk ubiquity-slideshow-ubuntu ubiquity-ubuntu-artwork
+   
+   	### Install pre-defined packages per user selection:
 	sudo tasksel
-
-	### Pre-configure locales.  Defaults to "en_US.UTF-8":
-	sed -i "s|# ${LOCALE:-"en_US.UTF-8"}|${LOCALE:-"en_US.UTF-8"}|g" /etc/locale.gen
-	locale-gen
-
-	### Presets timezone.  Defaults to "America/Chicago":
-	rm /etc/localtime
-	ln -s /usr/share/zoneinfo/${TIMEZONE:-"America/Chicago"} /etc/localtime
 
 	### Configure network-manager:
 	(
@@ -535,10 +535,15 @@ function CHROOT_debootstrap()
 		echo "managed=false"
 	) > /etc/NetworkManager/NetworkManager.conf
 	dpkg-reconfigure network-manager
-
-	### Start creating the "extract" folder for outside CHROOT:
-	mkdir -p /image/{casper,isolinux,install}
-	touch /image/ubuntu
+}
+function CHROOT_debootstrap_stage_3()
+{
+	### Copy memtest86+ binary (BIOS and UEFI):
+	_title "Retrieving memtest86+ for both BIOS and UEFI..."
+	wget --progress=dot https://memtest.org/download/v7.00/mt86plus_7.00.binaries.zip -O /image/install/memtest86.zip
+	unzip -p /image/install/memtest86.zip memtest64.bin > /image/install/memtest86+.bin
+	unzip -p /image/install/memtest86.zip memtest64.efi > /image/install/memtest86+.efi
+	rm -f /image/install/memtest86.zip
 
 	### Create our "grub.cfg" file:
 	source /etc/os-release
@@ -549,7 +554,7 @@ function CHROOT_debootstrap()
 		echo "set timeout=30"
 		echo ""
 		echo "menuentry \"Try ${PRETTY_NAME} without installing\" {"
-   		echo "	linux /casper/vmlinuz boot=casper nopersistent toram quiet splash ---"
+   		echo "	linux /casper/vmlinuz boot=casper nopersistent quiet splash ---"
    		echo "	initrd /casper/initrd"
 		echo "}"
 		echo ""
@@ -591,27 +596,20 @@ function CHROOT_debootstrap()
 		echo "#define TOTALNUM0  1"
 	) > /image/README.diskdefines
 
-	### Copy memtest86+ binary (BIOS and UEFI):
-	_title "Retrieving memtest86+ for both BIOS and UEFI..."
-	wget --progress=dot https://memtest.org/download/v7.00/mt86plus_7.00.binaries.zip -O /image/boot/memtest86.zip
-	unzip -p /image/install/memtest86.zip memtest64.bin > /image/install/memtest86+.bin
-	unzip -p /image/install/memtest86.zip memtest64.efi > /image/install/memtest86+.efi
-	rm -f /image/boot/memtest86.zip
-
 	### Create the EFI directory:
 	_title "Building EFI directories, as well as UEFI boot image..."
 	cd /image
-	cp /usr/lib/shim/shimx64.efi.signed.previous /image/isolinux/bootx64.efi
-	cp /usr/lib/shim/mmx64.efi /image/isolinux/mmx64.efi
-	cp /usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed /image/isolinux/grubx64.efi
+	cp /usr/lib/shim/shimx64.efi.signed isolinux/bootx64.efi
+	cp /usr/lib/shim/mmx64.efi isolinux/mmx64.efi
+	cp /usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed isolinux/grubx64.efi
 
 	### Create a FAT16 UEFI boot disk image containing the EFI bootloaders:
 	(
 		source /etc/os-release
-		FILE=${NAME,,}-${VERSION_ID}_efi.img
+		FILE=efiboot.img
 		cd isolinux && \
-		dd if=/dev/zero of=${FILE} bs=1K count=$(( $(du -BK -s ../EFI/boot | awk '{print $1}' | sed 's|K||') + 128 )) && \
-		mkfs.vfat -F 16 ${FILE} && \
+		dd if=/dev/zero of=${FILE} bs=1K count=$(( $(du -BK -s ../isolinux | awk '{print $1}' | sed 's|K||') + 128 )) && \
+		mkfs.vfat ${FILE} && \
 		LC_CTYPE=C mmd -i ${FILE} efi efi/ubuntu efi/boot && \
 		LC_CTYPE=C mcopy -i ${FILE} ./bootx64.efi ::efi/boot/bootx64.efi && \
 		LC_CTYPE=C mcopy -i ${FILE} ./mmx64.efi ::efi/boot/mmx64.efi && \
@@ -628,9 +626,10 @@ function CHROOT_debootstrap()
 		--locales="" \
 		--fonts="" \
 		"boot/grub/grub.cfg=isolinux/grub.cfg"
-	cat /usr/lib/grub/i386-pc/cdboot.img isolinux/core.img > /image/boot/grub/i386-pc/eltorito.img
+	cat /usr/lib/grub/i386-pc/cdboot.img isolinux/core.img > isolinux/bios.img
 
 	## Unmount and remove the ISO image directory:
+	cd /
 	umount /image
 	rmdir /image
 }
@@ -647,7 +646,10 @@ function ACTION_unmount()
 	_title "Unmounting filesystem mount points...."
 	umount -qlf ${UNPACK_DIR}/edit/tmp/host >& /dev/null
 	mount | grep "${UNPACK_DIR}/edit" | awk '{print $3}' | tac | while read DIR; do umount -qlf ${DIR}; done
-	mount | grep "${UNPACK_DIR}/.lower" | awk '{print $3}' | while read DIR; do umount -qlf ${DIR} 2> /dev/null; test -d ${DIR} && rmdir ${DIR}; done
+	mount | grep "${UNPACK}/.lower" | awk '{print $3" "$4}' | while read DIR1 DIR2; do 
+		if [[ "$DIR1" =~ ^/ ]]; then umount -lfq ${DIR1}; rmdir ${DIR1}; fi
+		if [[ "$DIR2" =~ ^/ ]]; then umount -lfq ${DIR2}; rmdir ${DIR2}; fi
+	done
 	ACTION_docker_umount -q
 	_ui_title "All filesystem mount points should be unmounted now."
 }
@@ -932,7 +934,7 @@ function ACTION_iso()
 		# Figure out where the "eltorito.img" file is on the system:
 		IMG=/boot/grub/i386-pc/eltorito.img
 		if [[ ! -f ${UNPACK_DIR}/extract/${IMG} ]]; then
-			IMG=/boot/grub/efi.img
+			IMG=/isolinux/bios.img
 			if [[ ! -f ${UNPACK_DIR}/extract/${IMG} ]]; then _ui_error "No Eltorito image file found!  Aborting!"; exit 1; fi
 		fi
 
