@@ -98,7 +98,7 @@ function ACTION_update()
 function ACTION_mount()
 {
 	mount | grep -q "${UNPACK_DIR}/edit " && umount ${UNPACK_DIR}/edit
-	mount | grep "${UNPACK}/.lower" | awk '{print $3" "$4}' | while read DIR1 DIR2; do 
+	mount | grep "${UNPACK}/.lower" | awk '{print $3" "$4}' | while read DIR1 DIR2; do
 		if [[ "$DIR1" =~ ^/ ]]; then umount -lfq ${DIR1}; rmdir ${DIR1}; fi
 		if [[ "$DIR2" =~ ^/ ]]; then umount -lfq ${DIR2}; rmdir ${DIR2}; fi
 	done
@@ -428,7 +428,7 @@ function ACTION_debootstrap()
 		mount | grep -q "${UNPACK_DIR}/edit" && umount -lqf ${UNPACK_DIR}/edit
 		test -d ${UNPACK_DIR}/extract && rm -rf ${UNPACK_DIR}/extract
 		mkdir ${UNPACK_DIR}/extract
-		chown -R ${SUDO_USER}:${SUDO_USER} ${UNPACK_DIR}/extract 
+		chown -R ${SUDO_USER}:${SUDO_USER} ${UNPACK_DIR}/extract
 
 		### Remove current chroot environment, because we are going to start over again:
 		ACTION_remove || exit 1
@@ -486,45 +486,42 @@ function ACTION_debootstrap()
 		chown -R ${SUDO_USER}:${SUDO_USER} ${UNPACK_DIR}/edit/image
 	fi
 
-	### Enter the chroot environment we just created:
+	# Enter the chroot environment we just created:
 	ACTION_enter
 
-	### If we are outside chroot, repack newly created chroot, then move files around properly:
-	if [[ $(ischroot; echo $?) -eq 1 ]]; then
-		ACTION_changes
-		FILE=$(ls ${UNPACK_DIR}/extract/casper/filesystem-*.squashfs)
-		mv ${FILE} ${UNPACK_DIR}/extract/casper/filesystem.squashfs
-		mv ${FILE}.gpg ${UNPACK_DIR}/extract/casper/filesystem.squashfs.gpg
-	fi
+	# If we are outside chroot, pack newly created chroot:
+	[[ $(ischroot; echo $?) -eq 1 ]] && ACTION_changes
 }
 function CHROOT_debootstrap_stage_2()
 {
-	### Officially install the "edit-chroot" package if found in root:
+	# Officially install the "edit-chroot" package if found in root:
 	if [[ -f /edit-chroot_*_all.deb ]]; then
 		apt install -y /edit-chroot_*_all.deb
 		rm /edit-chroot_*_all.deb
 	fi
 
-	### Upgrade packages first:
+	# Upgrade packages first:
 	_title "Upgrading packages..."
 	apt upgrade -y
 
-	### Install packages needed for Live System.  Note that certain packages may not be available on Debian!
+	# Install packages needed for Live System.  Note that certain packages may not be available on Debian!
 	_title "Installing packages needed for Live System..."
 	apt install -y sudo ubuntu-standard casper discover laptop-detect os-prober network-manager net-tools wireless-tools tasksel \
 		locales grub-common grub-gfxpayload-lists grub-pc grub-pc-bin grub2-common grub-efi-amd64-signed shim-signed mtools binutils
 
-	### Install the kernel.  Note that package names differ between Ubuntu and Debian!
+	# Install the kernel.  Note that package names differ between Ubuntu and Debian!
 	_title "Installing the kernel..."
 	apt install -y --no-install-recommends $([[ "${ID}" == "ubuntu" ]] && echo "linux-generic-hwe-${VERSION_ID}" || echo "linux-image-amd64")
 
-	### Install packages regarding Graphical installer:
-	apt-get install -y ubiquity ubiquity-casper ubiquity-frontend-gtk ubiquity-slideshow-ubuntu ubiquity-ubuntu-artwork
-   
+	# Install packages regarding Graphical installer:
+	_title "Installing packages needed for Graphical Installer..."
+	apt install -y ubiquity ubiquity-casper ubiquity-frontend-gtk ubiquity-slideshow-ubuntu ubiquity-ubuntu-artwork \
+		$([[ "${ID}" == "ubuntu" ]] && echo "ubuntu-gnome-wallpapers")
+
    	### Install pre-defined packages per user selection:
 	sudo tasksel
 
-	### Configure network-manager:
+	# Configure network-manager:
 	(
 		echo "[main]"
 		echo "rc-manager=none"
@@ -538,14 +535,14 @@ function CHROOT_debootstrap_stage_2()
 }
 function CHROOT_debootstrap_stage_3()
 {
-	### Copy memtest86+ binary (BIOS and UEFI):
+	# Copy memtest86+ binary (BIOS and UEFI):
 	_title "Retrieving memtest86+ for both BIOS and UEFI..."
 	wget --progress=dot https://memtest.org/download/v7.00/mt86plus_7.00.binaries.zip -O /image/install/memtest86.zip
 	unzip -p /image/install/memtest86.zip memtest64.bin > /image/install/memtest86+.bin
 	unzip -p /image/install/memtest86.zip memtest64.efi > /image/install/memtest86+.efi
 	rm -f /image/install/memtest86.zip
 
-	### Create our "grub.cfg" file:
+	# Create our "grub.cfg" file:
 	source /etc/os-release
 	(
 		echo "search --set=root --file /ubuntu"
@@ -583,7 +580,7 @@ function CHROOT_debootstrap_stage_3()
 		echo "fi"
 	) > /image/isolinux/grub.cfg
 
-	### Create file /image/README.diskdefines:
+	# Create file /image/README.diskdefines:
 	(
 		echo "#define DISKNAME  ${PRETTY_NAME}"
 		echo "#define TYPE  binary"
@@ -596,14 +593,14 @@ function CHROOT_debootstrap_stage_3()
 		echo "#define TOTALNUM0  1"
 	) > /image/README.diskdefines
 
-	### Create the EFI directory:
+	# Create the EFI directory:
 	_title "Building EFI directories, as well as UEFI boot image..."
 	cd /image
 	cp /usr/lib/shim/shimx64.efi.signed isolinux/bootx64.efi
 	cp /usr/lib/shim/mmx64.efi isolinux/mmx64.efi
 	cp /usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed isolinux/grubx64.efi
 
-	### Create a FAT16 UEFI boot disk image containing the EFI bootloaders:
+	# Create a FAT16 UEFI boot disk image containing the EFI bootloaders:
 	(
 		source /etc/os-release
 		FILE=efiboot.img
@@ -617,7 +614,7 @@ function CHROOT_debootstrap_stage_3()
 		LC_CTYPE=C mcopy -i ${FILE} ./grub.cfg ::efi/ubuntu/grub.cfg
 	)
 
-	### Create a grub BIOS image:
+	# Create a grub BIOS image:
 	grub-mkstandalone \
 		--format=i386-pc \
 		--output=isolinux/core.img \
@@ -633,6 +630,10 @@ function CHROOT_debootstrap_stage_3()
 	umount /image
 	rmdir /image
 }
+function ACTION_debug()
+{
+	CHROOT_debootstrap_stage_3
+}
 
 #==============================================================================
 # Function that safely unmount the filesystem mount points:
@@ -646,7 +647,7 @@ function ACTION_unmount()
 	_title "Unmounting filesystem mount points...."
 	umount -qlf ${UNPACK_DIR}/edit/tmp/host >& /dev/null
 	mount | grep "${UNPACK_DIR}/edit" | awk '{print $3}' | tac | while read DIR; do umount -qlf ${DIR}; done
-	mount | grep "${UNPACK}/.lower" | awk '{print $3" "$4}' | while read DIR1 DIR2; do 
+	mount | grep "${UNPACK}/.lower" | awk '{print $3" "$4}' | while read DIR1 DIR2; do
 		if [[ "$DIR1" =~ ^/ ]]; then umount -lfq ${DIR1}; rmdir ${DIR1}; fi
 		if [[ "$DIR2" =~ ^/ ]]; then umount -lfq ${DIR2}; rmdir ${DIR2}; fi
 	done
@@ -760,13 +761,14 @@ function FUNC_pack()
 	XZ=$([[ ${FLAG_XZ:-"0"} == "1" ]] && echo "-comp xz -Xdict-size 100%")
 
 	# Fourth: Pack the filesystem into squashfs if required:
-	FS=filesystem_$(date +"%Y%m%d")
-	FS=${FS}-$(( $(ls -r extract/${DIR}/${FS}-* 2> /dev/null | grep -m 1 -oe "$FS-[0-9]" | cut -d- -f 2 | cut -d_ -f 1) + 1 ))
-	eval `grep -m 1 -e "^MUK_COMMENT=" edit/etc/os-release && sed -i "/^MUK_COMMENT=/d" edit/etc/os-release`
-	[[ ! -z "${2}" ]] && MUK_COMMENT=$2
-	[[ ! -z "${MUK_COMMENT}" ]] && FS=${FS}_${MUK_COMMENT}
 	test -d extract/live && DIR=live || DIR=casper
-
+	FS=filesystem
+	if [[ "${ACTION}" != "debootstrap" ]]; then
+		FS+=_$(date +"%Y%m%d")
+		FS+=-$(( $(ls -r extract/${DIR}/${FS}-* 2> /dev/null | grep -m 1 -oe "$FS-[0-9]" | cut -d- -f 2 | cut -d_ -f 1) + 1 ))
+		[[ ! -z "${2}" ]] && MUK_COMMENT=$2
+		[[ ! -z "${MUK_COMMENT}" ]] && FS=${FS}_${MUK_COMMENT}
+	fi
 	FS=${FS}.squashfs
 	_title "Building ${BLUE}${FS}${GREEN}...."
 	mksquashfs ${SRC} extract/${DIR}/${FS} -b 1048576 ${XZ}
@@ -790,13 +792,12 @@ function FUNC_pack()
 	if [[ ! -z "${KEY}" ]]; then
 		_title "Signing ${BLUE}${FS}${GREEN}...."
 		sudo -u ${SUDO_USER} gpg -v -u "${KEY}" -o extract/${DIR}/${FS}.gpg -b extract/${DIR}/${FS}
-		chown root:root extract/${DIR}/${FS}.gpg
 	fi
 
-	# Sixth: remove the overlay filesystem and upper layer of overlay, then create the "md5sum.txt" file:
+	# Sixth: Remove the overlay filesystem and upper layer of overlay:
 	_title "Removing the overlay filesystem and upper layer of overlay..."
 	ACTION_remove
-	if [[ "${ACTION}" == "pack" || "${ACTION}" == "pack-xz" ]]; then
+	if [[ "${ACTION}" =~ ^pack ]]; then
 		mv ${UNPACK_DIR}/extract/${DIR}/${FS} ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs
 		test -f ${UNPACK_DIR}/extract/${DIR}/${FS}.gpg && mv ${UNPACK_DIR}/extract/${DIR}/${FS}.gpg ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs.gpg
 		rm ${UNPACK_DIR}/extract/${DIR}/filesystem_*.squashfs* 2> /dev/null
