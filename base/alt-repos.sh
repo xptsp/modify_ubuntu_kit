@@ -16,7 +16,6 @@ fi
 #==============================================================================
 _title "Updating the ${RED}\"/etc/apt/sources.list\"${BLUE} file"
 source /etc/os-release
-_ischroot && echo "${NAME}-fs-live" > /etc/hostname
 if [[ "${ID}" == "ubuntu" ]]; then
 	(
 		echo "deb http://us.archive.ubuntu.com/ubuntu/ ${VERSION_CODENAME} main restricted universe multiverse"
@@ -46,6 +45,7 @@ else
 		echo "deb-src http://ftp.de.debian.org/debian/ ${VERSION_CODENAME}-backports main non-free non-free-firmware contrib"
 	) > /etc/apt/sources.list
 fi
+apt update
 
 # Second: Creating finisher task to replace generated repo list with our list:
 #==============================================================================

@@ -97,8 +97,8 @@ function ACTION_update()
 #==============================================================================
 function ACTION_mount()
 {
-	mount | grep -q "${UNPACK_DIR}/edit " && umount ${UNPACK_DIR}/edit
-	mount | grep "${UNPACK}/.lower" | awk '{print $3" "$4}' | while read DIR1 DIR2; do
+	mount | grep "${UNPACK_DIR}/edit" | awk '{print $3}' | tac | while read DIR; do umount -qlf ${DIR}; done
+	mount | grep "${UNPACK_DIR}/.lower" | awk '{print $3" "$4}' | while read DIR1 DIR2; do
 		if [[ "$DIR1" =~ ^/ ]]; then umount -lfq ${DIR1}; rmdir ${DIR1}; fi
 		if [[ "$DIR2" =~ ^/ ]]; then umount -lfq ${DIR2}; rmdir ${DIR2}; fi
 	done
@@ -106,6 +106,8 @@ function ACTION_mount()
 	test -d ${UNPACK_DIR}/extract/live && DIR=live || DIR=casper
 	if [[ -f ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs ]]; then
 		mount ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs ${UNPACK_DIR}/.lower || exit 1
+	elif [[ -f ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs.old ]]; then
+		mount ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs.old ${UNPACK_DIR}/.lower || exit 1
 	else
 		_ui_error "No \"filesystem.squashfs\" found!  Use ${BLUE}edit_chroot unpack${GREEN} first!"
 		exit 1
@@ -183,6 +185,7 @@ function ACTION_enter()
 		mount --bind /dev/ ${UNPACK_DIR}/edit/dev
 		mount -t tmpfs tmpfs ${UNPACK_DIR}/edit/tmp
 		mount -t tmpfs tmpfs ${UNPACK_DIR}/edit/var/cache/apt
+		mount -t tmpfs tmpfs ${UNPACK_DIR}/edit/var/lib/apt/lists
 
 		### Fourth: Copy the "edit_chroot" binary into the chroot environment:
 		if [[ "$(dirname $0)" == "/usr/local/bin" ]]; then
@@ -262,6 +265,7 @@ function ACTION_enter()
 
 		### Tenth: Remove mounts for CHROOT environment:
 		cd ${UNPACK_DIR}
+		ACTION_unmount
 		_title "Exited CHROOT environment"
 	else
 		#======================================================================
@@ -647,7 +651,7 @@ function ACTION_unmount()
 	_title "Unmounting filesystem mount points...."
 	umount -qlf ${UNPACK_DIR}/edit/tmp/host >& /dev/null
 	mount | grep "${UNPACK_DIR}/edit" | awk '{print $3}' | tac | while read DIR; do umount -qlf ${DIR}; done
-	mount | grep "${UNPACK}/.lower" | awk '{print $3" "$4}' | while read DIR1 DIR2; do
+	mount | grep "${UNPACK_DIR}/.lower" | awk '{print $3" "$4}' | while read DIR1 DIR2; do
 		if [[ "$DIR1" =~ ^/ ]]; then umount -lfq ${DIR1}; rmdir ${DIR1}; fi
 		if [[ "$DIR2" =~ ^/ ]]; then umount -lfq ${DIR2}; rmdir ${DIR2}; fi
 	done
@@ -710,6 +714,10 @@ function ACTION_unpack()
 	_title "Copying contents of ISO..."
 	mkdir -p extract
 	rsync -a mnt/ extract
+	chown -R ${SUDO_USER}:${SUDO_USER} extract{,/*}
+	find extract -type d -exec chmod 0755 {} \;
+	find extract -type f -exec chmod 0644 {} \;
+
 
 	# Third: Unmount the DVD/ISO if necessary:
 	_title "Unmounting DVD/ISO from mount point...."
@@ -732,6 +740,8 @@ function ACTION_changes()
 }
 function ACTION_pack()
 {
+	test -d ${UNPACK_DIR}/extract/live && DIR=live || DIR=casper
+	mv ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs{,.old}
 	export SRC=edit
 	ACTION_unmount
 	ACTION_mount || exit 1
@@ -763,7 +773,7 @@ function FUNC_pack()
 	# Fourth: Pack the filesystem into squashfs if required:
 	test -d extract/live && DIR=live || DIR=casper
 	FS=filesystem
-	if [[ "${ACTION}" != "debootstrap" ]]; then
+	if [[ ! "${ACTION}" =~ (debootstrap|pack|rebuild) ]]; then
 		FS+=_$(date +"%Y%m%d")
 		FS+=-$(( $(ls -r extract/${DIR}/${FS}-* 2> /dev/null | grep -m 1 -oe "$FS-[0-9]" | cut -d- -f 2 | cut -d_ -f 1) + 1 ))
 		[[ ! -z "${2}" ]] && MUK_COMMENT=$2
@@ -772,6 +782,7 @@ function FUNC_pack()
 	FS=${FS}.squashfs
 	_title "Building ${BLUE}${FS}${GREEN}...."
 	mksquashfs ${SRC} extract/${DIR}/${FS} -b 1048576 ${XZ}
+	chown ${SUDO_USER}:${SUDO_USER} extract/${DIR}/${FS}
 
 	# Fifth: Generate a GPG signature for the squashfs we just created:
 	unset KEY
@@ -791,17 +802,14 @@ function FUNC_pack()
 	fi
 	if [[ ! -z "${KEY}" ]]; then
 		_title "Signing ${BLUE}${FS}${GREEN}...."
+		rm extract/${DIR}/${FS}.gpg 2> /dev/null
 		sudo -u ${SUDO_USER} gpg -v -u "${KEY}" -o extract/${DIR}/${FS}.gpg -b extract/${DIR}/${FS}
 	fi
 
 	# Sixth: Remove the overlay filesystem and upper layer of overlay:
 	_title "Removing the overlay filesystem and upper layer of overlay..."
 	ACTION_remove
-	if [[ "${ACTION}" =~ ^pack ]]; then
-		mv ${UNPACK_DIR}/extract/${DIR}/${FS} ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs
-		test -f ${UNPACK_DIR}/extract/${DIR}/${FS}.gpg && mv ${UNPACK_DIR}/extract/${DIR}/${FS}.gpg ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs.gpg
-		rm ${UNPACK_DIR}/extract/${DIR}/filesystem_*.squashfs* 2> /dev/null
-	fi
+	[[ "$ACTION}" =~ (pack|rebuild) ]] && rm ${UNPACK_DIR}/extract/${DIR}/filesystem.squashfs.old
 
 	# Seventh: Create MD5 checksum file:
 	FUNC_md5sum
@@ -901,9 +909,9 @@ function ACTION_iso()
 		cd ${UNPACK_DIR}/extract
 		test -d isolinux || cp -aR ${MUK_DIR}/files/isolinux ./
 		if [[ "${FLAG_MKISOFS}" == "0" ]]; then
-			genisoimage -allow-limited-size -D -r -V "${ISO_LABEL}" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ${ISO_DIR}/${ISO_FILE}.iso .
+			sudo -u ${SUDO_USER} genisoimage -allow-limited-size -D -r -V "${ISO_LABEL}" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ${ISO_DIR}/${ISO_FILE}.iso .
 		else
-			mkisofs -allow-limited-size -D -r -V "${ISO_LABEL}" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ${ISO_DIR}/${ISO_FILE}.iso .
+			sudo -u ${SUDO_USER} mkisofs -allow-limited-size -D -r -V "${ISO_LABEL}" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o ${ISO_DIR}/${ISO_FILE}.iso .
 		fi
 	else
 		# >>>> NEW WAY TO CREATE ISO: Valid for Jammy and above <<<<<
@@ -940,7 +948,7 @@ function ACTION_iso()
 		fi
 
 		# Finally pack up an ISO the new way:
-		xorriso -as mkisofs -r \
+		sudo -u ${SUDO_USER} xorriso -as mkisofs -r \
   			-V "${PRETTY_NAME}" \
 			-J -joliet-long -iso-level 3 \
   			-o ${ISO_DIR}/${ISO_FILE}.iso \
@@ -968,11 +976,6 @@ function ACTION_iso()
 #==============================================================================
 function ACTION_rebuild()
 {
-	ACTION_pack && ACTION_iso
-}
-function ACTION_rebuild()
-{
-	FLAG_XZ=1
 	ACTION_pack && ACTION_iso
 }
 

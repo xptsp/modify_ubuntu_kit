@@ -6,15 +6,13 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Replaces default Ubuntu background with Red Dragon background..."
+	echo -e "${RED}Purpose:${NC} Sets custom Gnome settings."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Replacing default Ubuntu background with Red Dragon background..."
+_title "Adding script to get changed Gnome settings..."
 #==============================================================================
-cd /usr/share/backgrounds
-test -e warty-final-ubuntu-original.png || mv warty-final-ubuntu.png warty-final-ubuntu-original.png
-cp ${MUK_DIR}/files/red_dragon.png /usr/share/backgrounds/
-ln -sf red_dragon.png warty-final-ubuntu.png
+test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
+apt install -y reddragon-tools

@@ -12,56 +12,70 @@ if [[ "$1" == "--help" || "$1" == "-h" ]]; then
 fi
 
 #==============================================================================
-_title "Adding script to get changed Gnome settings..."
-#==============================================================================
-test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
-apt install -y reddragon-tools
-
-#==============================================================================
 _title "Setting custom Gnome settings..."
 #==============================================================================
-# Enable automatic suspend after 30 minutes:
-dbus-launch --exit-with-session gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-timeout 1800
-dbus-launch --exit-with-session gsettings set org.gnome.settings-daemon.plugins.power sleep-inactive-ac-type 'suspend'
-
-# Pressing power button suspends computer:
-dbus-launch --exit-with-session gsettings set org.gnome.settings-daemon.plugins.power power-button-action 'suspend'
+mkdir -p  /etc/dconf/{profile,db/local.d}
+[[ -f /etc/dconf/profile/user ]] || cat << EOF >  /etc/dconf/profile/user
+user-db:user
+system-db:local
+EOF
+STR="${EXTS[@]}"
+cat << EOF >  /etc/dconf/db/local.d/00-reddragon-gnome-settings
+[org/gnome/desktop/interface]
+# Change time format to "AM/PM":
+clock-format='12h'
 
 # Set Dark mode for Appearances:
-dbus-launch --exit-with-session gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
-dbus-launch --exit-with-session gsettings set org.gnome.desktop.interface gtk-theme 'Yaru-dark'
-dbus-launch --exit-with-session gsettings set org.gnome.gedit.preferences.editor scheme 'Yaru-dark'
+color-scheme='prefer-dark'
+gtk-theme='Yaru-dark'
 
+# Disable Automatic Screen Lock and Lock Screen on Suspend:
+[org/gnome/desktop/screensaver]
+lock-enabled=false
+ubuntu-lock-on-suspend=false
+
+# Set Dark mode for Appearances:
+[org/gnome/gedit/preferences/editor]
+scheme='Yaru-dark'
+
+[org/gnome/settings-daemon/plugins/power]
+# Enable automatic suspend after 30 minutes:
+power-button-action='suspend'
+sleep-inactive-ac-timeout=1800
+
+# Pressing power button suspends computer:
+sleep-inactive-ac-type='suspend'
+
+[org/gnome/shell/extensions/dash-to-dock]
 # Move Application Dock to bottom of screen:
-dbus-launch --exit-with-session gsettings set org.gnome.shell.extensions.dash-to-dock dock-position 'BOTTOM'
-
-# Hide Volumes and Devices on Application Dock:
-dbus-launch --exit-with-session gsettings set org.gnome.shell.extensions.dash-to-dock show-mounts false
-
-# Hide Trash on Application Dock:
-dbus-launch --exit-with-session gsettings set org.gnome.shell.extensions.dash-to-dock show-trash false
-
-# Change "Position of New Icons" to "Top Left":
-dbus-launch --exit-with-session gsettings set org.gnome.shell.extensions.ding start-corner 'top-left'
-
-# Change time format to "AM/PM":
-dbus-launch --exit-with-session gsettings set org.gnome.desktop.interface clock-format '12h'
-dbus-launch --exit-with-session gsettings set org.gtk.Settings.FileChooser clock-format '12h'
-
-# Disable Automatic Screen Lock:
-dbus-launch --exit-with-session gsettings set org.gnome.desktop.screensaver lock-enabled false
-
-# Disable Lock Screen on Suspend:
-dbus-launch --exit-with-session gsettings set org.gnome.desktop.screensaver ubuntu-lock-on-suspend false
-
-# In Gnome Nautilus, sort Folders before Files:
-dbus-launch --exit-with-session gsettings set org.gtk.Settings.FileChooser sort-directories-first true
+dock-position='BOTTOM'
 
 # Show Dock on all displays:
-dbus-launch --exit-with-session gsettings set org.gnome.shell.extensions.dash-to-dock multi-monitor true
+multi-monitor=true
 
-# Set Network Proxy to "automatic":
-dbus-launch --exit-with-session gsettings set org.gnome.system.proxy mode 'auto'
+# Hide Volumes and Devices on Application Dock:
+show-mounts=false
+
+# Hide Trash on Application Dock:
+show-trash=false
+
+# Change "Position of New Icons" to "Top Left":
+[org/gnome/shell/extensions/ding]
+start-corner='top-left'
 
 # Set my "Favorite Applications" listed in the dock:
-dbus-launch --exit-with-session gsettings set org.gnome.shell favorite-apps "['firefox.desktop', 'thunderbird.desktop', 'org.gnome.Nautilus.desktop', 'rhythmbox.desktop', 'xfce4-terminal.desktop', 'gnome-control-center.desktop']"
+[org/gnome/shell]
+favorite-apps=['firefox.desktop', 'thunderbird.desktop', 'org.gnome.Nautilus.desktop', 'rhythmbox.desktop', 'xfce4-terminal.desktop', 'gnome-control-center.desktop']
+
+# Set Network Proxy to "automatic":
+[org/gnome/system/proxy]
+mode='auto'
+
+[org/gtk/Settings/FileChooser]
+# Set Dark mode for Appearances and clock to AM/PM format:
+clock-format='12h'
+
+# In Gnome Nautilus, sort Folders before Files:
+sort-directories-first=true
+EOF
+dconf update

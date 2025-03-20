@@ -36,25 +36,43 @@ _title "Installing compatible Gnome extensions..."
 #   14) Notification Banner Reloaded >> https://extensions.gnome.org/extension/4651/notification-banner-reloaded/ 
 #   15) Sound Input & Output Device Chooser >> https://extensions.gnome.org/extension/906/sound-output-device-chooser/
 #==============================================================================
+add_package() { PKGS+=( $1 ); EXTS+=( $2 ); }
 test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
 VER=$(apt list gnome-shell 2> /dev/null | grep -m 1 gnome | grep -m 1 -o -e '[0-9][0-9]\.' | cut -d. -f 1)
 PKGS=()
-[[ "${VER}" -ge 40 && "${VER}" -le 44 ]] && PKGS+=( gnome-shell-extension-grand-theft-focus )
-[[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && PKGS+=( gnome-shell-extension-dash-to-dock-workaround )
-[[ "${VER}" -ge 40 && "${VER}" -le 44 ]] && PKGS+=( gnome-shell-extension-prevent-double-empty-window )
-[[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && PKGS+=( gnome-shell-extension-osd-volume-number )
-[[ "${VER}" -ge 40 && "${VER}" -le 42 ]] && PKGS+=( gnome-shell-extension-refresh-wifi )
-[[ "${VER}" -eq 42 ]] && PKGS+=( gnome-shell-extension-gsconnect )
-[[ "${VER}" -eq 42 ]] && PKGS+=( gnome-shell-extension-openweather )
-[[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && PKGS+=( gnome-shell-extension-dash-to-panel )
-[[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && PKGS+=( gnome-shell-extension-arcmenu )
-[[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && PKGS+=( gnome-shell-extension-reboot-to-uefi )
-[[ "${VER}" -ge 40 && "${VER}" -le 42 ]] && PKGS+=( gnome-shell-extension-gamemode )
-[[ "${VER}" -ge 42 && "${VER}" -le 43 ]] && PKGS+=( gnome-shell-extension-battery-indicator-upower )
-[[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && PKGS+=( gnome-shell-extension-add-to-desktop )
-[[ "${VER}" -ge 40 && "${VER}" -le 44 ]] && PKGS+=( gnome-shell-extension-notification-banner-reloaded )
-[[ "${VER}" -ge 40 && "${VER}" -le 42 ]] && PKGS+=( gnome-shell-extension-sound-output-device-chooser )
-apt install -y ${PKGS}    
+EXTS=()
+[[ "${VER}" -ge 40 && "${VER}" -le 44 ]] && add_package gnome-shell-extension-grand-theft-focus grand-theft-focus@zalckos.github.com
+[[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && add_package gnome-shell-extension-dash-to-dock-workaround dash-to-dock-workaround@popov895.ukr.net
+[[ "${VER}" -ge 40 && "${VER}" -le 44 ]] && add_package gnome-shell-extension-prevent-double-empty-window prevent-double-empty-window@silliewous.nl
+[[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && add_package gnome-shell-extension-osd-volume-number osd-volume-number@deminder
+[[ "${VER}" -ge 40 && "${VER}" -le 42 ]] && add_package gnome-shell-extension-refresh-wifi refresh-wifi@kgshank.net
+[[ "${VER}" -eq 42 ]] && add_package gnome-shell-extension-gsconnect gsconnect@andyholmes.github.io
+[[ "${VER}" -eq 42 ]] && add_package gnome-shell-extension-openweather openweather-extension@jenslody.de
+[[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && add_package gnome-shell-extension-dash-to-panel dash-to-panel@jderose9.github.com
+[[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && add_package gnome-shell-extension-arcmenu arcmenu@arcmenu.com
+[[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && add_package gnome-shell-extension-reboot-to-uefi reboottouefi@ubaygd.com
+[[ "${VER}" -ge 40 && "${VER}" -le 42 ]] && add_package gnome-shell-extension-gamemode gamemode@christian.kellner.me
+[[ "${VER}" -ge 42 && "${VER}" -le 43 ]] && add_package gnome-shell-extension-battery-indicator-upower battery-indicator@jgotti.org
+[[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && add_package gnome-shell-extension-add-to-desktop add-to-desktop@tommimon.github.com
+[[ "${VER}" -ge 40 && "${VER}" -le 44 ]] && add_package gnome-shell-extension-notification-banner-reloaded notification-banner-reloaded@marcinjakubowski.github.com
+[[ "${VER}" -ge 40 && "${VER}" -le 42 ]] && add_package gnome-shell-extension-sound-output-device-chooser sound-output-device-chooser@kgshank.net
+apt install -y ${PKGS[@]}    
+
+#==============================================================================
+_title "Enabling the installed gnome settings..."
+#==============================================================================
+mkdir -p  /etc/dconf/{profile,db/local.d}
+[[ -f /etc/dconf/profile/user ]] || cat << EOF >  /etc/dconf/profile/user
+user-db:user
+system-db:local
+EOF
+STR="${EXTS[@]}"
+cat << EOF >  /etc/dconf/db/local.d/00-reddragon-gnome-extensions
+# List all extensions that you want to have enabled for all users
+[org/gnome/shell]
+enabled-extensions=['ding@rastersoft.com','ubuntu-appindicators@ubuntu.com','ubuntu-dock@ubuntu.com','${STR// /\',\'}']
+EOF
+dconf update
 
 #==============================================================================
 _title "Extracting and compiling custom schema files for extensions..."
@@ -63,7 +81,7 @@ cd /tmp/
 unzip -o ${MUK_DIR}/files/gnome-extensions-schemas.zip
 cd gnome-extensions-schemas/
 ls | while read DIR; do
-	DEST=~/.local/share/gnome-shell/extensions/${DIR}/schemas
+	DEST=/usr/share/gnome-shell/extensions/${DIR}/schemas
 	XML=$(basename ${DIR}/*.xml)
 	test -f ${DEST}/${XML}.original || cp ${DEST}/${XML} ${DEST}/${XML}.original
 	mv ${DIR}/*.xml ${DEST}/
