@@ -46,7 +46,6 @@ EXTS=()
 [[ "${VER}" -ge 40 && "${VER}" -le 44 ]] && add_package gnome-shell-extension-prevent-double-empty-window prevent-double-empty-window@silliewous.nl
 [[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && add_package gnome-shell-extension-osd-volume-number osd-volume-number@deminder
 [[ "${VER}" -ge 40 && "${VER}" -le 42 ]] && add_package gnome-shell-extension-refresh-wifi refresh-wifi@kgshank.net
-[[ "${VER}" -eq 42 ]] && add_package gnome-shell-extension-gsconnect gsconnect@andyholmes.github.io
 [[ "${VER}" -eq 42 ]] && add_package gnome-shell-extension-openweather openweather-extension@jenslody.de
 [[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && add_package gnome-shell-extension-dash-to-panel dash-to-panel@jderose9.github.com
 [[ "${VER}" -ge 42 && "${VER}" -le 44 ]] && add_package gnome-shell-extension-arcmenu arcmenu@arcmenu.com
@@ -82,10 +81,12 @@ unzip -o ${MUK_DIR}/files/gnome-extensions-schemas.zip
 cd gnome-extensions-schemas/
 ls | while read DIR; do
 	DEST=/usr/share/gnome-shell/extensions/${DIR}/schemas
-	XML=$(basename ${DIR}/*.xml)
-	test -f ${DEST}/${XML}.original || cp ${DEST}/${XML} ${DEST}/${XML}.original
-	mv ${DIR}/*.xml ${DEST}/
-	glib-compile-schemas ${DEST}/
+	if [[ -d "${DEST}" ]]; then
+		XML=$(basename ${DIR}/*.xml)
+		test -f ${DEST}/${XML}.original || cp ${DEST}/${XML} ${DEST}/${XML}.original
+		mv ${DIR}/*.xml ${DEST}/
+		glib-compile-schemas ${DEST}/
+	fi
 done
 cd ..
 rm -rf gnome-extensions-schemas/
