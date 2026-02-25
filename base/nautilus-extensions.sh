@@ -19,17 +19,13 @@ mkdir -p  /etc/dconf/{profile,db/local.d}
 user-db:user
 system-db:local
 EOF
-STR="${EXTS[@]}"
-cat << EOF >  /etc/dconf/db/local.d/00-reddragon-nautilus
-# First: Set standard size instead of small icon size  
-[org/gnome/nautilus/icon-view]
-default-zoom-level='standard'
-EOF
-dconf update
+
+# Enable automatic suspend after 30 minutes:
+dbus-launch --exit-with-session gsettings set org.gnome.nautilus.icon-view default-zoom-level 'standard'
 
 #==============================================================================
 _title "Installs Nautilus extensions available in Ubuntu repo..."
 #==============================================================================
 test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
-apt install -y nautilus-admin nautilus-extension-brasero nautilus-filename-repairer nautilus-gtkhash \
+apt install -y nautilus-admin nautilus-filename-repairer nautilus-gtkhash \
 	nautilus-image-converter nautilus-hide nautilus-wipe folder-color nautilus-gnome-disks  

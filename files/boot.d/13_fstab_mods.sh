@@ -7,23 +7,23 @@ FS[ntfs]=noatime,rw,nosuid,nodev,relatime,uid=1000,gid=1000,fmask=0111,dmask=002
 FS[vfat]=${ntfs}
 
 function mount_partition() {
-	local DEV=$2
+	local DEV="$2"
 	if [[ ! -z "${DEV}" ]]; then
 		umount ${DEV}
 		eval `blkid -o export ${DEV}`
 		local DIR=$1
 		sed -i "/ ${DIR//\//\\\/} /d" /etc/fstab
 		echo "UUID=${UUID}  ${1} ${TYPE}  ${FS[$TYPE]:-"defaults,noatime"}  0  0" >> $F
-		mkdir -p $DIR
-		mount ${DIR}
+		mkdir -p "${DIR}"
+		mount "${DIR}"
 	fi
 }
 function mount_directory()
 {
-	local SRC=$1
-	local DST=$2
+	local SRC="$1"
+	local DST="$2"
 	if [[ -d ${SRC} ]]; then	
-		mkdir -p ${DST}
+		mkdir -p "${DST}"
 		chown ${USER}:${USER} ${DST}
 		sed -i "/ ${DST//\//\\\/} /d" /etc/fstab
 		echo "${SRC}  ${DST// /\\040}  none  bind  0  0" >> $F
