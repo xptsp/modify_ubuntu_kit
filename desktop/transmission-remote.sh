@@ -19,5 +19,5 @@ fi
 _title "Installing Transmission Remote GTK..."
 #==============================================================================
 test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
-apt purge -y --autoremove transmission*
-apt install -y transmission-remote
+apt purge -y --autoremove transmission-common transmission-gtk
+apt install -y transmission-remote-gtk

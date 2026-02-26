@@ -17,7 +17,7 @@ if [[ ${OS_VER} -lt 2004 ]]; then echo -e "${RED}ERROR:${NC} Ubuntu versions bel
 _title "Install ScrCpy for Ubuntu..."
 #==============================================================================
 test -f /etc/apt/sources.list.d/xptsp_ppa.list || ${MUK_DIR}/base/custom-xptsp.sh
-apt install scrcpy
+apt install -y scrcpy
 
 #==============================================================================
 _title "Install ScrCpy GUI for Ubuntu..."

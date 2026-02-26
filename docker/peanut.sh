@@ -1,1 +1,1 @@
-../core/peanut.sh
+../base/peanut.sh

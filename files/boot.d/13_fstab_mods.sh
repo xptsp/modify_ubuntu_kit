@@ -22,7 +22,7 @@ function mount_directory()
 {
 	local SRC="$1"
 	local DST="$2"
-	if [[ -d ${SRC} ]]; then	
+	if [[ -d "${SRC}" ]]; then	
 		mkdir -p "${DST}"
 		chown ${USER}:${USER} ${DST}
 		sed -i "/ ${DST//\//\\\/} /d" /etc/fstab

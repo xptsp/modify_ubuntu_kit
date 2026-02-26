@@ -6,16 +6,12 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs CPU-G on your computer."
+	echo -e "${RED}Purpose:${NC} Installs a few small Red Dragon tools..."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Installing CPU-G (alternative for CPU-Z)..."
+_title "Installing \"nfs-client\" and \"cifs-utils\"..."
 #==============================================================================
-add-apt-repository -y ppa:atareao/atareao
-FILE=/etc/apt/sources.list.d/atareao-ubuntu-atareao-*.list
-sed -i "s| jammy | focal |g" ${FILE}
-apt update
-apt install -y cpu-g
+apt install -y nfs-client cifs-utils
