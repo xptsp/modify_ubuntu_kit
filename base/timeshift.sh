@@ -18,7 +18,31 @@ _title "Installing TimeShift..."
 #==============================================================================
 apt install -y timeshift
 
-# Second: Add the finisher script:
+# Second: Add task to the finisher script:
 #==============================================================================
 add_taskd 70_timeshift.sh
 add_bootd zz_timeshift.sh
+
+# Third: Create backup hook script to save initramfs and kernel files if
+#  they are located outside the root partition:
+#==============================================================================
+FILE=/etc/timeshift/backup-hooks.d/backup
+mkdir -p $(dirname $FILE)
+cat << EOF > ${FILE}
+#!/bin/bash
+mount | grep -q " /boot " && cp -aRx /boot \${TS_SNAPSHOT_PATH}/@/
+EOF
+chmod +x ${FILE}
+
+# Fourth: Create restore hook script to restore initramfs and kernel files if
+#  they are located outside the root partition:
+#==============================================================================
+FILE=/etc/timeshift/restore-hooks.d/backup
+mkdir -p $(dirname $FILE)
+cat << EOF > ${FILE}
+#!/bin/bash
+mount | grep -q " /boot " || exit 0
+rm -rf /boot/*
+cp -aRx \${TS_SNAPSHOT_PATH}/@/boot/* /boot/
+EOF
+chmod +x ${FILE}

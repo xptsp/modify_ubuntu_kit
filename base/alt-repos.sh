@@ -47,6 +47,6 @@ else
 fi
 apt update
 
-# Second: Creating finisher task to replace generated repo list with our list:
+# Second: Add task to the finisher script:
 #==============================================================================
 add_taskd 10_sources.sh

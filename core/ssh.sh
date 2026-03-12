@@ -21,7 +21,7 @@ sed -i "s|#ClientAliveInterval .*|ClientAliveInterval 60|g" /etc/ssh/sshd_config
 sed -i "s|#ClientAliveCountMax .*|ClientAliveCountMax 3|g" /etc/ssh/sshd_config
 systemctl restart sshd
 
-# Second: Configure as appropriate:
+# Second: Add task to the finisher script to configure SSH:
 #==============================================================================
 ischroot && (systemctl disable ssh; rm -v /etc/ssh/ssh_host_*)
 add_taskd 12_ssh.sh

@@ -6,12 +6,15 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs a few small Red Dragon tools..."
+	echo -e "${RED}Purpose:${NC} Installs support for NFS and CIFS mounts."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-_title "Installing \"nfs-client\" and \"cifs-utils\"..."
+_title "Installing support for NFS and CIFS mounts...."
 #==============================================================================
-apt install -y nfs-client cifs-utils
+apt install -y nfs-common cifs-utils
+
+# Second: Add task to the finisher script:
+add_bootd 11_remote_mods.sh

@@ -45,6 +45,6 @@ ln -sf ${MUK_DIR}/files/truecrypt.xpm /usr/share/icons/
 #==============================================================================
 echo "ALL ALL=(ALL) NOPASSWD:/usr/bin/truecrypt,/usr/local/bin/tcmount,/usr/local/bin/tcumount" >> /etc/sudoers.d/truecrypt
 
-# Fifth: Add the finisher script:
+# Fifth: Add task to the finisher script:
 #==============================================================================
 add_taskd 70_truecrypt.sh

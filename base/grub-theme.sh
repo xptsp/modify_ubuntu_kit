@@ -24,4 +24,8 @@ GRUB_GFXMODE=1920x1080
 GRUB_THEME="/usr/share/grub/themes/reddragon/theme.txt"
 GRUB_DISABLE_OS_PROBER=false
 EOF
-update-grub
+
+# Add task to the finisher script:
+#==============================================================================
+add_boot 13_grub.sh
+

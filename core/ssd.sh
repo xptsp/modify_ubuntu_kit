@@ -14,7 +14,7 @@ fi
 #==============================================================================
 _title "Configuring your computer for best performance..."
 #==============================================================================
-# First: Add a finisher task to check for SSDs:
+# First: Add task to the finisher script to check for SSDs:
 #==============================================================================
 add_taskd 16_noatime.sh
 

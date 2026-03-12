@@ -50,6 +50,7 @@ function _ui_error() { if [[ "$UI" == "N" ]]; then _error $@; else dialog --msgb
 if [[ ! "${ACTION}" =~ (help|--help) && "${ACTION}" != "debootstrap" && "$(dirname $0)" != "/usr/bin" ]]; then
 	# Make sure we got everything we need to create a customized Ubuntu disc:
 	PKGS=()
+	whereis ethtool | grep -q "/ethtool" || PKGS+=( ethtool )
 	whereis mksquashfs | grep -q "/mksquashfs" || PKGS+=( squashfs-tools )
 	whereis genisoimage | grep -q "/genisoimage" || PKGS+=( genisoimage )
 	whereis xorriso | grep -q "/xorriso" || PKGS+=( xorriso )
