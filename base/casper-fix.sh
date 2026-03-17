@@ -6,13 +6,15 @@ MUK_DIR=${MUK_DIR:-"/opt/modify_ubuntu_kit"}
 
 # No parameter specified?  Or maybe help requested?
 if [[ "$1" == "--help" || "$1" == "-h" ]]; then
-	echo -e "${RED}Purpose:${NC} Installs wireguard initramfs support."
+	echo -e "${RED}Purpose:${NC} Fixes issue with casper init script."
 	echo ""
 	exit 0
 fi
 
 #==============================================================================
-# Install and configure wireguard-initramfs package:
+_title "Fixing issue with casper init script..."
 #==============================================================================
-apt install -y wireguard-initramfs
-update-initramfs -k all -u
+FILE=/usr/share/initramfs-tools/scripts/casper
+sed -i.bak "s|panic \"overlay mount failed\"|panic \"overlay mount failed\"\n    mkdir -p \"\$rootmnt/rofs\"\n    mount -t overlay -o \"lowerdir=\$mounts\" \"/rofs\" \"\$rootmnt/rofs\"|" ${FILE}
+sed -i "/# move the first mount; no head in busybox-initramfs/,+5d" ${FILE}
+update-initramfs -c -k all

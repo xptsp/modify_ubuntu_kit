@@ -106,6 +106,12 @@ gnome-extensions install notification-banner-reloadedmarcinjakubowski.github.com
 dbus-launch --exit-with-session gnome-extensions enable notification-banner-reloaded@marcinjakubowski.github.com
 rm notification-banner-reloadedmarcinjakubowski.github.com.v8.shell-extension.zip
 
+# Fifteenth: Burn My Windows >> https://extensions.gnome.org/extension/4679/burn-my-windows/
+wget https://extensions.gnome.org/extension-data/burn-my-windowsschneegans.github.com.v40.shell-extension.zip
+gnome-extensions install burn-my-windowsschneegans.github.com.v40.shell-extension.zip
+dbus-launch --exit-with-session gnome-extensions enable burn-my-windows@schneegans.github.com
+rm burn-my-windowsschneegans.github.com.v40.shell-extension.zip
+
 #==============================================================================
 _title "Extracting and compiling custom schema files for extensions..."
 #==============================================================================
