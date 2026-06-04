@@ -42,7 +42,7 @@ mkdir -p $(dirname $FILE)
 cat << EOF > ${FILE}
 #!/bin/bash
 mount | grep -q " /boot " || exit 0
-rm -rf /boot/*
+rm -rf --one-file-system /boot/*
 cp -aRx \${TS_SNAPSHOT_PATH}/@/boot/* /boot/
 EOF
 chmod +x ${FILE}

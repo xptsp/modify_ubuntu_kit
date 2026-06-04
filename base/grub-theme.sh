@@ -27,5 +27,4 @@ EOF
 
 # Add task to the finisher script:
 #==============================================================================
-add_boot 13_grub.sh
-
+add_bootd 13_grub.sh
